@@ -1,76 +1,93 @@
-import numpy as np
+"""
+Problem 2 — Multi-Agent Random Walk (Order Sensitivity)
 
-class EntropyError(Exception):
-    """Custom error for when a system invariant is violated."""
-    pass
+Objective
+---------
+Simulate N agents moving on a 1D line.
 
-class Engine:
-    def __init__(self, seed, initial_energies):
-        # PROBLEM 1: RNG Isolation
-        # We create a private 'tank' of randomness tied only to this instance
-        self.rng = np.random.default_rng(seed)
-        
-        # State Initialization
-        self.tick = 0
-        self.total_sum = 0
-        self.energies = initial_energies # This is our 'S(t)'
-        
-    def validate_invariants(self):
-        # PROBLEM 2: The Invariant Gatekeeper
-        # Check if any energy value is negative
-        for energy in self.energies:
-            if energy < 0:
-                raise EntropyError(f"Invariant Violated: Energy dropped to {energy} at tick {self.tick}")
+Global system state:
 
-    def step(self, metabolic_rate):
-        """Advances the universe by one discrete time step."""
-        # 1. Generate random integer (Problem 1)
-        # Note: we use self.rng, NOT np.random.randint
-        random_val = self.rng.integers(1, 101) 
-        self.total_sum += random_val
-        
-        # 2. Update agent energies (Problem 2)
-        # S(t+1) calculation
-        self.energies = [e - metabolic_rate for e in self.energies]
-        
-        # 3. Enforce the laws of the universe
-        self.validate_invariants()
-        
-        # 4. Advance logical time
-        self.tick += 1
+    S(t) = { position_i(t) } for i in {1,...,N}
 
-    def run(self, n_steps, metabolic_rate):
-        """Runs the simulation loop."""
-        for _ in range(n_steps):
-            self.step(metabolic_rate)
-        return self.total_sum, self.energies
+Each timestep:
 
-# --- TESTING THE IMPLEMENTATION ---
+    position_i(t+1) = position_i(t) + δ_i(t)
 
-if __name__ == "__main__":
-    # Test 1: Deterministic Ghost (Problem 1)
-    seed_val = 42
-    steps = 10
-    
-    eng1 = Engine(seed=seed_val, initial_energies=[10, 10])
-    sum1, energies1 = eng1.run(steps, metabolic_rate=0.5)
-    
-    eng2 = Engine(seed=seed_val, initial_energies=[10, 10])
-    sum2, energies2 = eng2.run(steps, metabolic_rate=0.5)
-    
-    print(f"Run 1 Sum: {sum1}")
-    print(f"Run 2 Sum: {sum2}")
-    print(f"Run 1 Energies: {energies1}")
-    print(f"Run 2 Energies: {energies2}")
-    assert sum1 == sum2, "FAILED: Runs with same seed must be identical!"
-    print("SUCCESS: Determinism confirmed.\n")
+where:
 
-    # Test 2: Invariant Gatekeeper (Problem 2)
-    print("Testing Invariants...")
-    try:
-        # Starting with 5 energy, losing 2 per tick. 
-        # Should crash on tick 3 (5 -> 3 -> 1 -> -1)
-        crash_engine = Engine(seed=1, initial_energies=[5])
-        crash_engine.run(n_steps=10, metabolic_rate=2)
-    except EntropyError as e:
-        print(f"SUCCESS: Caught expected error: {e}")
+    δ_i(t) ∈ {-1, +1}
+
+Direction is chosen randomly.
+
+
+Required Constraints
+--------------------
+1. Use ONE master RNG at the engine level.
+2. No global random usage.
+3. No per-agent RNG instances.
+4. Deterministic agent iteration order.
+5. run(seed, steps) must be reproducible.
+
+
+Required Experiments
+--------------------
+
+Experiment 1 — Determinism
+
+    Engine(seed=42, N=5).run(100)
+    Engine(seed=42, N=5).run(100)
+
+Expected:
+    Identical final positions.
+
+
+Experiment 2 — Order Sensitivity
+
+Change agent iteration order
+(e.g., reverse iteration or shuffle once).
+
+Run again with the same seed.
+
+Expected:
+    Entire trajectory diverges.
+
+
+Experiment 3 — Artificial Synchrony
+
+Give each agent its own RNG:
+
+    agent.rng = np.random.default_rng(seed)
+
+Expected:
+    All agents move identically (perfect synchrony).
+
+This demonstrates that identical per-agent seeding
+destroys independence.
+
+
+What This Problem Teaches
+-------------------------
+
+1. RNG call order is part of the world state.
+2. Changing iteration order changes RNG consumption order.
+3. Per-agent seeding with identical seeds creates correlated behavior.
+4. Deterministic simulation requires:
+       - Same seed
+       - Same call order
+       - Same number of RNG calls
+
+
+Questions You Must Be Able To Answer
+------------------------------------
+
+1. What is S(t)?
+2. What is r(t)?
+3. How many RNG calls happen per tick?
+4. What changes call order?
+5. Why does shuffling cause divergence?
+
+
+Goal
+----
+Understand that (S(t), r(t)) is a coupled deterministic system.
+"""
