@@ -37,6 +37,31 @@ def set_uint8(x):
 
 
 
+
+
+class EngineSnapshot:
+    ''' sep in world and agents subclasses to isolate logic clearly '''
+    def __init__(self, engine : Engine) -> dict:
+        self.engine = engine
+        self.tick = engine.tick
+        self.agent_count = len(engine.agents)
+        self.agents = self.get_agents(engine.agents)
+
+
+    def get_agents(self, agents):
+        return [AgentSnapshot(agent) for agent in agents]
+    
+
+class AgentSnapshot:
+    def __init__(self, agent : Agent) -> dict:
+        
+        # no self.engine needed 
+        pass
+
+
+
+
+
 class Engine:
     def __init__(self, seed, agent_count : np.int64, change_condition=False):
         self.master_ss = np.random.SeedSequence(seed)
@@ -47,10 +72,10 @@ class Engine:
         self.agent_count = agent_count
 
 
-        self.state = self.initialize_state(self.agent_count)
+        self.agents = self.initialize_state(self.agent_count)
 
 
-
+    # set to initialize agents and remove self.state => self.state is abstraction only created by hash return 
     def initialize_state(self, agent_count):
         ''' 
         The engine should be deterministic, so the initial state should be determined by the seed.
@@ -65,13 +90,13 @@ class Engine:
         # kinda like high level simulation of genetic inheritance.
 
         self.agent_count += 1
-        self.state.append(Agent( self , self.agent_count , parent_agent_seed.spawn(1)[0]))
+        self.agents.append(Agent( self , self.agent_count , parent_agent_seed.spawn(1)[0]))
 
 
 
     def step(self):
         """ future proving deterministic agent order. not relevant for current problem but will help in future."""
-        for agent in sorted(self.state, key=lambda a: a.id):
+        for agent in sorted(self.agents, key=lambda a: a.id):
             # agent step returns true if agent reproduces.
             if agent.step() and self.agent_count < MAX_AGENT_COUNT:
                 self.create_new_agent(agent.agent_seed)
@@ -94,11 +119,14 @@ class Engine:
         # tick, agent_count, agent: id, position, energy, alive
         buffer = bytearray()
 
+        # schema version => 
+        buffer += set_int64(1)
+
+        # world state  
         buffer += set_int64(self.tick)
-
-        buffer += set_int64(self.agent_count)
-
-        for agent in sorted(self.state, key=lambda a: a.id):
+        buffer += set_int64(len(self.agents))
+        # agent state
+        for agent in sorted(self.agents, key=lambda a: a.id):
             buffer += set_int64(agent.id)
             # position can be negative so use signed=True
             buffer += set_int64(agent.position, signed=True)
@@ -116,7 +144,7 @@ class Engine:
         for _ in range(n_steps):
             self.step()
 
-        return self.state
+        return self.agents
 
     
 
@@ -205,15 +233,8 @@ if __name__ == "__main__":
     print("case 1 engine 1 and engine 2 should be the same with same seed")
     print("-----------------------------------------------------------------")
     print("\n")
-    print("Final positions eng1:")
-    for agent in eng1.state:
-        print(f"Agent {agent.id} position: {agent.position}")
     print("\n")
     print(f"final agent count eng1: {eng1.agent_count}")
-    print("\n")
-    print("Final positions eng2:")
-    for agent in eng2.state:
-        print(f"Agent {agent.id} position: {agent.position}")   
     print("\n")
     print(f"final agent count eng2: {eng2.agent_count}")
 
@@ -227,16 +248,12 @@ if __name__ == "__main__":
     print("case 2 engine 1 and engine 3 should be different because of change in reproduction seed")
     print("-----------------------------------------------------------------")
     print("\n")
-    print("Final positions eng3:")
-    for agent in eng3.state:
-        print(f"Agent {agent.id} position: {agent.position}")   
-    print("\n")
     print(f"final agent count eng3: {eng3.agent_count}")
 
 
     # test 3
     print("\n")
-    print("Testing get_state_hash() functionality...")
+
     print("================================================================")
     print("case 3 engine 1 and engine 2 should have the same hash")
     print("-----------------------------------------------------------------")
