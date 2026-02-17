@@ -1,0 +1,11 @@
+bit generator content simplified : 
+
+{
+    'bit_generator': 'PCG64',
+    'state': {
+        'state': 12345678901234567890,
+        'inc': 10987654321098765432
+    },
+    'has_uint32': 0,
+    'uinteger': 0
+}
