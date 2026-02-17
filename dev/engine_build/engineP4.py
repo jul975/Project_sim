@@ -1,85 +1,36 @@
 import numpy as np
+import hashlib
+
 
 """
-Problem 4 — Dual RNG Streams (Hierarchical Determinism)
+State Schema v1:
+    basic first layout of state. 
+    should be used to set up get_state_bytes() for "canonical serialization"
+    this should feed the buffer feeding the get_hash() function.
 
-Objective
----------
-Separate randomness into independent subsystems.
-
-Use TWO RNG streams:
-
-    movement_rng
-    reproduction_rng
-
-Both derived from a single master seed using SeedSequence.spawn().
-
-
-System State
-------------
-
-S(t) = {
-    position_i(t),
-    alive_i(t)
-}
-
-Each timestep:
-
-1) Movement phase:
-    position_i += movement_rng.choice([-1, 1])
-
-2) Reproduction phase:
-    if reproduction_rng.random() < p:
-        spawn new agent
-
-
-Core Constraints
-----------------
-1. Use numpy.random.SeedSequence(seed)
-2. Spawn two child sequences:
-       ss.spawn(2)
-3. Create two independent RNG streams
-4. Movement must not depend on reproduction RNG
-5. Reproduction must not depend on movement RNG
-
-
-Required Experiments
---------------------
-
-Experiment 1 — Same Master Seed
-    Entire world identical.
-
-Experiment 2 — Change Only Reproduction Seed
-    Movement trajectory remains identical.
-    Reproduction behavior differs.
-
-Experiment 3 — Collapse to Single RNG
-    Movement becomes coupled to reproduction.
-    Removing reproduction changes movement.
-
-
-What This Teaches
------------------
-1. Controlled independence
-2. Hierarchical deterministic randomness
-3. Subsystem separation
-4. Why seed splitting must be explicit
-5. How professional simulation engines isolate randomness
-
-
-Goal
-----
-Understand how to control independence without losing determinism.
-
-The system evolves in expanded state:
-
-    (S(t), r_movement(t), r_reproduction(t))
-
-You now control multiple deterministic random timelines.
+State Schema v1
+---------------
+tick: int64
+agent_count: uint64
+agent:
+    id: int64
+    position: int64
+    energy: int64
+    alive: uint8
+    
 """
 
 
 MAX_AGENT_COUNT = 200
+
+
+# helpers 
+def set_int64(x, signed=False):
+    # position can be negative so use signed=True
+    return int(x).to_bytes(8, 'big', signed=signed)
+
+def set_uint8(x):
+    return int(x).to_bytes(1, 'big', signed=False)
 
 
 
@@ -87,12 +38,12 @@ MAX_AGENT_COUNT = 200
 
 
 class Engine:
-    def __init__(self, seed, agent_count, change_condition=False):
+    def __init__(self, seed, agent_count : np.int64, change_condition=False):
         self.master_ss = np.random.SeedSequence(seed)
         self.change_condition = change_condition
 
 
-        self.tick = 0
+        self.tick : np.int64 = 0
         self.agent_count = agent_count
 
 
@@ -119,12 +70,46 @@ class Engine:
 
 
     def step(self):
-
-        for agent in list(self.state):
+        """ future proving deterministic agent order. not relevant for current problem but will help in future."""
+        for agent in sorted(self.state, key=lambda a: a.id):
             # agent step returns true if agent reproduces.
             if agent.step() and self.agent_count < MAX_AGENT_COUNT:
                 self.create_new_agent(agent.agent_seed)
         self.tick += 1
+
+
+    def get_state_bytes(self):
+        """ canonical serialization of state. """
+        """ Right now:  
+                - S(t) = 
+                        {
+                        world state: tick, agent_count
+                        + 
+                        n_agents * (agent state: id, position, energy, alive)
+                        }
+        """
+
+
+
+        # tick, agent_count, agent: id, position, energy, alive
+        buffer = bytearray()
+
+        buffer += set_int64(self.tick)
+
+        buffer += set_int64(self.agent_count)
+
+        for agent in sorted(self.state, key=lambda a: a.id):
+            buffer += set_int64(agent.id)
+            # position can be negative so use signed=True
+            buffer += set_int64(agent.position, signed=True)
+            buffer += set_int64(agent.energy_level)
+            buffer += set_uint8(agent.alive)
+
+
+        return bytes(buffer)
+    
+    def get_state_hash(self):
+        return hashlib.sha256(self.get_state_bytes()).hexdigest()
 
 
     def run(self, n_steps):
@@ -141,22 +126,36 @@ class Engine:
 
 class Agent:
     ''' agents should be a subclass in order to acces span new agent functionality cleanly. '''
-    def __init__(self, engine , id, agent_seed):
-        self.engine = engine
+    def __init__(self, engine : Engine , id : np.int64, agent_seed : np.random.SeedSequence) -> None:
+        
+        """ engine: Engine
+        
+                        id: np.int64
+                agent_seed: np.random.SeedSequence
+        """
+        self.engine= engine
         self.id = id
         self.agent_seed = agent_seed
 
-        self.move_ss, self.repro_ss = self.agent_seed.spawn(2)
+        self.move_ss, self.repro_ss, self.energy_ss = self.agent_seed.spawn(3)
 
 
         # create rngs for movement and reproduction.
+
+
         self.move_rng = np.random.default_rng(self.move_ss)
         self.repro_rng = np.random.default_rng(self.repro_ss)
+        self.energy_rng = np.random.default_rng(self.energy_ss)
 
 
         # initialize position
-        self.position = self.move_rng.integers(1, 30)
-        self.alive = True
+        self.position : np.int64 = self.move_rng.integers(1, 30)
+        self.alive : np.uint8 = True
+
+        # setup energy level as static variable for now. 
+        # current idea is that on initialization each agent has a certain energy range
+        # gives it a inborn "fitness" will be used later
+        self.energy_level = self.energy_rng.integers(20, 40)
 
 
 
@@ -233,6 +232,18 @@ if __name__ == "__main__":
         print(f"Agent {agent.id} position: {agent.position}")   
     print("\n")
     print(f"final agent count eng3: {eng3.agent_count}")
+
+
+    # test 3
+    print("\n")
+    print("Testing get_state_hash() functionality...")
+    print("================================================================")
+    print("case 3 engine 1 and engine 2 should have the same hash")
+    print("-----------------------------------------------------------------")
+    print("\n")
+    print(f"eng1 hash: {eng1.get_state_hash()}")
+    print(f"eng2 hash: {eng2.get_state_hash()}")    
+    print(f"eng3 hash: {eng3.get_state_hash()}")
 
 
 
