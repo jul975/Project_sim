@@ -19,7 +19,7 @@ MAX_AGENT_COUNT = 200
 
 
 class Engine:
-    def __init__(self, seed, agent_count : np.int64, change_condition=False):
+    def __init__(self, seed, agent_count : np.int64 = None, change_condition=False):
         
                 
         self.master_ss = np.random.SeedSequence(seed)
@@ -77,6 +77,7 @@ class Engine:
         engine_snapshot = {
             "tick" : self.tick,
             "master_ss" : self.master_ss,
+            "change_condition" : self.change_condition,
             "agent_count" : len(self.agents),
             "agents" : [self.get_agent_snapshot(agent) for agent in self.agents]
         }
@@ -94,9 +95,9 @@ class Engine:
             "energy_level" : agent.energy_level,
             "alive" : agent.alive,
             "agent_seed" : agent.agent_seed,
-            "move_rng" : agent.move_rng,
-            "repro_rng" : agent.repro_rng,
-            "energy_rng" : agent.energy_rng
+            "move_rng" : agent.move_rng.bit_generator.state,
+            "repro_rng" : agent.repro_rng.bit_generator.state,
+            "energy_rng" : agent.energy_rng.bit_generator.state
         }
     
     @classmethod
@@ -104,6 +105,10 @@ class Engine:
         """ create engine from snapshot. """
         engine = cls(snapshot["master_ss"].entropy, snapshot["agent_count"])
         engine.tick = snapshot["tick"]
+        engine.change_condition = snapshot["change_condition"]
+        
+        engine.agents = [Agent.from_snapshot(agent_snapshot, engine) for agent_snapshot in snapshot["agents"]]
+        return engine
 
 
 
@@ -133,7 +138,10 @@ if __name__ == "__main__":
 
 
     eng1 = Engine(42, 10)
-    eng1.run(100)
+    eng1.run(50)
+    clone = Engine.from_snapshot(eng1.get_snapshot())
+    clone.run(50)
+    eng1.run(50)
 
 
     eng2 = Engine(42, 10)
@@ -141,6 +149,12 @@ if __name__ == "__main__":
 
     eng3 = Engine(42, 10, change_condition=True)
     eng3.run(100)
+
+    
+    
+
+    
+
 
     # test 1 
     print("Testing Same Seed => Identical World...")
@@ -176,6 +190,16 @@ if __name__ == "__main__":
     print(f"eng1 hash: {eng1.get_state_hash()}")
     print(f"eng2 hash: {eng2.get_state_hash()}")    
     print(f"eng3 hash: {eng3.get_state_hash()}")
+
+
+    # test 4
+    print("\n")
+    print("================================================================")
+    print("case 4 engine 1 and engine 4 should have the same hash, engine 4 is a clone of engine 1 at t = 50 => snapshot and rebuild")
+    print("-----------------------------------------------------------------")
+    print("\n")
+    print(f"eng1 hash: {eng1.get_state_hash()}")
+    print(f"clone hash: {clone.get_state_hash()}")
 
 
 

@@ -7,6 +7,9 @@ if TYPE_CHECKING:
     from engineP4 import Engine
 
 
+from rng_utils import reconstruct_rng
+
+
 
 class Agent:
     ''' agents should be a subclass in order to acces span new agent functionality cleanly. '''
@@ -46,6 +49,25 @@ class Agent:
         # idea is that this would create a 10% chance of reproducing per tick.
         self.p = 0.01 if not engine.change_condition else 0.02
 
+
+    @classmethod
+    def from_snapshot(cls, snapshot, engine : "Engine"):
+        """ create agent from snapshot. """
+        # use reconstruct_rng() from rng_utils.py to reconstruct rngs.
+
+        instance = object.__new__(cls)
+
+        # set agent properties 
+        # named it instance to make clear distinction
+        
+        
+        instance.position = snapshot["position"]
+        instance.alive = snapshot["alive"]
+        instance.energy_level = snapshot["energy_level"]
+        instance.move_rng = reconstruct_rng(snapshot["move_rng"])
+        instance.repro_rng = reconstruct_rng(snapshot["repro_rng"])
+        instance.energy_rng = reconstruct_rng(snapshot["energy_rng"])
+        return instance
 
     
          
