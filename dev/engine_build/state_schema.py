@@ -1,0 +1,62 @@
+
+
+
+from rng_utils import set_int64, set_uint8
+
+
+"""
+State Schema v1:
+    basic first layout of state. 
+    should be used to set up get_state_bytes() for "canonical serialization"
+    this should feed the buffer feeding the get_hash() function.
+
+State Schema v1
+---------------
+tick: int64
+agent_count: uint64
+agent:
+    id: int64
+    position: int64
+    energy: int64
+    alive: uint8
+    
+"""
+
+""" canonical serialization of state. """
+""" Right now:  
+        - S(t) = 
+                {
+                world state: tick, agent_count
+                + 
+                n_agents * (agent state: id, position, energy, alive)
+                }
+"""
+
+SCHEMA_VERSION = 1
+
+
+
+def get_state_bytes(engine) -> bytes:
+
+
+
+
+    # tick, agent_count, agent: id, position, energy, alive
+    buffer = bytearray()
+
+    # schema version => 
+    buffer += set_int64(SCHEMA_VERSION)
+
+    # world state  
+    buffer += set_int64(engine.tick)
+    buffer += set_int64(len(engine.agents))
+    # agent state
+    for agent in sorted(engine.agents, key=lambda a: a.id):
+        buffer += set_int64(agent.id)
+        # position can be negative so use signed=True
+        buffer += set_int64(agent.position, signed=True)
+        buffer += set_int64(agent.energy_level)
+        buffer += set_uint8(int(agent.alive))
+
+
+    return bytes(buffer)

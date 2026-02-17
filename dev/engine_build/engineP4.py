@@ -2,61 +2,17 @@ import numpy as np
 import hashlib
 
 
-"""
-State Schema v1:
-    basic first layout of state. 
-    should be used to set up get_state_bytes() for "canonical serialization"
-    this should feed the buffer feeding the get_hash() function.
 
-State Schema v1
----------------
-tick: int64
-agent_count: uint64
-agent:
-    id: int64
-    position: int64
-    energy: int64
-    alive: uint8
-    
-"""
+from state_schema import get_state_bytes
+
+from agent import Agent
+
+
+
 
 
 MAX_AGENT_COUNT = 200
 
-
-# helpers 
-def set_int64(x, signed=False):
-    # position can be negative so use signed=True
-    return int(x).to_bytes(8, 'big', signed=signed)
-
-def set_uint8(x):
-    return int(x).to_bytes(1, 'big', signed=False)
-
-
-
-
-
-
-
-
-class EngineSnapshot:
-    ''' sep in world and agents subclasses to isolate logic clearly '''
-    def __init__(self, engine : Engine) -> dict:
-        self.engine = engine
-        self.tick = engine.tick
-        self.agent_count = len(engine.agents)
-        self.agents = self.get_agents(engine.agents)
-
-
-    def get_agents(self, agents):
-        return [AgentSnapshot(agent) for agent in agents]
-    
-
-class AgentSnapshot:
-    def __init__(self, agent : Agent) -> dict:
-        
-        # no self.engine needed 
-        pass
 
 
 
@@ -64,80 +20,93 @@ class AgentSnapshot:
 
 class Engine:
     def __init__(self, seed, agent_count : np.int64, change_condition=False):
+        
+                
         self.master_ss = np.random.SeedSequence(seed)
         self.change_condition = change_condition
 
 
         self.tick : np.int64 = 0
-        self.agent_count = agent_count
+        
 
 
-        self.agents = self.initialize_state(self.agent_count)
+        self.agents = self.initialize_state(agent_count)  
 
 
-    # set to initialize agents and remove self.state => self.state is abstraction only created by hash return 
+
     def initialize_state(self, agent_count):
-        ''' 
-        The engine should be deterministic, so the initial state should be determined by the seed.
-        The seed should be used (or rng, need to clear up the difference between the two) to create the initial state.
-        '''
         agent_seeds = self.master_ss.spawn(agent_count)
         return [Agent(self, i, agent_seeds[i]) for i in range(agent_count)]
     
     def create_new_agent(self, parent_agent_seed):
-        # get agent_seed from parent_rng => idea is that the determinism of the engine is preserved.
-        # also the new agent rng is deterministicly linked to it's parent but still different from parent and other children.
-        # kinda like high level simulation of genetic inheritance.
 
-        self.agent_count += 1
-        self.agents.append(Agent( self , self.agent_count , parent_agent_seed.spawn(1)[0]))
+        ## ==>  need fix here, indexing prob not future proof as deaths will potentially 
+        #       change the order of agents.
 
+        
+        self.agents.append(Agent( self , len(self.agents) , parent_agent_seed.spawn(1)[0]))
 
+    def get_agent_count(self):
+        return len(self.agents)
+
+    def __eq__(self, other):
+        return self.get_state_hash() == other.get_state_hash()
 
     def step(self):
-        """ future proving deterministic agent order. not relevant for current problem but will help in future."""
         for agent in sorted(self.agents, key=lambda a: a.id):
-            # agent step returns true if agent reproduces.
-            if agent.step() and self.agent_count < MAX_AGENT_COUNT:
+            if agent.step() and len(self.agents) < MAX_AGENT_COUNT:
                 self.create_new_agent(agent.agent_seed)
         self.tick += 1
 
 
-    def get_state_bytes(self):
-        """ canonical serialization of state. """
-        """ Right now:  
-                - S(t) = 
-                        {
-                        world state: tick, agent_count
-                        + 
-                        n_agents * (agent state: id, position, energy, alive)
-                        }
-        """
+# get_state_bytes() and get_state_hash() are not used in the current version. 
 
+    
 
-
-        # tick, agent_count, agent: id, position, energy, alive
-        buffer = bytearray()
-
-        # schema version => 
-        buffer += set_int64(1)
-
-        # world state  
-        buffer += set_int64(self.tick)
-        buffer += set_int64(len(self.agents))
-        # agent state
-        for agent in sorted(self.agents, key=lambda a: a.id):
-            buffer += set_int64(agent.id)
-            # position can be negative so use signed=True
-            buffer += set_int64(agent.position, signed=True)
-            buffer += set_int64(agent.energy_level)
-            buffer += set_uint8(agent.alive)
-
-
-        return bytes(buffer)
     
     def get_state_hash(self):
-        return hashlib.sha256(self.get_state_bytes()).hexdigest()
+        return hashlib.sha256(get_state_bytes(self)).hexdigest()
+    
+
+
+
+
+
+
+    def get_snapshot(self):
+        engine_snapshot = {
+            "tick" : self.tick,
+            "master_ss" : self.master_ss,
+            "agent_count" : len(self.agents),
+            "agents" : [self.get_agent_snapshot(agent) for agent in self.agents]
+        }
+        return engine_snapshot
+        
+        
+
+
+        
+
+    def get_agent_snapshot(self, agent):
+        return {
+            "id" : agent.id, 
+            "position" : agent.position,
+            "energy_level" : agent.energy_level,
+            "alive" : agent.alive,
+            "agent_seed" : agent.agent_seed,
+            "move_rng" : agent.move_rng,
+            "repro_rng" : agent.repro_rng,
+            "energy_rng" : agent.energy_rng
+        }
+    
+    @classmethod
+    def from_snapshot(cls, snapshot):
+        """ create engine from snapshot. """
+        engine = cls(snapshot["master_ss"].entropy, snapshot["agent_count"])
+        engine.tick = snapshot["tick"]
+
+
+
 
 
     def run(self, n_steps):
@@ -150,60 +119,6 @@ class Engine:
 
 
 
-
-
-class Agent:
-    ''' agents should be a subclass in order to acces span new agent functionality cleanly. '''
-    def __init__(self, engine : Engine , id : np.int64, agent_seed : np.random.SeedSequence) -> None:
-        
-        """ engine: Engine
-        
-                        id: np.int64
-                agent_seed: np.random.SeedSequence
-        """
-        self.engine= engine
-        self.id = id
-        self.agent_seed = agent_seed
-
-        self.move_ss, self.repro_ss, self.energy_ss = self.agent_seed.spawn(3)
-
-
-        # create rngs for movement and reproduction.
-
-
-        self.move_rng = np.random.default_rng(self.move_ss)
-        self.repro_rng = np.random.default_rng(self.repro_ss)
-        self.energy_rng = np.random.default_rng(self.energy_ss)
-
-
-        # initialize position
-        self.position : np.int64 = self.move_rng.integers(1, 30)
-        self.alive : np.uint8 = True
-
-        # setup energy level as static variable for now. 
-        # current idea is that on initialization each agent has a certain energy range
-        # gives it a inborn "fitness" will be used later
-        self.energy_level = self.energy_rng.integers(20, 40)
-
-
-
-        # idea is that this would create a 10% chance of reproducing per tick.
-        self.p = 0.01 if not engine.change_condition else 0.02
-
-
-    
-         
-
-    def step(self):        
-        self.position += self.move_rng.choice([-1, 1])
-
-        reproduce = self.repro_rng.random()
-        if reproduce < self.p:
-            ## create new agent => how to update sequence? => i would use parent_agents rng as a base so it is deterministic but different from parent and other children.
-            return True
-        return False
-
-            
 
 
 
@@ -234,9 +149,9 @@ if __name__ == "__main__":
     print("-----------------------------------------------------------------")
     print("\n")
     print("\n")
-    print(f"final agent count eng1: {eng1.agent_count}")
+    print(f"final agent count eng1: {eng1.get_agent_count()}")
     print("\n")
-    print(f"final agent count eng2: {eng2.agent_count}")
+    print(f"final agent count eng2: {eng2.get_agent_count()}")
 
 
 
@@ -248,7 +163,7 @@ if __name__ == "__main__":
     print("case 2 engine 1 and engine 3 should be different because of change in reproduction seed")
     print("-----------------------------------------------------------------")
     print("\n")
-    print(f"final agent count eng3: {eng3.agent_count}")
+    print(f"final agent count eng3: {eng3.get_agent_count()}")
 
 
     # test 3
