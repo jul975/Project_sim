@@ -60,10 +60,13 @@ class Agent:
         # set agent properties 
         # named it instance to make clear distinction
         
-        
+        instance.engine = engine
+        instance.id = snapshot["id"]
+
         instance.position = snapshot["position"]
         instance.alive = snapshot["alive"]
         instance.energy_level = snapshot["energy_level"]
+        
         instance.move_rng = reconstruct_rng(snapshot["move_rng"])
         instance.repro_rng = reconstruct_rng(snapshot["repro_rng"])
         instance.energy_rng = reconstruct_rng(snapshot["energy_rng"])

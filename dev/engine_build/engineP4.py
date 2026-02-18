@@ -1,9 +1,8 @@
 import numpy as np
 import hashlib
 
-
-
 from state_schema import get_state_bytes
+from rng_utils import reconstruct_rng
 
 from agent import Agent
 
@@ -38,13 +37,48 @@ class Engine:
         agent_seeds = self.master_ss.spawn(agent_count)
         return [Agent(self, i, agent_seeds[i]) for i in range(agent_count)]
     
-    def create_new_agent(self, parent_agent_seed):
+
+
+
+
+
+
+
+
+
+
+    
+    def create_new_agent(self, parent_agent : Agent):
 
         ## ==>  need fix here, indexing prob not future proof as deaths will potentially 
         #       change the order of agents.
 
+
+        # seed sequence for new agent is not necessary, rng can be used to simulate determinism 
+        # current idea => | Parent RNG → draw value → use value to seed new independent RNG
+        child_seed_int = parent_agent.repro_rng.bit_generator.random_raw()
         
-        self.agents.append(Agent( self , len(self.agents) , parent_agent_seed.spawn(1)[0]))
+        #note on 63: 2**63 is the maximum value for a signed 64 bit integer.
+        
+        
+
+
+
+        
+        self.agents.append(Agent( self , len(self.agents) , child_seed_int))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     def get_agent_count(self):
         return len(self.agents)
@@ -55,7 +89,10 @@ class Engine:
     def step(self):
         for agent in sorted(self.agents, key=lambda a: a.id):
             if agent.step() and len(self.agents) < MAX_AGENT_COUNT:
-                self.create_new_agent(agent.agent_seed)
+                
+
+                # creation of child rng, 
+                self.create_new_agent( agent)
         self.tick += 1
 
 

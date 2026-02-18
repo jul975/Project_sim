@@ -13,7 +13,7 @@ def set_uint8(x):
     return int(x).to_bytes(1, 'big', signed=False)
 
 
-def reconstruct_rng(bit_gent_state : dict) -> np.random.Generator:
+def reconstruct_rng(bit_gen_state : dict) -> np.random.Generator:
     '''bit_generator.state => rng reconstruction.'''
     # bit_gent_state is a dictionary with the following keys: 
     # {'bit_generator': 'PCG64', 'state': {'state': 12345678901234567890, 'inc': 10987654321098765432}, 'has_uint32': 0, 'uinteger': 0}
@@ -24,7 +24,7 @@ def reconstruct_rng(bit_gent_state : dict) -> np.random.Generator:
     # look to notes for further description of state.
 
     bit_generator = np.random.PCG64()
-    bit_generator.state = bit_gent_state
+    bit_generator.state = bit_gen_state
 
     # return rng
     return np.random.default_rng(bit_generator)
