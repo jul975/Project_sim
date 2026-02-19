@@ -6,6 +6,7 @@ from .rng_utils import reconstruct_rng
 from .seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
 
 from .agent import Agent
+from .world import World
 
 
 
@@ -23,16 +24,16 @@ class Engine:
         
                 
         self.master_ss = np.random.SeedSequence(seed)
-        self.change_condition = change_condition
-
-
-        self.tick : np.int64 = 0
-
         self.next_agent_id = agent_count
         
 
-        # agents are stored in a dict with id as key for fast access.
+        self.world = World(change_condition)
+        
         self.agents : dict[np.int64, Agent] = self.initialize_state(agent_count)  
+        
+        
+        
+        self.pending_death: list[np.int64] = []
 
 
 
@@ -89,12 +90,24 @@ class Engine:
 
     def step(self) -> None:
         for agent_id, agent in sorted(self.agents.items()):
-            if agent.step() and len(self.agents) < MAX_AGENT_COUNT:
-                
 
+            
+            
+
+            if agent.step() and len(self.agents) < MAX_AGENT_COUNT:
                 # creation of child rng, 
                 self.create_new_agent( agent)
-        self.tick += 1
+
+            if not agent.alive:
+                self.pending_death.append(agent_id)
+
+        # remove dead agents
+        for agent_id in self.pending_death:
+            del self.agents[agent_id]
+        self.pending_death.clear()
+
+        # increment tick
+        self.world.tick += 1
 
 
 # get_state_bytes() and get_state_hash() are not used in the current version. 
@@ -113,10 +126,15 @@ class Engine:
 
     def get_snapshot(self) -> dict:
         engine_snapshot = {
-            "tick" : self.tick,
+            
             "master_ss" : get_seed_seq_dict(self.master_ss),
-            "change_condition" : self.change_condition,
             "next_agent_id" : self.next_agent_id,
+
+
+            "world" : {
+                "tick" : self.world.tick,
+                "change_condition" : self.world.change_condition
+            },
             "agents" : {agent_id : self.get_agent_snapshot(agent) for agent_id, agent in self.agents.items()}
         }
         return engine_snapshot
@@ -147,7 +165,7 @@ class Engine:
         }
     
     @classmethod
-    def from_snapshot(cls, snapshot) -> "Engine":
+    def from_snapshot(cls, snapshot : dict) -> "Engine":
 
         """ create engine from snapshot. """
         engine_clone = object.__new__(cls)
@@ -155,8 +173,10 @@ class Engine:
 
         # engine master_ss doesnt need to be reconstructed.
         engine_clone.master_ss = reconstruct_seed_seq(snapshot["master_ss"], 0)
-        engine_clone.change_condition = snapshot["change_condition"]
-        engine_clone.tick = snapshot["tick"]
+
+        # reconstruct world
+        engine_clone.world = World.from_snapshot(snapshot["world"])
+        engine_clone.pending_death = []
 
         engine_clone.next_agent_id = snapshot["next_agent_id"]
 
