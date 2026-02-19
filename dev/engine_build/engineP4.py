@@ -18,7 +18,7 @@ MAX_AGENT_COUNT = 200
 
 
 class Engine:
-    def __init__(self, seed, agent_count : np.int64 = None, change_condition=False):
+    def __init__(self, seed, agent_count : np.int64 = None, change_condition=False) -> None:
         
                 
         self.master_ss = np.random.SeedSequence(seed)
@@ -33,7 +33,7 @@ class Engine:
 
 
 
-    def initialize_state(self, agent_count):
+    def initialize_state(self, agent_count) -> list[Agent]:
         agent_seeds = self.master_ss.spawn(agent_count)
         return [Agent(self, i, agent_seeds[i]) for i in range(agent_count)]
     
@@ -48,7 +48,7 @@ class Engine:
 
 
     
-    def create_new_agent(self, parent_agent : Agent):
+    def create_new_agent(self, parent_agent : Agent) -> None:
 
         ## ==>  need fix here, indexing prob not future proof as deaths will potentially 
         #       change the order of agents.
@@ -80,13 +80,13 @@ class Engine:
 
 
 
-    def get_agent_count(self):
+    def get_agent_count(self) -> np.int64:
         return len(self.agents)
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return self.get_state_hash() == other.get_state_hash()
 
-    def step(self):
+    def step(self) -> None:
         for agent in sorted(self.agents, key=lambda a: a.id):
             if agent.step() and len(self.agents) < MAX_AGENT_COUNT:
                 
@@ -101,7 +101,7 @@ class Engine:
     
 
     
-    def get_state_hash(self):
+    def get_state_hash(self) -> str:
         return hashlib.sha256(get_state_bytes(self)).hexdigest()
     
 
@@ -110,7 +110,7 @@ class Engine:
 
 
 
-    def get_snapshot(self):
+    def get_snapshot(self) -> dict:
         engine_snapshot = {
             "tick" : self.tick,
             "master_ss" : self.master_ss,
@@ -125,7 +125,7 @@ class Engine:
 
         
 
-    def get_agent_snapshot(self, agent):
+    def get_agent_snapshot(self, agent) -> dict:
         return {
             "id" : agent.id, 
             "position" : agent.position,
@@ -138,7 +138,7 @@ class Engine:
         }
     
     @classmethod
-    def from_snapshot(cls, snapshot):
+    def from_snapshot(cls, snapshot) -> "Engine":
         """ create engine from snapshot. """
         engine = cls(snapshot["master_ss"].entropy, snapshot["agent_count"])
         engine.tick = snapshot["tick"]
@@ -151,7 +151,7 @@ class Engine:
 
 
 
-    def run(self, n_steps):
+    def run(self, n_steps) -> list[Agent]:
         for _ in range(n_steps):
             self.step()
 
