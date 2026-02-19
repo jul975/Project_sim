@@ -2,13 +2,13 @@
 import numpy as np
 # check logic and eff of type checking statements.
 from typing import TYPE_CHECKING
-from seed_seq_utils import reconstruct_seed_seq
+from .seed_seq_utils import reconstruct_seed_seq
 
 if TYPE_CHECKING:
-    from engineP4 import Engine
+    from .engineP4 import Engine
 
 
-from rng_utils import reconstruct_rng
+from .rng_utils import reconstruct_rng
 
 """
 GENERAL NOTES:

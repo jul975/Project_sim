@@ -1,7 +1,7 @@
 
 
 
-from rng_utils import set_int64, set_uint8
+from .rng_utils import set_int64, set_uint8
 
 
 """
