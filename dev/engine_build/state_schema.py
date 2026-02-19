@@ -48,7 +48,7 @@ def get_state_bytes(engine) -> bytes:
     buffer += set_int64(SCHEMA_VERSION)
 
     # world state  
-    buffer += set_int64(engine.tick)
+    buffer += set_int64(engine.world.tick)
     buffer += set_int64(len(engine.agents))
     # agent state
 
