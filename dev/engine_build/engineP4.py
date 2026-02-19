@@ -3,6 +3,7 @@ import hashlib
 
 from state_schema import get_state_bytes
 from rng_utils import reconstruct_rng
+from seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
 
 from agent import Agent
 
@@ -50,22 +51,14 @@ class Engine:
     
     def create_new_agent(self, parent_agent : Agent) -> None:
 
-        ## ==>  need fix here, indexing prob not future proof as deaths will potentially 
-        #       change the order of agents.
+                
+        # parent_agent.agent_seed.spawn(1)[0]
 
-
-        # seed sequence for new agent is not necessary, rng can be used to simulate determinism 
-        # current idea => | Parent RNG → draw value → use value to seed new independent RNG
-        child_seed_int = parent_agent.repro_rng.bit_generator.random_raw()
-        
-        #note on 63: 2**63 is the maximum value for a signed 64 bit integer.
-        
-        
-
+        child_seed = parent_agent.reproduce()
 
 
         
-        self.agents.append(Agent( self , len(self.agents) , child_seed_int))
+        self.agents.append(Agent( self , len(self.agents) , child_seed))
 
 
 
@@ -113,7 +106,7 @@ class Engine:
     def get_snapshot(self) -> dict:
         engine_snapshot = {
             "tick" : self.tick,
-            "master_ss" : self.master_ss,
+            "master_ss" : get_seed_seq_dict(self.master_ss),
             "change_condition" : self.change_condition,
             "agent_count" : len(self.agents),
             "agents" : [self.get_agent_snapshot(agent) for agent in self.agents]
@@ -128,10 +121,18 @@ class Engine:
     def get_agent_snapshot(self, agent) -> dict:
         return {
             "id" : agent.id, 
+            "agent_spawn_count" : agent.agent_spawn_count,
             "position" : agent.position,
             "energy_level" : agent.energy_level,
             "alive" : agent.alive,
-            "agent_seed" : agent.agent_seed,
+
+            "agent_seed" : get_seed_seq_dict(agent.agent_seed),
+            
+            # redundant clones 
+            #"move_ss" : get_seed_seq_dict(agent.move_ss),
+            #"repro_ss" : get_seed_seq_dict(agent.repro_ss),
+            #"energy_ss" : get_seed_seq_dict(agent.energy_ss),
+
             "move_rng" : agent.move_rng.bit_generator.state,
             "repro_rng" : agent.repro_rng.bit_generator.state,
             "energy_rng" : agent.energy_rng.bit_generator.state
@@ -139,13 +140,26 @@ class Engine:
     
     @classmethod
     def from_snapshot(cls, snapshot) -> "Engine":
+
         """ create engine from snapshot. """
-        engine = cls(snapshot["master_ss"].entropy, snapshot["agent_count"])
-        engine.tick = snapshot["tick"]
-        engine.change_condition = snapshot["change_condition"]
+        engine_clone = object.__new__(cls)
+
+
+        # engine master_ss doesnt need to be reconstructed.
+        #engine_clone.master_ss = reconstruct_engine_seed_seq(snapshot["master_ss"])
+        engine_clone.change_condition = snapshot["change_condition"]
+        engine_clone.tick = snapshot["tick"]
+
+        engine_clone.agent_count = snapshot["agent_count"]
+
+        engine_clone.agents = [Agent.from_snapshot(agent_snapshot, engine_clone) for agent_snapshot in snapshot["agents"]]
         
-        engine.agents = [Agent.from_snapshot(agent_snapshot, engine) for agent_snapshot in snapshot["agents"]]
-        return engine
+
+
+
+
+        
+        return engine_clone
 
 
 

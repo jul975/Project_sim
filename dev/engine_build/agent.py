@@ -2,6 +2,7 @@
 import numpy as np
 # check logic and eff of type checking statements.
 from typing import TYPE_CHECKING
+from seed_seq_utils import reconstruct_seed_seq
 
 if TYPE_CHECKING:
     from engineP4 import Engine
@@ -47,6 +48,15 @@ class Agent:
         self.id = id
         self.agent_seed = agent_seed
 
+        # external spawn_count logic 
+        self.agent_spawn_count = 0
+
+        
+        self.agent_entropy = self.agent_seed.entropy
+        self.agent_spawn_key = self.agent_seed.spawn_key
+        self.pool_size = self.agent_seed.pool_size
+
+
         self.move_ss, self.repro_ss, self.energy_ss = self.agent_seed.spawn(3)
 
 
@@ -70,12 +80,23 @@ class Agent:
         # idea is that this would create a 1% chance of reproducing per tick.
         self.p = 0.01 if not engine.change_condition else 0.02
 
+    def reproduce(self) -> np.random.SeedSequence:
+        # I'm returning the child seed in order to maintain sep of consernce. reproduction should be a method of the engine. (for now)
 
-    @classmethod
-    def reproduce(cls) -> "Agent":
-        new_agent = object.__new__(cls)
+        index = self.agent_spawn_count
+        child_spawn_key = self.agent_spawn_key + (index,)
+        child_seed = np.random.SeedSequence(
+            entropy=self.agent_entropy,
+            spawn_key=child_spawn_key,
+            pool_size=self.pool_size
+        )
+        self.agent_spawn_count += 1
+        return child_seed
 
         
+
+
+
 
     @classmethod
     def from_snapshot(cls, snapshot, engine : "Engine") -> "Agent":
@@ -86,6 +107,14 @@ class Agent:
 
         # set agent properties 
         # named it instance to make clear distinction
+
+        instance.agent_spawn_count = snapshot["agent_spawn_count"]
+        # seed sequence properties
+        agent_seed_dict = snapshot["agent_seed"]
+        instance.agent_entropy = agent_seed_dict["entropy"]
+        instance.agent_spawn_key = agent_seed_dict["spawn_key"]
+        instance.pool_size = agent_seed_dict["pool_size"]
+
         
         instance.engine = engine
         instance.id = snapshot["id"]
@@ -94,9 +123,22 @@ class Agent:
         instance.alive = snapshot["alive"]
         instance.energy_level = snapshot["energy_level"]
 
+        # seed reconstruction 
+        instance.agent_seed = reconstruct_seed_seq(snapshot["agent_seed"], instance.agent_spawn_count)
+        
+        # redundant clones 
+        #instance.move_ss = reconstruct_seed_seq(snapshot["move_ss"])
+        #instance.repro_ss = reconstruct_seed_seq(snapshot["repro_ss"])
+        #instance.energy_ss = reconstruct_seed_seq(snapshot["energy_ss"])
+
+
         instance.move_rng = reconstruct_rng(snapshot["move_rng"])
         instance.repro_rng = reconstruct_rng(snapshot["repro_rng"])
         instance.energy_rng = reconstruct_rng(snapshot["energy_rng"])
+
+        instance.p = 0.01 if not engine.change_condition else 0.02
+
+
         return instance
 
     
