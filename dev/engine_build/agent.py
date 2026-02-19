@@ -35,6 +35,22 @@ GENERAL NOTES:
 
 
 
+"""
+NOTE:
+NumPy does not expose n_children_spawned in SeedSequence.
+
+We emulate spawn counter restoration by extending spawn_key
+with the stored spawn_count.
+
+This preserves deterministic lineage for this engine
+but does not reproduce NumPy internal state exactly.
+
+SeedSequence is used here only as entropy mixer,
+not as authoritative lineage tracker.
+"""
+
+
+
 class Agent:
     ''' agents should be a subclass in order to acces span new agent functionality cleanly. '''
     def __init__(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence) -> None:

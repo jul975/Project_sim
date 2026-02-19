@@ -9,9 +9,9 @@ That destroys lineage determinism.
 
 So:
 
-✔ entropy must be restored
-✔ spawn_key must be restored
-✔ n_children_spawned must be restored
+-  entropy must be restored
+-  spawn_key must be restored
+-  n_children_spawned must be restored
 
 But numpy does NOT expose a constructor parameter for n_children_spawned."""
 
@@ -40,3 +40,5 @@ def reconstruct_seed_seq(seed_seq_dict : dict, spawn_count : np.int64) -> np.ran
     )
     
     return ss
+
+

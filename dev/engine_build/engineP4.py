@@ -19,7 +19,7 @@ MAX_AGENT_COUNT = 200
 
 
 class Engine:
-    def __init__(self, seed, agent_count : np.int64 = None, change_condition=False) -> None:
+    def __init__(self, seed : np.int64, agent_count : np.int64 = None, change_condition=False) -> None:
         
                 
         self.master_ss = np.random.SeedSequence(seed)
@@ -146,7 +146,7 @@ class Engine:
 
 
         # engine master_ss doesnt need to be reconstructed.
-        #engine_clone.master_ss = reconstruct_engine_seed_seq(snapshot["master_ss"])
+        engine_clone.master_ss = reconstruct_seed_seq(snapshot["master_ss"], 0)
         engine_clone.change_condition = snapshot["change_condition"]
         engine_clone.tick = snapshot["tick"]
 
@@ -217,40 +217,44 @@ if __name__ == "__main__":
     print(f"final agent count eng1: {eng1.get_agent_count()}")
     print("\n")
     print(f"final agent count eng2: {eng2.get_agent_count()}")
-
-
+    print("\n")
+    print(f"eng1 hash: {eng1.get_state_hash()}")
+    print(f"eng2 hash: {eng2.get_state_hash()}")
+    print("\n")
 
 
     # test 2
     print("\n")
-    print("Testing Change Only Reproduction Seed...")
+    print("testing different seed => different world...")
     print("================================================================")
-    print("case 2 engine 1 and engine 3 should be different because of change in reproduction seed")
+    print("case 2 engine 1 and engine 3 should be different because of different seed")
     print("-----------------------------------------------------------------")
     print("\n")
+    print(f"final agent count eng1: {eng1.get_agent_count()}")
+    print("\n")
     print(f"final agent count eng3: {eng3.get_agent_count()}")
+    print("\n")
+    print(f"eng1 hash: {eng1.get_state_hash()}")
+    print(f"eng3 hash: {eng3.get_state_hash()}")
+    print("\n") 
 
 
     # test 3
     print("\n")
-
+    print("testing snapshot and rebuild...")
     print("================================================================")
-    print("case 3 engine 1 and engine 2 should have the same hash")
+    print("case 3 engine 1 and clone should be the same because clone is a rebuild from eng1 snapshot")
     print("-----------------------------------------------------------------")
+    status = "passed" if eng1.get_state_hash() == clone.get_state_hash() else "failed"
     print("\n")
-    print(f"eng1 hash: {eng1.get_state_hash()}")
-    print(f"eng2 hash: {eng2.get_state_hash()}")    
-    print(f"eng3 hash: {eng3.get_state_hash()}")
-
-
-    # test 4
+    print(f"test status: {status}")
     print("\n")
-    print("================================================================")
-    print("case 4 engine 1 and engine 4 should have the same hash, engine 4 is a clone of engine 1 at t = 50 => snapshot and rebuild")
-    print("-----------------------------------------------------------------")
+    print(f"final agent count eng1: {eng1.get_agent_count()}")
+    print(f"final agent count clone: {clone.get_agent_count()}")
     print("\n")
     print(f"eng1 hash: {eng1.get_state_hash()}")
     print(f"clone hash: {clone.get_state_hash()}")
+    print("\n")
 
 
 
