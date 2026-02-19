@@ -51,7 +51,16 @@ def get_state_bytes(engine) -> bytes:
     buffer += set_int64(engine.tick)
     buffer += set_int64(len(engine.agents))
     # agent state
-    for agent in sorted(engine.agents, key=lambda a: a.id):
+
+
+# NOTE : SUGGESTION BY CHATGPT => NOT IMPLEMENTED RN TO SEE IF AND WHERE NOT IMPLEMENTING, CREATES
+#                                 FUTURE DEVIATIONS.
+#                           
+#                                 EXPECTING A TUPLE ALLOCATION ERROR.
+
+#                                 => for agent in (self.agents[k] for k in sorted(self.agents)):
+
+    for agent_id, agent in sorted(engine.agents.items()):
         buffer += set_int64(agent.id)
         # position can be negative so use signed=True
         buffer += set_int64(agent.position, signed=True)

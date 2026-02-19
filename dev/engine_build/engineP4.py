@@ -27,16 +27,19 @@ class Engine:
 
 
         self.tick : np.int64 = 0
+
+        self.next_agent_id = agent_count
         
 
+        # agents are stored in a dict with id as key for fast access.
+        self.agents : dict[np.int64, Agent] = self.initialize_state(agent_count)  
 
-        self.agents = self.initialize_state(agent_count)  
 
 
-
-    def initialize_state(self, agent_count) -> list[Agent]:
+    def initialize_state(self, agent_count) -> dict[np.int64, Agent]:
         agent_seeds = self.master_ss.spawn(agent_count)
-        return [Agent(self, i, agent_seeds[i]) for i in range(agent_count)]
+
+        return {i : Agent(self, i, agent_seeds[i]) for i in range(agent_count)}
     
 
 
@@ -58,7 +61,8 @@ class Engine:
 
 
         
-        self.agents.append(Agent( self , len(self.agents) , child_seed))
+        self.agents[self.next_agent_id] = Agent( self , self.next_agent_id , child_seed)
+        self.next_agent_id += 1
 
 
 
@@ -77,10 +81,14 @@ class Engine:
         return len(self.agents)
 
     def __eq__(self, other) -> bool:
+        # guard suggested by chatgpt, sounded reasonnable.
+        if not isinstance(other, Engine):
+            return NotImplemented
+        
         return self.get_state_hash() == other.get_state_hash()
 
     def step(self) -> None:
-        for agent in sorted(self.agents, key=lambda a: a.id):
+        for agent_id, agent in sorted(self.agents.items()):
             if agent.step() and len(self.agents) < MAX_AGENT_COUNT:
                 
 
@@ -108,8 +116,8 @@ class Engine:
             "tick" : self.tick,
             "master_ss" : get_seed_seq_dict(self.master_ss),
             "change_condition" : self.change_condition,
-            "agent_count" : len(self.agents),
-            "agents" : [self.get_agent_snapshot(agent) for agent in self.agents]
+            "next_agent_id" : self.next_agent_id,
+            "agents" : {agent_id : self.get_agent_snapshot(agent) for agent_id, agent in self.agents.items()}
         }
         return engine_snapshot
         
@@ -150,9 +158,9 @@ class Engine:
         engine_clone.change_condition = snapshot["change_condition"]
         engine_clone.tick = snapshot["tick"]
 
-        engine_clone.agent_count = snapshot["agent_count"]
+        engine_clone.next_agent_id = snapshot["next_agent_id"]
 
-        engine_clone.agents = [Agent.from_snapshot(agent_snapshot, engine_clone) for agent_snapshot in snapshot["agents"]]
+        engine_clone.agents = {agent_id : Agent.from_snapshot(agent_snapshot, engine_clone) for agent_id, agent_snapshot in snapshot["agents"].items()}
         
 
 
@@ -165,7 +173,7 @@ class Engine:
 
 
 
-    def run(self, n_steps) -> list[Agent]:
+    def run(self, n_steps) -> dict[np.int64, Agent]:
         for _ in range(n_steps):
             self.step()
 
@@ -190,6 +198,7 @@ if __name__ == "__main__":
 
     eng1 = Engine(42, 10)
     eng1.run(50)
+
     clone = Engine.from_snapshot(eng1.get_snapshot())
     clone.run(50)
     eng1.run(50)
@@ -245,9 +254,13 @@ if __name__ == "__main__":
     print("================================================================")
     print("case 3 engine 1 and clone should be the same because clone is a rebuild from eng1 snapshot")
     print("-----------------------------------------------------------------")
-    status = "passed" if eng1.get_state_hash() == clone.get_state_hash() else "failed"
+    status_clone_vs_source = "PASSED" if eng1 == clone else "FAILED"
+    status_eng1_vs_eng2 = "PASSED" if eng1 == eng2 and eng1 == clone else "FAILED"
+
     print("\n")
-    print(f"test status: {status}")
+    print("-----------------------------------------------------------------")
+    print(f"test status clone vs source : {status_clone_vs_source}")
+    print(f"test status eng1 vs ref_eng vs clone : {status_eng1_vs_eng2}")
     print("\n")
     print(f"final agent count eng1: {eng1.get_agent_count()}")
     print(f"final agent count clone: {clone.get_agent_count()}")
