@@ -33,7 +33,7 @@ class Engine:
         
         
         
-        self.pending_death: list[np.int64] = []
+        
 
 
 
@@ -53,17 +53,21 @@ class Engine:
 
 
     
-    def create_new_agent(self, parent_agent : Agent) -> None:
+    def create_new_agent(self, child_seed : np.random.SeedSequence) -> None:
 
                 
         # parent_agent.agent_seed.spawn(1)[0]
 
-        child_seed = parent_agent.reproduce()
+        # child_seed = parent_agent.reproduce()
 
 
         
         self.agents[self.next_agent_id] = Agent( self , self.next_agent_id , child_seed)
         self.next_agent_id += 1
+
+
+    def get_child_seed(self, parent_agent : Agent) -> np.random.SeedSequence:
+        return parent_agent.reproduce()
 
 
 
@@ -89,28 +93,57 @@ class Engine:
         return self.get_state_hash() == other.get_state_hash()
 
     def step(self) -> None:
-        for agent_id, agent in sorted(self.agents.items()):
+        """ restructuring step method in order to evaluate agents for death and birth together. 
+            After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
+        
 
-            
-            
+        pending_death: list[np.int64] = []
+        pending_birth: list[np.int64] = []
 
-            if agent.step() and len(self.agents) < MAX_AGENT_COUNT:
-                # creation of child rng, 
-                self.create_new_agent( agent)
+
+
+        sorted_agents = sorted(self.agents.items())
+
+
+        ''' NOTE: 
+            -   Agent state updated is followed by a state evaluation on engine level
+
+            -   The evaluation does NOT influence determenism as it holds only references to the agents marked 
+                for their respective state AFTER step is implemented, further processing happens after 
+                all states have been updated 
+        
+        '''
+        # state update and classification 
+        for agent_id, agent in sorted_agents:
 
             if not agent.alive:
-                self.pending_death.append(agent_id)
+                pending_death.append(agent_id)
+            
 
-        # remove dead agents
-        for agent_id in self.pending_death:
+            elif agent.step() and len(self.agents) < MAX_AGENT_COUNT:
+                # creation of child rng, 
+                pending_birth.append(self.get_child_seed(agent))
+                # self.create_new_agent( agent)
+
+            
+        # capacity calculations
+        effective_population = len(self.agents) - len(pending_death)
+        available_capacity = MAX_AGENT_COUNT - effective_population
+        births_to_commit = pending_birth[:available_capacity]
+       
+       
+       
+        # commit to population changes
+        # NOTE: Keep an eye on this step!! 
+        for agent_id in pending_death:
             del self.agents[agent_id]
-        self.pending_death.clear()
+        for child_seed in births_to_commit:
+            self.create_new_agent(child_seed)
 
-        # increment tick
         self.world.tick += 1
 
 
-# get_state_bytes() and get_state_hash() are not used in the current version. 
+
 
     
 
@@ -176,7 +209,7 @@ class Engine:
 
         # reconstruct world
         engine_clone.world = World.from_snapshot(snapshot["world"])
-        engine_clone.pending_death = []
+        
 
         engine_clone.next_agent_id = snapshot["next_agent_id"]
 
@@ -211,83 +244,11 @@ class Engine:
 
 
 if __name__ == "__main__":
+    pass
 
 
 
 
-
-    eng1 = Engine(42, 10)
-    eng1.run(50)
-
-    clone = Engine.from_snapshot(eng1.get_snapshot())
-    clone.run(50)
-    eng1.run(50)
-
-
-    eng2 = Engine(42, 10)
-    eng2.run(100)
-
-    eng3 = Engine(42, 10, change_condition=True)
-    eng3.run(100)
-
-    
-    
-
-    
-
-
-    # test 1 
-    print("Testing Same Seed => Identical World...")
-    print("================================================================")
-    print("case 1 engine 1 and engine 2 should be the same with same seed")
-    print("-----------------------------------------------------------------")
-    print("\n")
-    print("\n")
-    print(f"final agent count eng1: {eng1.get_agent_count()}")
-    print("\n")
-    print(f"final agent count eng2: {eng2.get_agent_count()}")
-    print("\n")
-    print(f"eng1 hash: {eng1.get_state_hash()}")
-    print(f"eng2 hash: {eng2.get_state_hash()}")
-    print("\n")
-
-
-    # test 2
-    print("\n")
-    print("testing different seed => different world...")
-    print("================================================================")
-    print("case 2 engine 1 and engine 3 should be different because of different seed")
-    print("-----------------------------------------------------------------")
-    print("\n")
-    print(f"final agent count eng1: {eng1.get_agent_count()}")
-    print("\n")
-    print(f"final agent count eng3: {eng3.get_agent_count()}")
-    print("\n")
-    print(f"eng1 hash: {eng1.get_state_hash()}")
-    print(f"eng3 hash: {eng3.get_state_hash()}")
-    print("\n") 
-
-
-    # test 3
-    print("\n")
-    print("testing snapshot and rebuild...")
-    print("================================================================")
-    print("case 3 engine 1 and clone should be the same because clone is a rebuild from eng1 snapshot")
-    print("-----------------------------------------------------------------")
-    status_clone_vs_source = "PASSED" if eng1 == clone else "FAILED"
-    status_eng1_vs_eng2 = "PASSED" if eng1 == eng2 and eng1 == clone else "FAILED"
-
-    print("\n")
-    print("-----------------------------------------------------------------")
-    print(f"test status clone vs source : {status_clone_vs_source}")
-    print(f"test status eng1 vs ref_eng vs clone : {status_eng1_vs_eng2}")
-    print("\n")
-    print(f"final agent count eng1: {eng1.get_agent_count()}")
-    print(f"final agent count clone: {clone.get_agent_count()}")
-    print("\n")
-    print(f"eng1 hash: {eng1.get_state_hash()}")
-    print(f"clone hash: {clone.get_state_hash()}")
-    print("\n")
 
 
 
