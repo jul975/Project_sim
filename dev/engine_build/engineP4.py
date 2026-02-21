@@ -134,14 +134,16 @@ class Engine:
         # state update and classification 
         for agent_id, agent in sorted_agents:
 
+            does_reproduce = agent.step()
+
+
             if not agent.alive:
                 pending_death.append(agent_id)
             
 
-            elif agent.step():
-                # creation of child rng, 
+            elif does_reproduce:
                 pending_birth.append(self.get_child_seed(agent))
-                # self.create_new_agent( agent)
+                
 
             
         # capacity calculations

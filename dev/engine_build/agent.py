@@ -85,11 +85,11 @@ class Agent:
 
 
         # initialize position
-        self.position : np.int64 = self.move_rng.integers(1, 30)
+        self.position : np.int64 = self.move_rng.integers(engine.config.spawn_range[0], engine.config.spawn_range[1])
         self.alive : bool = True
 
         
-        self.energy_level = self.energy_rng.integers(20, 40)
+        self.energy_level = self.energy_rng.integers(engine.config.energy_init_range[0], engine.config.energy_init_range[1])
 
 
 
@@ -152,7 +152,7 @@ class Agent:
         instance.repro_rng = reconstruct_rng(snapshot["repro_rng"])
         instance.energy_rng = reconstruct_rng(snapshot["energy_rng"])
 
-        instance.p = 0.01 if not engine.world.change_condition else 0.02
+        instance.p = engine.config.reproduction_probability if not engine.world.change_condition else engine.config.reproduction_probability_change_condition
 
 
         return instance
@@ -160,14 +160,21 @@ class Agent:
     
          
 
-    def step(self) -> bool:        
+    def step(self) -> bool:
+
+        # logic, you spend the energy and then get to the location 
+        self.energy_level -= self.engine.config.move_cost        
         self.position += self.move_rng.choice([-1, 1])
+
+        if self.energy_level <= 0:
+            self.alive = False
+            return False
 
         reproduce = self.repro_rng.random()
         if reproduce < self.p:
-            ## create new agent => how to update sequence? => i would use parent_agents rng as a base so it is deterministic but different from parent and other children.
             return True
         return False
+        
 
             
 
