@@ -1,6 +1,7 @@
 from engine_build.engineP4 import Engine, MAX_AGENT_COUNT
 import numpy as np
 
+
 """
 Testing plan: 
 
@@ -155,6 +156,20 @@ def test_seed_sensitivity_suite(seed_1 : np.int64, seed_2 : np.int64) -> str:
 
     return status
 
+
+def test_agent_health_suite(seed : np.int64, step_count : np.int64) -> str:
+    """ Verify that agents are healthy. """
+
+    eng = Engine(seed, N_agents)
+    metrics = eng.run_with_metrics(step_count)
+
+    assert max(metrics.population) > 1
+    assert min(metrics.population) > 0 , f"extinction occurred on seed {seed} |"
+    assert len(set(metrics.population)) > 1
+
+    return f"Population healthy for seed = {seed} || T = {step_count} || max population = {max(metrics.population)} || min population = {min(metrics.population)}"
+    
+
 ## NOTE: next 2 tests to implement 
 
 ### 1) RNG Stream Independence Test 
@@ -188,4 +203,10 @@ Example:
 
 if __name__ == "__main__":
     test_canonical_determinism_suite(42, full_trajectory=True)
+
+    print("\n")
+    print("================================================================")
+    print("Testing Agent Health...")
+    print('-----------------------------------------------------------------')
+    print(test_agent_health_suite(42, Total))
     

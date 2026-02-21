@@ -7,6 +7,7 @@ from .seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
 
 from .agent import Agent
 from .world import World
+from .metrics import SimulationMetrics
 
 
 
@@ -92,9 +93,15 @@ class Engine:
         
         return self.get_state_hash() == other.get_state_hash()
 
-    def step(self) -> None:
+
+
+
+    def step(self, run_metrics : bool = False) -> None | tuple[np.int64, np.int64]:
         """ restructuring step method in order to evaluate agents for death and birth together. 
             After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
+        
+        # if metrics are run, len(births_to_commit) and len(pending_death) are returned.
+        # should simplify light weight metrics collection. without interference
         
 
         pending_death: list[np.int64] = []
@@ -111,6 +118,10 @@ class Engine:
             -   The evaluation does NOT influence determenism as it holds only references to the agents marked 
                 for their respective state AFTER step is implemented, further processing happens after 
                 all states have been updated 
+
+
+            - CAVE: ORDERING OF DEATH AND BIRTH IS IMPORTANT! 
+                    => RIGHT NOW, DEATH OCCURS BEFORE BIRTH. !!!!!!!
         
         '''
         # state update and classification 
@@ -120,7 +131,7 @@ class Engine:
                 pending_death.append(agent_id)
             
 
-            elif agent.step() and len(self.agents) < MAX_AGENT_COUNT:
+            elif agent.step():
                 # creation of child rng, 
                 pending_birth.append(self.get_child_seed(agent))
                 # self.create_new_agent( agent)
@@ -141,6 +152,11 @@ class Engine:
             self.create_new_agent(child_seed)
 
         self.world.tick += 1
+
+
+        # metrics return 
+        if run_metrics:
+            return len(births_to_commit), len(pending_death)
 
 
 
@@ -232,6 +248,28 @@ class Engine:
 
         return self.agents
 
+    # NOTE: CAVE: 
+            # method need to be removed in future !!!!
+    def run_with_metrics(self, n_steps) -> dict[np.int64, Agent]:
+        """ runs engine for n_steps and returns metrics. """
+        """ NOTE: (copy from metrics.py)
+                -   as of now I'm using 4 lists to store the metrics, need to make sure that no ticks are missed. 
+                    => should be ok as is, as the recording is done after the tick is completed.
+                    => but keep in mind  
+
+            
+        """
+
+        metrics = SimulationMetrics()
+
+        for _ in range(n_steps):
+            
+
+            births_this_tick, deaths_this_tick = self.step(run_metrics=True)
+
+            metrics.record(self, births_this_tick, deaths_this_tick)
+        
+        return metrics
     
 
 
