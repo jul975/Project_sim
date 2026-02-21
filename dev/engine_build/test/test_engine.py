@@ -1,5 +1,7 @@
-from engine_build.engineP4 import Engine, MAX_AGENT_COUNT
+from engine_build.engineP4 import Engine
 import numpy as np
+from engine_build.config import SimulationConfig
+
 
 
 """
@@ -23,13 +25,15 @@ def test_long_horizon()
 T_mid = 250
 T_tail = 250
 Total = 500
-N_agents = 10
+
+config = SimulationConfig()
+
 
 
 def test_same_seed_determinism_suite(seed : np.int64) -> str:
     """ verify determinism for diff engines with the same seed """
-    eng1 = Engine(seed, N_agents)
-    eng2 = Engine(seed, N_agents)
+    eng1 = Engine(seed, config)
+    eng2 = Engine(seed, config)
 
     eng1.run(T_mid)
     eng2.run(T_mid)
@@ -49,7 +53,7 @@ def test_same_seed_determinism_suite(seed : np.int64) -> str:
 def test_canonical_determinism_suite(seed : np.int64, full_trajectory : bool = False) -> str:
     """ Verify trajectory equivalence for mid run interruption, cloning and continuation. """
 
-    eng1 = Engine(seed, N_agents)
+    eng1 = Engine(seed, config)
     eng1.run(T_mid)
 
     snapshot = eng1.get_snapshot()
@@ -63,7 +67,7 @@ def test_canonical_determinism_suite(seed : np.int64, full_trajectory : bool = F
     if not full_trajectory:
         status = "PASSED" if eng1 == clone else "FAILED"
     else:
-        eng2 = Engine(seed, N_agents)
+        eng2 = Engine(seed, config)
         eng2.run(T_mid + T_tail)
         status = "PASSED" if eng1 == clone and eng1 == eng2 else "FAILED"
 
@@ -86,7 +90,7 @@ def test_snapshot_idempotence_suite(seed : np.int64) -> str:
     """ CAVE => This isolates reconstruction correctness from forward evolution."""
     
     
-    eng = Engine(seed, N_agents)
+    eng = Engine(seed, config)
     eng.run(T_mid)
 
     snapshot_1 = eng.get_snapshot()
@@ -114,7 +118,7 @@ def test_multi_clone_consistency_suite(seed : np.int64) -> str:
     """ Verify that multiple clones of the same snapshot are equivalent. """
 
     """ CAVE => CATCHES SUBTLE REFERENCE BUGS"""
-    eng = Engine(seed, N_agents)
+    eng = Engine(seed, config)
     eng.run(T_mid)
 
     snapshot = eng.get_snapshot()
@@ -138,8 +142,8 @@ def test_multi_clone_consistency_suite(seed : np.int64) -> str:
 # seed sensitivity
 def test_seed_sensitivity_suite(seed_1 : np.int64, seed_2 : np.int64) -> str:
     """ Verify that different seeds produce different worlds. """
-    eng1 = Engine(seed_1, N_agents)
-    eng2 = Engine(seed_2, N_agents)
+    eng1 = Engine(seed_1, config)
+    eng2 = Engine(seed_2, config)
 
     eng1.run(Total)
     eng2.run(Total)
@@ -160,7 +164,7 @@ def test_seed_sensitivity_suite(seed_1 : np.int64, seed_2 : np.int64) -> str:
 def test_agent_health_suite(seed : np.int64, step_count : np.int64) -> str:
     """ Verify that agents are healthy. """
 
-    eng = Engine(seed, N_agents)
+    eng = Engine(seed, config)
     metrics = eng.run_with_metrics(step_count)
 
     assert max(metrics.population) > 1

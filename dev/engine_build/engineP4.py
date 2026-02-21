@@ -9,11 +9,17 @@ from .agent import Agent
 from .world import World
 from .metrics import SimulationMetrics
 
+from .config import SimulationConfig
+
+from dataclasses import asdict
 
 
 
 
-MAX_AGENT_COUNT = 200
+
+
+
+
 
 
 
@@ -21,16 +27,17 @@ MAX_AGENT_COUNT = 200
 
 
 class Engine:
-    def __init__(self, seed : np.int64, agent_count : np.int64 = None, change_condition=False) -> None:
-        
+    def __init__(self, seed : np.int64 , config : SimulationConfig ,change_condition=False) -> None:
+
+        self.config = config
                 
         self.master_ss = np.random.SeedSequence(seed)
-        self.next_agent_id = agent_count
+        self.next_agent_id = self.config.initial_agent_count
         
 
         self.world = World(change_condition)
         
-        self.agents : dict[np.int64, Agent] = self.initialize_state(agent_count)  
+        self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.initial_agent_count)  
         
         
         
@@ -139,7 +146,7 @@ class Engine:
             
         # capacity calculations
         effective_population = len(self.agents) - len(pending_death)
-        available_capacity = MAX_AGENT_COUNT - effective_population
+        available_capacity = self.config.max_agent_count - effective_population
         births_to_commit = pending_birth[:available_capacity]
        
        
@@ -178,6 +185,7 @@ class Engine:
             
             "master_ss" : get_seed_seq_dict(self.master_ss),
             "next_agent_id" : self.next_agent_id,
+            "config": asdict(self.config),
 
 
             "world" : {
@@ -218,6 +226,8 @@ class Engine:
 
         """ create engine from snapshot. """
         engine_clone = object.__new__(cls)
+
+        engine_clone.config = SimulationConfig(**snapshot["config"])
 
 
         # engine master_ss doesnt need to be reconstructed.

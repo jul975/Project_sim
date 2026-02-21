@@ -46,7 +46,7 @@ class SimulationMetrics:
 
         if agent_count > 0:
             # check efficiency, compared to standard python sum / len
-            self.mean_energy.append(np.mean([agent.energy_level for agent in agents]))
+            self.mean_energy.append((sum(agent.energy_level for agent in agents) / agent_count) if agent_count > 0 else 0.0)
         else:
             # 
             self.mean_energy.append(0.0)

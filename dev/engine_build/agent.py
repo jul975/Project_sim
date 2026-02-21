@@ -94,7 +94,7 @@ class Agent:
 
 
         # idea is that this would create a 1% chance of reproducing per tick.
-        self.p = 0.01 if not engine.world.change_condition else 0.02
+        self.p = engine.config.reproduction_probability if not engine.world.change_condition else engine.config.reproduction_probability_change_condition
 
     def reproduce(self) -> np.random.SeedSequence:
         # I'm returning the child seed in order to maintain sep of consernce. reproduction should be a method of the engine. (for now)
