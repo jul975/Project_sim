@@ -2,23 +2,33 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class SimulationConfig:
+    
+    
     # population
-    max_agent_count: int = 200
+    max_agent_count: int = 1000
     initial_agent_count: int = 10
 
-    # space
-    world_size: int = 30
+    # world config
+    world_size: int = 200
+    
+    """
+    Number of discrete spatial cells.
 
-    # agent spawn ranges 
-    min_location: int = 0
-    max_location: int = 30
-    spawn_range: tuple[int, int] = (min_location, max_location)
+    Valid positions satisfy:
+        0 <= position < world_size
+
+    The upper bound is EXCLUSIVE.
+
+    Toroidal wrapping is implemented via modulo:
+        position = position % world_size
+    """
+
+    
+    
 
     # energy dynamics
     move_cost: int = 1
-    energy_init_min: int = 20
-    energy_init_max: int = 40
-    energy_init_range: tuple[int, int] = (energy_init_min, energy_init_max)
+    energy_init_range: tuple[int, int] = (30, 60)
 
     # reproduction
     reproduction_probability: float = 0.5

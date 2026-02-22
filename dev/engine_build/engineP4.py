@@ -35,7 +35,7 @@ class Engine:
         self.next_agent_id = self.config.initial_agent_count
         
 
-        self.world = World(change_condition)
+        self.world = World(self.config, change_condition)
         
         self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.initial_agent_count)  
         
@@ -51,7 +51,19 @@ class Engine:
         return {i : Agent(self, i, agent_seeds[i]) for i in range(agent_count)}
     
 
-
+    ## NOTE:
+    ## config -> engine -> subsystem delegation
+    @property
+    def movement_cost(self) -> np.int64:
+        return self.config.move_cost
+    
+    @property
+    def reproduction_cost(self) -> np.int64:
+        return self.config.reproduction_cost
+    
+    @property
+    def world_size(self) -> np.int64:
+        return self.config.world_size
 
 
 
@@ -61,16 +73,17 @@ class Engine:
 
 
     
-    def create_new_agent(self, child_seed : np.random.SeedSequence) -> None:
+    def create_new_agent(self, parent_agent : Agent) -> None:
 
                 
         # parent_agent.agent_seed.spawn(1)[0]
 
         # child_seed = parent_agent.reproduce()
 
-
+        child_seed = self.get_child_seed(parent_agent)
         
         self.agents[self.next_agent_id] = Agent( self , self.next_agent_id , child_seed)
+        self.agents[self.next_agent_id].position = parent_agent.position
         self.next_agent_id += 1
 
 
@@ -112,7 +125,7 @@ class Engine:
         
 
         pending_death: list[np.int64] = []
-        pending_birth: list[np.int64] = []
+        reproducing_agents: list[np.int64] = []
 
 
 
@@ -142,14 +155,14 @@ class Engine:
             
 
             elif does_reproduce:
-                pending_birth.append(self.get_child_seed(agent))
+                reproducing_agents.append(agent)
                 
 
             
         # capacity calculations
         effective_population = len(self.agents) - len(pending_death)
         available_capacity = self.config.max_agent_count - effective_population
-        births_to_commit = pending_birth[:available_capacity]
+        reproducers_to_commit = reproducing_agents[:available_capacity]
        
        
        
@@ -157,15 +170,15 @@ class Engine:
         # NOTE: Keep an eye on this step!! 
         for agent_id in pending_death:
             del self.agents[agent_id]
-        for child_seed in births_to_commit:
-            self.create_new_agent(child_seed)
+        for parent_agent in reproducers_to_commit:
+            self.create_new_agent(parent_agent)
 
         self.world.tick += 1
 
 
         # metrics return 
         if run_metrics:
-            return len(births_to_commit), len(pending_death)
+            return len(reproducers_to_commit), len(pending_death)
 
 
 
@@ -192,7 +205,9 @@ class Engine:
 
             "world" : {
                 "tick" : self.world.tick,
-                "change_condition" : self.world.change_condition
+                "change_condition" : self.world.change_condition,
+                "config" : asdict(self.world.config),
+                "world_size" : self.world.world_size
             },
             "agents" : {agent_id : self.get_agent_snapshot(agent) for agent_id, agent in self.agents.items()}
         }
