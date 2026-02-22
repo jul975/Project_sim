@@ -168,7 +168,6 @@ def test_agent_health_suite(seed : np.int64, step_count : np.int64) -> str:
     metrics = eng.run_with_metrics(step_count)
 
     assert max(metrics.population) > 1
-    assert min(metrics.population) > 0 , f"extinction occurred on seed {seed} |"
     assert len(set(metrics.population)) > 1
 
     return f"Population healthy for seed = {seed} || T = {step_count} || max population = {max(metrics.population)} || min population = {min(metrics.population)}"

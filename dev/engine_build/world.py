@@ -16,16 +16,12 @@ class World:
 
 
     @classmethod
-    # NOTE: 
-    #       -   config right now, config is stored twice, once in engine, once in world. 
-    #           => need to change that.
-    #       -   Question before solving that, do I need to store config in world? 
-    #       -   After initialisation, I should have all config values available, thinking about just removing config from world level but need to check 
     def from_snapshot(cls, world_snapshot: dict) -> "World":
         clone_world = object.__new__(cls)
         clone_world.tick = world_snapshot["tick"]
         clone_world.change_condition = world_snapshot["change_condition"]
-        clone_world.config = world_snapshot["config"]
+    
+        
         clone_world.world_size = world_snapshot["world_size"]
         return clone_world
     
