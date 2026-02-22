@@ -83,9 +83,10 @@ class Agent:
         self.repro_rng = np.random.default_rng(self.repro_ss)
         self.energy_rng = np.random.default_rng(self.energy_ss)
 
-
+# NOTE: 
+    # need to change created agent spam logic NOW, wil be spread to much.  
         # initialize position
-        self.position : np.int64 = self.move_rng.integers(engine.config.spawn_range[0], engine.config.spawn_range[1])
+        self.position : np.int64 = self.move_rng.integers(0, engine.world_size)
         self.alive : bool = True
 
         
@@ -163,8 +164,14 @@ class Agent:
     def step(self) -> bool:
 
         # logic, you spend the energy and then get to the location 
-        self.energy_level -= self.engine.config.move_cost        
+        self.energy_level -= self.engine.movement_cost     
         self.position += self.move_rng.choice([-1, 1])
+        # again clear this up, same logic on world level so wrap around logic should be implemented there/here.
+        # interaction agent => world 
+        # agent interacts IN the world, the engin mediates the interactions 
+        
+        self.position = self.engine.world.wrap_around(self.position)
+        #self.position %= self.engine.world_size
 
         if self.energy_level <= 0:
             self.alive = False
