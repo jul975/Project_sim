@@ -13,7 +13,34 @@ from .config import SimulationConfig
 
 from dataclasses import asdict
 
+"""
+    NOTE: 
+            Engine invariants:
+                                1) Spatial invariant
+                                                    0 ≤ position < world_size
 
+                                                    Because toroidal normalization guarantees this.
+
+                                2) Identity invariant
+                                                    agent.id matches dict key
+
+                                                    Useful later when deletion/reordering occurs.
+
+                                3) Population invariant
+                                                    len(agents) ≤ max_agent_count
+
+                                                    Prevents overflow bugs.
+
+                                4) Energy invariant (optional)
+                                                    energy_level ≥ 0  OR  agent.alive == False
+
+
+
+
+
+
+
+"""
 
 
 
@@ -79,6 +106,7 @@ class Engine:
         # parent_agent.agent_seed.spawn(1)[0]
 
         # child_seed = parent_agent.reproduce()
+        
 
         child_seed = self.get_child_seed(parent_agent)
         
@@ -172,7 +200,6 @@ class Engine:
             del self.agents[agent_id]
         for parent_agent in reproducers_to_commit:
             self.create_new_agent(parent_agent)
-
         self.world.tick += 1
 
 
@@ -206,7 +233,6 @@ class Engine:
             "world" : {
                 "tick" : self.world.tick,
                 "change_condition" : self.world.change_condition,
-                "config" : asdict(self.world.config),
                 "world_size" : self.world.world_size
             },
             "agents" : {agent_id : self.get_agent_snapshot(agent) for agent_id, agent in self.agents.items()}
@@ -228,10 +254,6 @@ class Engine:
 
             "agent_seed" : get_seed_seq_dict(agent.agent_seed),
             
-            # redundant clones 
-            #"move_ss" : get_seed_seq_dict(agent.move_ss),
-            #"repro_ss" : get_seed_seq_dict(agent.repro_ss),
-            #"energy_ss" : get_seed_seq_dict(agent.energy_ss),
 
             "move_rng" : agent.move_rng.bit_generator.state,
             "repro_rng" : agent.repro_rng.bit_generator.state,
