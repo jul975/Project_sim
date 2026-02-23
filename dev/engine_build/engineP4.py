@@ -61,12 +61,19 @@ class Engine:
         self.master_ss = np.random.SeedSequence(seed)
         self.next_agent_id = self.config.initial_agent_count
         
+        # create world
+        world_seed: np.int64 = self.master_ss.spawn(1)[0]
+        # create new seed, for world setup
 
-        self.world = World(self.config, change_condition)
+        self.world = World( world_seed, self.config ,change_condition)
         
         self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.initial_agent_count)  
         
-        
+    def _assert_invariants(self) -> None:
+        assert len(self.agents) <= self.config.max_agent_count, "Agent count exceeds max_agent_count"
+        for agent_id, agent in self.agents.items():
+            assert agent_id == agent.id, "Agent id does not match dict key"
+            assert 0 <= agent.position < self.config.world_size, "Agent position out of bounds"
         
         
 
@@ -91,6 +98,18 @@ class Engine:
     @property
     def world_size(self) -> np.int64:
         return self.config.world_size
+    
+    @property
+    def max_resource_level(self) -> np.int64:
+        return self.config.max_resource_level
+    
+    @property
+    def resource_regen_rate(self) -> np.int64:
+        return self.config.resource_regen_rate
+
+    
+    
+
 
 
 
@@ -171,21 +190,30 @@ class Engine:
             - CAVE: ORDERING OF DEATH AND BIRTH IS IMPORTANT! 
                     => RIGHT NOW, DEATH OCCURS BEFORE BIRTH. !!!!!!!
         
+                    
+            - CAVE: need to formulate engine stepping logic cleary in order to not introduce hidden sources of non-determinism.
         '''
-        # state update and classification 
+        # single agent state update and interactions world
         for agent_id, agent in sorted_agents:
 
+            # spends energy and moves to new position.
             does_reproduce = agent.step()
 
-
+            # did I die moving towards my new position? 
             if not agent.alive:
                 pending_death.append(agent_id)
+            # if I'm not dead I'm looking for food, then i think about reproducing.
+            else:
+                # if there is food at my position, i eat it.
+                agent.harvest_resources()
+
+                # if i'm not dead (after eating), i think about reproducing.
+                if does_reproduce:
+                    reproducing_agents.append(agent)
+
             
-
-            elif does_reproduce:
-                reproducing_agents.append(agent)
                 
-
+        # agents state updates
             
         # capacity calculations
         effective_population = len(self.agents) - len(pending_death)
@@ -200,7 +228,14 @@ class Engine:
             del self.agents[agent_id]
         for parent_agent in reproducers_to_commit:
             self.create_new_agent(parent_agent)
+
+
+        # world state update 
+        self.world.regrow_resources()
         self.world.tick += 1
+
+        if __debug__:
+            self._assert_invariants()
 
 
         # metrics return 
@@ -233,7 +268,14 @@ class Engine:
             "world" : {
                 "tick" : self.world.tick,
                 "change_condition" : self.world.change_condition,
-                "world_size" : self.world.world_size
+                "world_size" : self.world.world_size,
+
+                "rng_world": self.world.rng_world.bit_generator.state,
+
+                "resources" : self.world.resources,
+                "fertility" : self.world.fertility,
+                "max_harvest" : self.world.max_harvest,
+                "resource_regen_rate" : self.world.resource_regen_rate
             },
             "agents" : {agent_id : self.get_agent_snapshot(agent) for agent_id, agent in self.agents.items()}
         }
@@ -260,6 +302,8 @@ class Engine:
             "energy_rng" : agent.energy_rng.bit_generator.state
         }
     
+
+
     @classmethod
     def from_snapshot(cls, snapshot : dict) -> "Engine":
 
@@ -270,7 +314,7 @@ class Engine:
 
 
         # engine master_ss doesnt need to be reconstructed.
-        engine_clone.master_ss = reconstruct_seed_seq(snapshot["master_ss"], 0)
+        engine_clone.master_ss = reconstruct_seed_seq(snapshot["master_ss"], 1)
 
         # reconstruct world
         engine_clone.world = World.from_snapshot(snapshot["world"])
