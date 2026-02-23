@@ -31,5 +31,27 @@ def reconstruct_rng(bit_gen_state : dict) -> np.random.Generator:
 
 
 
+
+def serialize_rng_state(rng : np.random.Generator) -> bytearray:
+    """ serializes rng state to bytes. """
+    state: dict = rng.bit_generator.state
+    buffer: bytearray = bytearray()
+
+    # name
+    buffer += set_int64(state["bit_generator"])
+    # state
+    buffer += set_int64(state["state"]["state"]) 
+    # inc   
+    buffer += set_int64(state["state"]["inc"])
+    # has_uint32
+    buffer += set_int64(state["has_uint32"])
+    # uinteger
+    buffer += set_int64(state["uinteger"])
+    
+    
+    return buffer
+
+
+
 if __name__ == "__main__":
     pass

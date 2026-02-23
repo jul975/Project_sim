@@ -1,7 +1,7 @@
 
 
 
-from .rng_utils import set_int64, set_uint8
+from .rng_utils import set_int64, set_uint8, serialize_rng_state
 
 
 """
@@ -86,13 +86,39 @@ def schema_v2(engine) -> bytes:
     buffer += set_int64(len(engine.agents))
 
     # World
+    buffer += set_int64(engine.world.world_size)
+    buffer += set_int64(engine.world.max_harvest)
+    buffer += set_int64(engine.world.resource_regen_rate)
+
+    # resource and fertility array's
+    #
+    #
+
+    # rng_world
+    buffer += serialize_rng_state(engine.world.rng_world)
 
 
 
+    # Agents
+    for agent_id, agent in sorted(engine.agents.items()):
+
+        buffer += set_int64(agent.id)
+        # position can be negative so use signed=True
+        buffer += set_int64(agent.position, signed=True)
+        buffer += set_int64(agent.energy_level)
+        buffer += set_uint8(int(agent.alive))
+        buffer += set_int64(agent.agent_spawn_count)
+        buffer += set_int64(agent.agent_entropy)
+        buffer += set_int64(agent.agent_spawn_key)
+        buffer += serialize_rng_state(agent.move_rng)
+        buffer += serialize_rng_state(agent.repro_rng)
+        buffer += serialize_rng_state(agent.energy_rng)
 
 
 
-    
+    return bytes(buffer)
+
+
 
 
 
