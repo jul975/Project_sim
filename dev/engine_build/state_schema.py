@@ -37,10 +37,88 @@ SCHEMA_VERSION = 1
 
 
 def get_state_bytes(engine) -> bytes:
+    if SCHEMA_VERSION == 1:
+        return schema_v1(engine)
+    else:
+        raise NotImplementedError(f"Schema version {SCHEMA_VERSION} not implemented")
+
+
+
+"""
+SCHEMA_VERSION = 2
+
+Engine:
+  tick
+  next_agent_id
+
+World:
+  world_size
+  max_harvest
+  resource_regen_rate
+  resources[]
+  fertility[]
+  rng_world_state
+
+Agents (sorted by id):
+  id
+  position
+  energy
+  alive
+  agent_spawn_count
+  agent_entropy
+  agent_spawn_key
+  move_rng_state
+  repro_rng_state
+  energy_rng_state
+
+
+"""
+
+def schema_v2(engine) -> bytes:
+    # tick, agent_count, agent: id, position, energy, alive
+    buffer = bytearray()
+
+    # schema version => 
+    buffer += set_int64(SCHEMA_VERSION)
+
+    # Engine  
+    buffer += set_int64(engine.world.tick)
+    buffer += set_int64(len(engine.agents))
+
+    # World
 
 
 
 
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def schema_v1(engine) -> bytes:
     # tick, agent_count, agent: id, position, energy, alive
     buffer = bytearray()
 
