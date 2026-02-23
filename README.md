@@ -1,5 +1,12 @@
 # Ecosystem Emergent Behavior Simulator
 
+
+
+# "T=Π∘B∘D∘M"
+
+
+
+
 ## Overview
 Agent-based predator–prey–resource ecosystem model.
 
