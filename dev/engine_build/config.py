@@ -37,6 +37,10 @@ class SimulationConfig:
     reproduction_threshold: int = 0
 
     # resource (future phase)
-    resource_regen_rate: int = 0
-    resource_cap: int = 0
-    harvest_max: int = 0
+    resource_regen_rate: int = 2
+
+    max_harvest: int = 1
+    max_resource_level: int = 80
+
+    
+    
