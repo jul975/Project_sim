@@ -31,7 +31,7 @@ class SimulationConfig:
     energy_init_range: tuple[int, int] = (30, 60)
 
     # reproduction
-    reproduction_probability: float = 0.5
+    reproduction_probability: float = 0.01
     reproduction_probability_change_condition: float = 0.02 # NOTE: for testing
     reproduction_cost: int = 0
     reproduction_threshold: int = 0
