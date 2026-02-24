@@ -59,4 +59,94 @@ Return the requested number of words for PRNG seeding.
 spawn(n_children)
 
 Spawn a number of child SeedSequence s by extending the spawn_key.
+------------------------------
+# NumPy RNG Data Types
+
+## `numpy.random.SeedSequence` (DS)
+
+```python
+SeedSequence(
+    entropy: None | int | Sequence[int] = None,
+    *,
+    spawn_key: tuple[int, ...] = (),
+    pool_size: int = 4,
+    n_children_spawned: int = 0,
+)
+```
+
+Purpose:
+- Mixes entropy deterministically.
+- Produces independent child seed sequences with `spawn(n)`.
+- Generates seed words for bit generators with `generate_state(...)`.
+
+State structure (`seed_seq.state`):
+
+```python
+{
+    "entropy": int | tuple[int, ...],
+    "spawn_key": tuple[int, ...],
+    "pool_size": int,
+    "n_children_spawned": int,
+}
+```
+
+Example:
+
+```python
+import numpy as np
+
+seed_seq = np.random.SeedSequence(12345)
+print(seed_seq.state)
+# {
+#   'entropy': 12345,
+#   'spawn_key': (),
+#   'pool_size': 4,
+#   'n_children_spawned': 0
+# }
+```
+
+---
+
+## NumPy RNG (`numpy.random.Generator`) (DS)
+
+```python
+Generator(bit_generator: BitGenerator)
+```
+
+Most common constructor:
+
+```python
+rng = np.random.default_rng(seed_or_seedsequence)
+```
+
+Structure:
+- `rng`: high-level random API (`random`, `integers`, `choice`, etc.).
+- `rng.bit_generator`: low-level PRNG engine (`PCG64` by default).
+- `rng.bit_generator.state`: serializable engine state dictionary.
+
+Example state (default `PCG64`):
+
+```python
+{
+    "bit_generator": "PCG64",
+    "state": {
+        "state": int,
+        "inc": int
+    },
+    "has_uint32": int,   # 0 or 1
+    "uinteger": int
+}
+```
+
+Example:
+
+```python
+import numpy as np
+
+seed_seq = np.random.SeedSequence(12345)
+rng = np.random.default_rng(seed_seq)
+print(type(rng))                 # numpy.random._generator.Generator
+print(type(rng.bit_generator))   # numpy.random._pcg64.PCG64
+print(rng.bit_generator.state)
+```
 

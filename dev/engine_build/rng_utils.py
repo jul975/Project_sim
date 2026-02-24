@@ -32,24 +32,53 @@ def reconstruct_rng(bit_gen_state : dict) -> np.random.Generator:
 
 
 
-def serialize_rng_state(rng : np.random.Generator) -> bytearray:
-    """ serializes rng state to bytes. """
-    state: dict = rng.bit_generator.state
-    buffer: bytearray = bytearray()
+def encode_string(s: str) -> bytes:
+    b = s.encode("utf-8")
+    return set_int64(len(b)) + b
 
-    # name
-    buffer += set_int64(state["bit_generator"])
-    # state
-    buffer += set_int64(state["state"]["state"]) 
-    # inc   
-    buffer += set_int64(state["state"]["inc"])
-    # has_uint32
-    buffer += set_int64(state["has_uint32"])
-    # uinteger
-    buffer += set_int64(state["uinteger"])
+def set_uint128(x: int) -> bytes:
+    return int(x).to_bytes(16, 'big', signed=False)
+
+def serialize_rng_state(rng):
+    state = rng.bit_generator.state
+    buf = bytearray()
+
+    buf += encode_string(state["bit_generator"])
+    buf += set_uint128(state["state"]["state"])
+    buf += set_uint128(state["state"]["inc"])
+    buf += set_int64(state["has_uint32"], signed=True)
+    buf += set_int64(state["uinteger"], signed=False)
+
+    return buf
     
     
-    return buffer
+    
+
+def serialize_array(arr) -> bytes:
+    arr = arr.astype(np.int64, copy=False)
+    flat = arr.ravel(order="C")
+
+    buf = bytearray()
+    buf += set_int64(len(flat))
+    buf += flat.tobytes(order="C")
+
+    return buf
+
+def serialize_spawn_key(spawn_key: tuple[int, ...]) -> tuple[int, ...]:
+    """
+    Canonical encoding of a SeedSequence spawn_key (tuple of ints).
+
+    Layout:
+        int64 L
+        int64 spawn_key[0]
+        ...
+        int64 spawn_key[L-1]
+    """
+    buf = bytearray()
+    buf += set_int64(len(spawn_key), signed=False)
+    for k in spawn_key:
+        buf += set_int64(k, signed=True)
+    return bytes(buf)
 
 
 
