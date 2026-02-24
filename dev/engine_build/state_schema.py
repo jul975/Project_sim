@@ -1,7 +1,8 @@
 
 
 
-from .rng_utils import set_int64, set_uint8, serialize_rng_state
+from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key
+
 
 
 """
@@ -32,13 +33,15 @@ agent:
                 }
 """
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 
 def get_state_bytes(engine) -> bytes:
     if SCHEMA_VERSION == 1:
-        return schema_v1(engine)
+        return _schema_v1(engine)
+    elif SCHEMA_VERSION == 2:
+        return _schema_v2(engine)
     else:
         raise NotImplementedError(f"Schema version {SCHEMA_VERSION} not implemented")
 
@@ -74,16 +77,17 @@ Agents (sorted by id):
 
 """
 
-def schema_v2(engine) -> bytes:
+def _schema_v2(engine) -> bytes:
     # tick, agent_count, agent: id, position, energy, alive
     buffer = bytearray()
 
     # schema version => 
-    buffer += set_int64(SCHEMA_VERSION)
+    buffer += set_int64(2)
 
     # Engine  
     buffer += set_int64(engine.world.tick)
     buffer += set_int64(len(engine.agents))
+    buffer += set_int64(engine.next_agent_id)
 
     # World
     buffer += set_int64(engine.world.world_size)
@@ -91,8 +95,9 @@ def schema_v2(engine) -> bytes:
     buffer += set_int64(engine.world.resource_regen_rate)
 
     # resource and fertility array's
-    #
-    #
+    buffer += serialize_array(engine.world.resources)
+    buffer += serialize_array(engine.world.fertility)
+    
 
     # rng_world
     buffer += serialize_rng_state(engine.world.rng_world)
@@ -109,7 +114,7 @@ def schema_v2(engine) -> bytes:
         buffer += set_uint8(int(agent.alive))
         buffer += set_int64(agent.agent_spawn_count)
         buffer += set_int64(agent.agent_entropy)
-        buffer += set_int64(agent.agent_spawn_key)
+        buffer += serialize_spawn_key(agent.agent_spawn_key)
         buffer += serialize_rng_state(agent.move_rng)
         buffer += serialize_rng_state(agent.repro_rng)
         buffer += serialize_rng_state(agent.energy_rng)
@@ -144,12 +149,12 @@ def schema_v2(engine) -> bytes:
 
 
 
-def schema_v1(engine) -> bytes:
+def _schema_v1(engine) -> bytes:
     # tick, agent_count, agent: id, position, energy, alive
     buffer = bytearray()
 
     # schema version => 
-    buffer += set_int64(SCHEMA_VERSION)
+    buffer += set_int64(1)
 
     # world state  
     buffer += set_int64(engine.world.tick)

@@ -47,13 +47,10 @@ class World:
         
         # NOTE: 
         # => future implementation with dynamic harvest values, right now keeping it simple
-        # harvest = min(available_resources, self.max_harvest)
+        harvest = min(available_resources, self.max_harvest)
         # self.resources[position] -= harvest
-        if available_resources:
-            self.resources[position] -= self.max_harvest
-            return self.max_harvest
-        else:
-            return False
+        self.resources[position] -= harvest
+        return harvest
         
 
     def regrow_resources(self) -> None:
