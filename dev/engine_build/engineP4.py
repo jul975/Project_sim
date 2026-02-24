@@ -172,7 +172,7 @@ class Engine:
         
 
         pending_death: list[np.int64] = []
-        reproducing_agents: list[np.int64] = []
+        reproducing_agents: list[Agent] = []
 
 
 

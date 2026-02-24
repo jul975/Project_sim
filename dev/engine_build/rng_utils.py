@@ -1,5 +1,7 @@
 
 import numpy as np
+import struct
+
 
 
 
@@ -64,7 +66,7 @@ def serialize_array(arr) -> bytes:
 
     return buf
 
-def serialize_spawn_key(spawn_key: tuple[int, ...]) -> tuple[int, ...]:
+def serialize_spawn_key(spawn_key: tuple[int, ...]) -> bytes:
     """
     Canonical encoding of a SeedSequence spawn_key (tuple of ints).
 
@@ -80,6 +82,24 @@ def serialize_spawn_key(spawn_key: tuple[int, ...]) -> tuple[int, ...]:
         buf += set_int64(k, signed=True)
     return bytes(buf)
 
+def serialize_rule_environment(engine) -> bytes:
+    """
+    float64 move_cost
+    float64 reproduction_probability
+    float64 reproduction_probability_change_condition
+    float64 resource_regen_rate
+    int64   max_harvest
+    int64   world_size
+    """
+    buf = bytearray()
+    buf.extend(struct.pack("<d", engine.config.move_cost))
+    buf.extend(struct.pack("<d", engine.config.reproduction_probability))
+    buf.extend(struct.pack("<d", engine.config.reproduction_probability_change_condition))
+    buf.extend(struct.pack("<d", engine.config.resource_regen_rate))
+    buf += set_int64(engine.config.max_harvest)
+    buf += set_int64(engine.config.world_size)
+    return buf
+    
 
 
 if __name__ == "__main__":

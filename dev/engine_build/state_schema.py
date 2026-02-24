@@ -1,7 +1,7 @@
 
 
 
-from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key
+from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key, serialize_rule_environment
 
 
 
@@ -83,11 +83,16 @@ def _schema_v2(engine) -> bytes:
 
     # schema version => 
     buffer += set_int64(2)
+    # change_condition
+    buffer += set_uint8(int(engine.world.change_condition))
 
     # Engine  
     buffer += set_int64(engine.world.tick)
     buffer += set_int64(len(engine.agents))
     buffer += set_int64(engine.next_agent_id)
+
+    # rule environment
+    buffer += serialize_rule_environment(engine)
 
     # World
     buffer += set_int64(engine.world.world_size)
