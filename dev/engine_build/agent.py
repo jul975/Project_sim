@@ -67,6 +67,7 @@ class Agent:
         # external spawn_count logic 
         self.agent_spawn_count = 0
 
+
         
         self.agent_entropy = self.agent_seed.entropy
         self.agent_spawn_key = self.agent_seed.spawn_key
@@ -131,6 +132,9 @@ class Agent:
         # named it instance to make clear distinction
 
         instance.agent_spawn_count = snapshot["agent_spawn_count"]
+
+
+        
         # seed sequence properties
         agent_seed_dict = snapshot["agent_seed"]
         instance.agent_entropy = agent_seed_dict["entropy"]
@@ -148,10 +152,7 @@ class Agent:
         # seed reconstruction 
         instance.agent_seed = reconstruct_seed_seq(snapshot["agent_seed"], instance.agent_spawn_count)
         
-        # redundant clones 
-        #instance.move_ss = reconstruct_seed_seq(snapshot["move_ss"])
-        #instance.repro_ss = reconstruct_seed_seq(snapshot["repro_ss"])
-        #instance.energy_ss = reconstruct_seed_seq(snapshot["energy_ss"])
+
 
 
         instance.move_rng = reconstruct_rng(snapshot["move_rng"])
@@ -169,7 +170,7 @@ class Agent:
     def step(self) -> bool:
 
         # logic, you spend the energy and then get to the location 
-        self.energy_level -= self.engine.movement_cost     
+        self.energy_level -= self.engine.energy_params.movement_cost     
         self.position += self.move_rng.choice([-1, 1])
         # again clear this up, same logic on world level so wrap around logic should be implemented there/here.
         # interaction agent => world 
@@ -181,10 +182,19 @@ class Agent:
         if self.energy_level <= 0:
             self.alive = False
             return False
+        
 
-        reproduce = self.repro_rng.random()
-        if reproduce < self.p:
-            return True
+        # reproduction logic
+        # NOTE: 
+        #       -   gonna change >= to > but need to change in documentation first.
+
+        if self.energy_level >= self.engine.energy_params.reproduction_threshold:
+            
+
+            reproduce = self.repro_rng.random()
+            if reproduce < self.p:
+                self.energy_level -= self.engine.energy_params.reproduction_cost
+                return True
         return False
         
 

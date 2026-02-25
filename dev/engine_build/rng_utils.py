@@ -84,19 +84,31 @@ def serialize_spawn_key(spawn_key: tuple[int, ...]) -> bytes:
 
 def serialize_rule_environment(engine) -> bytes:
     """
-    float64 move_cost
+    
     float64 reproduction_probability
     float64 reproduction_probability_change_condition
-    float64 resource_regen_rate
+    int64 resource_regen_rate
+
+    int64   movement_cost
+    int64   reproduction_threshold
+    int64   reproduction_cost
+
     int64   max_harvest
     int64   world_size
     """
     buf = bytearray()
-    buf.extend(struct.pack("<d", engine.config.move_cost))
     buf.extend(struct.pack("<d", engine.config.reproduction_probability))
     buf.extend(struct.pack("<d", engine.config.reproduction_probability_change_condition))
-    buf.extend(struct.pack("<d", engine.config.resource_regen_rate))
-    buf += set_int64(engine.config.max_harvest)
+    buf += set_int64(engine.config.resource_regen_rate)
+    # energy params
+    buf += set_int64(engine.energy_params.movement_cost)
+    buf += set_int64(engine.energy_params.reproduction_threshold)
+    buf += set_int64(engine.energy_params.reproduction_cost)
+
+
+
+
+    buf += set_int64(engine.config.energy_config.max_harvest)
     buf += set_int64(engine.config.world_size)
     return buf
     

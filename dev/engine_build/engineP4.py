@@ -9,7 +9,7 @@ from .agent import Agent
 from .world import World
 from .metrics import SimulationMetrics
 
-from .config import SimulationConfig
+from .config import SimulationConfig, EnergyParams
 
 from dataclasses import asdict
 
@@ -66,6 +66,7 @@ class Engine:
         # create new seed, for world setup
 
         self.world = World( world_seed, self.config ,change_condition)
+        self.energy_params = self._derive_energy_params()
         
         self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.initial_agent_count)  
         
@@ -77,8 +78,6 @@ class Engine:
         
         
 
-
-
     def initialize_state(self, agent_count) -> dict[np.int64, Agent]:
         agent_seeds = self.master_ss.spawn(agent_count)
 
@@ -87,14 +86,7 @@ class Engine:
 
     ## NOTE:
     ## config -> engine -> subsystem delegation
-    @property
-    def movement_cost(self) -> np.int64:
-        return self.config.move_cost
-    
-    @property
-    def reproduction_cost(self) -> np.int64:
-        return self.config.reproduction_cost
-    
+
     @property
     def world_size(self) -> np.int64:
         return self.config.world_size
@@ -108,7 +100,17 @@ class Engine:
         return self.config.resource_regen_rate
 
     
-    
+    ## derive energy config to be passed on to agents
+    def _derive_energy_params(self) -> EnergyParams:
+        """ derives energy parameters from config rations, and max_harvest. """
+        max_h = self.config.energy_config.max_harvest
+        r = self.config.energy_config.ratios
+
+        movement_cost = int(r.alpha * max_h)
+        reproduction_threshold = int(r.gamma * movement_cost)
+        reproduction_cost = int(r.beta * reproduction_threshold)
+
+        return EnergyParams(movement_cost, reproduction_threshold, reproduction_cost)
 
 
 
@@ -263,6 +265,8 @@ class Engine:
             "master_ss" : get_seed_seq_dict(self.master_ss),
             "next_agent_id" : self.next_agent_id,
             "config": asdict(self.config),
+            "energy_params" : asdict(self.energy_params),
+
 
 
             "world" : {
@@ -295,6 +299,8 @@ class Engine:
             "alive" : agent.alive,
 
             "agent_seed" : get_seed_seq_dict(agent.agent_seed),
+
+            
             
 
             "move_rng" : agent.move_rng.bit_generator.state,
@@ -310,7 +316,8 @@ class Engine:
         """ create engine from snapshot. """
         engine_clone = object.__new__(cls)
 
-        engine_clone.config = SimulationConfig(**snapshot["config"])
+        engine_clone.config = SimulationConfig.from_dict(snapshot["config"])
+        engine_clone.energy_params = engine_clone._derive_energy_params()
 
 
         # engine master_ss doesnt need to be reconstructed.
