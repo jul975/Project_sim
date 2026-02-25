@@ -30,7 +30,7 @@ class World:
         self.resources = self.fertility.copy()
         self.resource_regen_rate = config.resource_regen_rate
 
-        self.max_harvest = config.max_harvest
+        self.max_harvest = config.energy_config.max_harvest
 
 
 
