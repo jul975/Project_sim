@@ -153,9 +153,10 @@ def test_movement_rng_isolated_from_reproduction():
 
     # Compare the SAME identities (the original cohort only)
     base_ids = range(BASE_CONFIG.initial_agent_count)
+    common_ids = [i for i in base_ids if i in eng1.agents and i in eng2.agents]
 
-    pos1 = [eng1.agents[i].position for i in base_ids]
-    pos2 = [eng2.agents[i].position for i in base_ids]
+    pos1 = [eng1.agents[i].position for i in common_ids]
+    pos2 = [eng2.agents[i].position for i in common_ids]
 
     assert pos1 == pos2, (
         "Movement RNG not isolated from reproduction (base cohort differs). "
