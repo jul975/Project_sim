@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 from .rng_utils import reconstruct_rng
 
+
 """
 GENERAL NOTES:
     - Deterministic flow is inbetween verisions right now, need to separate seed_sequences from 
@@ -113,12 +114,13 @@ class Agent:
         self.agent_spawn_count += 1
         return child_seed
 
-    def harvest_resources(self) -> None:
+    def harvest_resources(self) -> bool:
         """ harvests resources from current position. """
         harvested_resources = self.engine.world.harvest(self.position)
         if harvested_resources:
             self.energy_level += harvested_resources
             ## value harvested is internal agent state, no need to return anything.
+        return True if self.energy_level > 0 else False
 
 
 
@@ -167,38 +169,46 @@ class Agent:
 
         return instance
 
-    
-         
-
-    def step(self) -> bool:
-        
-        # logic, you spend the energy and then get to the location 
+    def move_agent(self) -> bool:
+        # M, if energy <= 0, agent dies of metabolic starvation.
         self.energy_level -= self.engine.energy_params.movement_cost     
         self.position += self.move_rng.choice([-1, 1])
-        # again clear this up, same logic on world level so wrap around logic should be implemented there/here.
-        # interaction agent => world 
-        # agent interacts IN the world, the engin mediates the interactions 
-        
         self.position = self.engine.world.wrap_around(self.position)
-        #self.position %= self.engine.world_size
 
         if self.energy_level <= 0:
             self.alive = False
             return False
+        return True
+    
+    def can_reproduce(self) -> bool:
+            """ check energy level"""
+            if self.energy_level >= self.engine.energy_params.reproduction_threshold:
+                return True
+            return False
+            
+    def does_reproduce(self) -> bool:
+            reproduce = self.repro_rng.random()
+            if reproduce < self.p:
+                self.energy_level -= self.engine.energy_params.reproduction_cost
+                return True
+            return False
+         
+
+    def step(self) -> None:
+        
+        
+
         
 
         # reproduction logic
         # NOTE: 
         #       -   gonna change >= to > but need to change in documentation first.
+        self.age += 1
+        if self.age >= self.engine.config.max_age:
+            self.alive = False
+        
 
-        if self.energy_level >= self.engine.energy_params.reproduction_threshold:
-            
 
-            reproduce = self.repro_rng.random()
-            if reproduce < self.p:
-                self.energy_level -= self.engine.energy_params.reproduction_cost
-                return True
-        return False
         
 
             

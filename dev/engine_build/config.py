@@ -23,6 +23,14 @@ gamma ≈ 5 - 15
 
 import numpy as np
 
+from typing import List, TYPE_CHECKING
+
+
+@dataclass
+class DeathBucket:
+    count: int = 0
+    agents: List[np.int64] = field(default_factory=list)
+
 @dataclass(frozen=True)
 class EnergyParams:
     movement_cost: np.int64
