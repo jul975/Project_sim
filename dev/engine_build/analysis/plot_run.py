@@ -2,37 +2,48 @@ import matplotlib.pyplot as plt
 from engine_build.engineP4 import Engine
 from engine_build.config import SimulationConfig
 
-SEED = 42
-STEPS = 1000
 
-eng = Engine(SEED, SimulationConfig())
-metrics = eng.run_with_metrics(STEPS)
 
-plt.figure(figsize=(10,10))
+def plot_metrics(metrics):
 
-plt.subplot(4,1,1)
-plt.plot(metrics.population)
-plt.title("Population")
 
-plt.subplot(4,1,2)
-plt.plot(metrics.mean_energy)
-plt.title("Mean Energy")
+    plt.figure(figsize=(10,10))
 
-plt.subplot(4,1,3)
-plt.plot(metrics.births, label="Births")
-plt.plot(metrics.deaths, label="Deaths")
-plt.legend()
-plt.title("Births / Total Deaths")
+    plt.subplot(4,1,1)
+    plt.plot(metrics.population)
+    plt.title("Population")
 
-plt.subplot(4,1,4)
-for cause, series in metrics.death_causes.items():
-    plt.plot(series, label=cause)
+    plt.subplot(4,1,2)
+    plt.plot(metrics.mean_energy)
+    plt.title("Mean Energy")
 
-plt.legend()
-plt.title("Deaths by Cause")
+    plt.subplot(4,1,3)
+    plt.plot(metrics.births, label="Births")
+    plt.plot(metrics.deaths, label="Deaths")
+    plt.legend()
+    plt.title("Births / Total Deaths")
 
-plt.tight_layout()
-plt.show()
+    plt.subplot(4,1,4)
+    for cause, series in metrics.death_causes.items():
+        plt.plot(series, label=cause)
+
+    plt.legend()
+    plt.title("Deaths by Cause")
+
+    plt.tight_layout()
+    plt.show()
+    
+def main():
+    SEED = 42
+    STEPS = 1000
+
+    eng = Engine(SEED, SimulationConfig())
+    metrics = eng.run_with_metrics(STEPS)
+
+    plot_metrics(metrics)
+
+if __name__ == "__main__":
+    main()
 
 
 # python -m engine_build.analysis.plot_run
