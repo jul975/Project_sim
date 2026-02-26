@@ -53,6 +53,7 @@ SCHEMA_VERSION = 2
 Engine:
   tick
   next_agent_id
+  max_age
 
 World:
   world_size
@@ -66,6 +67,7 @@ Agents (sorted by id):
   id
   position
   energy
+  age
   alive
   agent_spawn_count
   agent_entropy
@@ -90,6 +92,7 @@ def _schema_v2(engine) -> bytes:
     buffer += set_int64(engine.world.tick)
     buffer += set_int64(len(engine.agents))
     buffer += set_int64(engine.next_agent_id)
+    buffer += set_int64(engine.max_age)
 
     # rule environment
     buffer += serialize_rule_environment(engine)
@@ -116,6 +119,7 @@ def _schema_v2(engine) -> bytes:
         # position can be negative so use signed=True
         buffer += set_int64(agent.position, signed=True)
         buffer += set_int64(agent.energy_level)
+        buffer += set_int64(agent.age)
         buffer += set_uint8(int(agent.alive))
         buffer += set_int64(agent.agent_spawn_count)
         buffer += set_int64(agent.agent_entropy)

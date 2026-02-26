@@ -9,7 +9,7 @@ from .agent import Agent
 from .world import World
 from .metrics import SimulationMetrics
 
-from .config import SimulationConfig, EnergyParams
+from .config import SimulationConfig, EnergyParams, DeathBucket
 
 from dataclasses import asdict
 
@@ -176,7 +176,13 @@ class Engine:
         # should simplify light weight metrics collection. without interference
         
 
-        pending_death: dict[str: [Agent]] = {"old_age" : [], "starvation" : [], "reproduction_failure" : []}
+        pending_death: dict[str: [Agent]] = {
+            "old_age" : DeathBucket(),
+            "metabolic_starvation" : DeathBucket(),
+            "post_harvest_starvation" : DeathBucket(),
+            "post_reproduction_death" : DeathBucket()
+            }
+        
         reproducing_agents: list[Agent] = []
 
 
@@ -208,41 +214,53 @@ class Engine:
         # Deterministic priority harvesting
         # Implicit age dominance
         for agent_id, agent in sorted_agents:
+            # A
             # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
             if not agent.alive:
-                pending_death["old_age"].append(agent)
+                pending_death["old_age"].count += 1
+                pending_death["old_age"].agents.append(agent_id)
                 continue
+            # M
+            if not agent.move_agent():
+                pending_death["metabolic_starvation"].count += 1
+                pending_death["metabolic_starvation"].agents.append(agent_id)
+                continue
+                
 
-
-
-
+            # H
+            if not agent.harvest_resources():
+                pending_death["post_harvest_starvation"].count += 1
+                pending_death["post_harvest_starvation"].agents.append(agent_id)
+                continue
             # spends energy and moves to new position.
             # potentially reproduces, store that
-            does_reproduce = agent.step()
+
+            # R
+            if agent.can_reproduce():
+                if agent.does_reproduce():
+                    reproducing_agents.append(agent)
+                    if agent.energy_level <= 0:
+                        pending_death["post_reproduction_death"].count += 1
+                        pending_death["post_reproduction_death"].agents.append(agent_id)
+                        continue
+            agent.step()
 
             
             
         
             
-            agent.harvest_resources()
-            # if agent energy <= 0, It moved and wasn't able to eat, => Dies of starvation
-            if agent.energy_level <= 0:
-                pending_death["starvation"].append(agent)
-                continue
+            
 
-            # if i'm not dead (after eating), i think about reproducing.
-            if does_reproduce:
-                reproducing_agents.append(agent)
-                if agent.energy_level <= 0:
-                    pending_death["reproduction_failure"].append(agent)
-                    continue
 
         
 
         # agents state updates
             
         # capacity calculations
-        effective_population = len(self.agents) - len(pending_death)
+        # NOTE: 
+            # Take sum of all bucket counts to get total death count
+        deaths_this_tick = sum(death_bucket.count for death_bucket in pending_death.values())
+        effective_population = len(self.agents) - deaths_this_tick 
         available_capacity = self.config.max_agent_count - effective_population
         reproducers_to_commit = reproducing_agents[:available_capacity]
        
@@ -250,8 +268,19 @@ class Engine:
        
         # commit to population changes
         # NOTE: Keep an eye on this step!! 
-        for agent_id in pending_death:
-            del self.agents[agent_id]
+            # CAVE: current system logic regarding age incrementation, 
+            # currently agents live through ticks, the "delta t" their transitioning over is defined by the end of the last step. 
+            # as agent.alive gets evaluated at the beginning of the step, they die at the beginning of the tick.
+            # => agents die at the beginning of the tick, but their death is only committed at the end of the tick. 
+
+        # D
+        for death_bucket in pending_death.values():
+            for agent_id in death_bucket.agents:
+                assert agent_id in self.agents
+                del self.agents[agent_id]
+                
+
+        # B
         for parent_agent in reproducers_to_commit:
             self.create_new_agent(parent_agent)
 
@@ -266,7 +295,7 @@ class Engine:
 
         # metrics return 
         if run_metrics:
-            return len(reproducers_to_commit), len(pending_death)
+            return len(reproducers_to_commit), deaths_this_tick
 
 
 
