@@ -68,7 +68,10 @@ class Engine:
         self.world = World( world_seed, self.config ,change_condition)
         self.energy_params = self._derive_energy_params()
         
-        self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.initial_agent_count)  
+        self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.initial_agent_count) 
+
+
+        self.max_age = self.config.max_age 
         
     def _assert_invariants(self) -> None:
         assert len(self.agents) <= self.config.max_agent_count, "Agent count exceeds max_agent_count"
@@ -173,7 +176,7 @@ class Engine:
         # should simplify light weight metrics collection. without interference
         
 
-        pending_death: list[np.int64] = []
+        pending_death: dict[str: [Agent]] = {"old_age" : [], "starvation" : [], "reproduction_failure" : []}
         reproducing_agents: list[Agent] = []
 
 
@@ -182,6 +185,9 @@ class Engine:
 
 
         ''' NOTE: 
+
+                Formal agent transition order: =>    T = Π ∘ B ∘ D ∘ H ∘ M ∘ A
+
             -   Agent state updated is followed by a state evaluation on engine level
 
             -   The evaluation does NOT influence determenism as it holds only references to the agents marked 
@@ -196,25 +202,43 @@ class Engine:
             - CAVE: need to formulate engine stepping logic cleary in order to not introduce hidden sources of non-determinism.
         '''
         # single agent state update and interactions world
+
+        # NOTE: 
+        # implicit agent resource competition, 
+        # Deterministic priority harvesting
+        # Implicit age dominance
         for agent_id, agent in sorted_agents:
+            # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
+            if not agent.alive:
+                pending_death["old_age"].append(agent)
+                continue
+
+
+
 
             # spends energy and moves to new position.
+            # potentially reproduces, store that
             does_reproduce = agent.step()
 
-            # did I die moving towards my new position? 
-            if not agent.alive:
-                pending_death.append(agent_id)
-            # if I'm not dead I'm looking for food, then i think about reproducing.
-            else:
-                # if there is food at my position, i eat it.
-                agent.harvest_resources()
-
-                # if i'm not dead (after eating), i think about reproducing.
-                if does_reproduce:
-                    reproducing_agents.append(agent)
-
             
-                
+            
+        
+            
+            agent.harvest_resources()
+            # if agent energy <= 0, It moved and wasn't able to eat, => Dies of starvation
+            if agent.energy_level <= 0:
+                pending_death["starvation"].append(agent)
+                continue
+
+            # if i'm not dead (after eating), i think about reproducing.
+            if does_reproduce:
+                reproducing_agents.append(agent)
+                if agent.energy_level <= 0:
+                    pending_death["reproduction_failure"].append(agent)
+                    continue
+
+        
+
         # agents state updates
             
         # capacity calculations
@@ -266,6 +290,7 @@ class Engine:
             "next_agent_id" : self.next_agent_id,
             "config": asdict(self.config),
             "energy_params" : asdict(self.energy_params),
+            "max_age" : self.max_age,
 
 
 
@@ -297,6 +322,7 @@ class Engine:
             "position" : agent.position,
             "energy_level" : agent.energy_level,
             "alive" : agent.alive,
+            "age" : agent.age,
 
             "agent_seed" : get_seed_seq_dict(agent.agent_seed),
 
@@ -318,6 +344,7 @@ class Engine:
 
         engine_clone.config = SimulationConfig.from_dict(snapshot["config"])
         engine_clone.energy_params = engine_clone._derive_energy_params()
+        engine_clone.max_age = snapshot["max_age"]
 
 
         # engine master_ss doesnt need to be reconstructed.

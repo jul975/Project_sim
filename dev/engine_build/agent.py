@@ -67,6 +67,8 @@ class Agent:
         # external spawn_count logic 
         self.agent_spawn_count = 0
 
+        self.age = 0
+
 
         
         self.agent_entropy = self.agent_seed.entropy
@@ -144,6 +146,7 @@ class Agent:
         
         instance.engine = engine
         instance.id = snapshot["id"]
+        instance.age = snapshot["age"]
 
         instance.position = snapshot["position"]
         instance.alive = snapshot["alive"]
@@ -168,7 +171,7 @@ class Agent:
          
 
     def step(self) -> bool:
-
+        
         # logic, you spend the energy and then get to the location 
         self.energy_level -= self.engine.energy_params.movement_cost     
         self.position += self.move_rng.choice([-1, 1])

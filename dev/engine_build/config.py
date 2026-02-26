@@ -46,6 +46,8 @@ class SimulationConfig:
     initial_agent_count: int = 10
     world_size: int = 200
 
+    max_age = 200
+
     energy_init_range: tuple[int, int] = (30, 60)
 
     reproduction_probability: float = 0.25
