@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .engineP4 import Engine
+    from .config import DeathBucket
 
 
 
@@ -30,9 +31,15 @@ class SimulationMetrics:
         self.mean_energy : list[np.float64] = []
         self.births : list[np.float64] = []
         self.deaths : list[np.float64] = []
+        self.death_causes : dict[str, list[np.int64]] = {
+            "old_age" : [],
+            "metabolic_starvation" : [],
+            "post_harvest_starvation" : [],
+            "post_reproduction_death" : []
+        }
 
 
-    def record(self, engine : "Engine", births_this_tick : np.int64 = 0, deaths_this_tick : np.int64 = 0) -> None:
+    def record(self, engine : "Engine", births_this_tick : np.int64 = 0, deaths_this_tick : np.int64 = 0, pending_death : dict[str, 'DeathBucket'] | None = None) -> None:
         """ records metrics for a given engine state. """
         """ NOTE: 
                 -   as of now I'm using 4 lists to store the metrics, need to make sure that no ticks are missed. 
@@ -53,6 +60,10 @@ class SimulationMetrics:
         
         self.births.append(births_this_tick)
         self.deaths.append(deaths_this_tick)
+
+        
+        for cause, bucket in pending_death.items():
+            self.death_causes[cause].append(bucket.count)
 
 
     

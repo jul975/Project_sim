@@ -48,6 +48,10 @@ class EnergyConfig:
     max_harvest: int = 5
     ratios: EnergyRatios = field(default_factory=EnergyRatios)
 
+
+
+
+
 @dataclass(frozen=True)
 class SimulationConfig:
     max_agent_count: int = 1000
@@ -65,6 +69,9 @@ class SimulationConfig:
 
     energy_config: EnergyConfig = field(default_factory=EnergyConfig)
     max_resource_level: int = 80
+
+
+    
 
     @classmethod
     def from_dict(cls, d: dict) -> "SimulationConfig":

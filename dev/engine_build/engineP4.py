@@ -295,7 +295,7 @@ class Engine:
 
         # metrics return 
         if run_metrics:
-            return len(reproducers_to_commit), deaths_this_tick
+            return len(reproducers_to_commit), deaths_this_tick, pending_death
 
 
 
@@ -403,6 +403,9 @@ class Engine:
             self.step()
 
         return self.agents
+    
+
+
 
     # NOTE: CAVE: 
             # method need to be removed in future !!!!
@@ -421,9 +424,9 @@ class Engine:
         for _ in range(n_steps):
             
 
-            births_this_tick, deaths_this_tick = self.step(run_metrics=True)
+            births_this_tick, deaths_this_tick, pending_death = self.step(run_metrics=True)
 
-            metrics.record(self, births_this_tick, deaths_this_tick)
+            metrics.record(self, births_this_tick, deaths_this_tick, pending_death)
         
         return metrics
     

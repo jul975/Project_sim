@@ -8,23 +8,20 @@ STEPS = 1000
 eng = Engine(SEED, SimulationConfig())
 metrics = eng.run_with_metrics(STEPS)
 
-plt.figure(figsize=(10,10))
+plt.figure(figsize=(10,8))
 
-plt.subplot(4,1,1)
+plt.subplot(3,1,1)
 plt.plot(metrics.population)
 plt.title("Population")
 
-plt.subplot(4,1,2)
-plt.plot(metrics.mean_energy)
-plt.title("Mean Energy")
 
-plt.subplot(4,1,3)
+plt.subplot(3,1,2)
 plt.plot(metrics.births, label="Births")
 plt.plot(metrics.deaths, label="Deaths")
 plt.legend()
 plt.title("Births / Total Deaths")
 
-plt.subplot(4,1,4)
+plt.subplot(3,1,3)
 for cause, series in metrics.death_causes.items():
     plt.plot(series, label=cause)
 
