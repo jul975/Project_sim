@@ -1,6 +1,6 @@
-from engine_build.engineP4 import Engine
-from engine_build.config import SimulationConfig, EnergyConfig, EnergyRatios
-from .analysis.plot_run import plot_metrics
+from engine_build.core.engineP4 import Engine
+from engine_build.core.config import SimulationConfig, EnergyConfig, EnergyRatios
+from engine_build.visualisation.plot_run import plot_metrics
 import argparse
 
 

@@ -1,7 +1,7 @@
 
 import matplotlib.pyplot as plt
 from engine_build.engineP4 import Engine
-from engine_build.config import SimulationConfig
+from dev.engine_build.core.config import SimulationConfig
 
 SEED = 42
 STEPS = 1000

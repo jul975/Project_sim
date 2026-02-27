@@ -7,7 +7,7 @@ from .seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
 
 from .agent import Agent
 from .world import World
-from .metrics import SimulationMetrics
+from engine_build.metrics.metrics import SimulationMetrics
 
 from .config import SimulationConfig, EnergyParams, DeathBucket
 

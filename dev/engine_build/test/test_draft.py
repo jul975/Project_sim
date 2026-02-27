@@ -21,8 +21,8 @@ python -m engine_build.test.test_engine --mode dev
 """
 
 import numpy as np
-from engine_build.engineP4 import Engine
-from engine_build.config import SimulationConfig
+from engine_build.core.engineP4 import Engine
+from engine_build.core.config import SimulationConfig
 from dataclasses import dataclass
 import argparse
 

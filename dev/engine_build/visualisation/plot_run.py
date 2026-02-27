@@ -1,29 +1,25 @@
 import matplotlib.pyplot as plt
-from engine_build.engineP4 import Engine
-from engine_build.config import SimulationConfig
+from engine_build.core.engineP4 import Engine
+from engine_build.core.config import SimulationConfig
 
 
 
 def plot_metrics(metrics):
 
 
-    plt.figure(figsize=(10,10))
+    plt.figure(figsize=(10,8))
 
-    plt.subplot(4,1,1)
+    plt.subplot(3,1,1)
     plt.plot(metrics.population)
     plt.title("Population")
 
-    plt.subplot(4,1,2)
-    plt.plot(metrics.mean_energy)
-    plt.title("Mean Energy")
-
-    plt.subplot(4,1,3)
+    plt.subplot(3,1,2)
     plt.plot(metrics.births, label="Births")
     plt.plot(metrics.deaths, label="Deaths")
     plt.legend()
     plt.title("Births / Total Deaths")
 
-    plt.subplot(4,1,4)
+    plt.subplot(3,1,3)
     for cause, series in metrics.death_causes.items():
         plt.plot(series, label=cause)
 
