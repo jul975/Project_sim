@@ -49,16 +49,19 @@ class EnergyConfig:
     ratios: EnergyRatios = field(default_factory=EnergyRatios)
 
 
+@dataclass(frozen=True)
+class PopulationConfig:
+    max_agent_count: int = 1000
+    initial_agent_count: int = 10
+    max_age: int = 200
+
 
 
 
 @dataclass(frozen=True)
 class SimulationConfig:
-    max_agent_count: int = 1000
-    initial_agent_count: int = 10
+    population_config: PopulationConfig = field(default_factory=PopulationConfig)
     world_size: int = 200
-
-    max_age = 200
 
     energy_init_range: tuple[int, int] = (30, 60)
 

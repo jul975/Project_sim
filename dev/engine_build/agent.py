@@ -204,7 +204,7 @@ class Agent:
         # NOTE: 
         #       -   gonna change >= to > but need to change in documentation first.
         self.age += 1
-        if self.age >= self.engine.config.max_age:
+        if self.age >= self.engine.max_age:
             self.alive = False
         
 

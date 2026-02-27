@@ -59,8 +59,10 @@ class Engine:
         self.config = config
                 
         self.master_ss = np.random.SeedSequence(seed)
-        self.next_agent_id = self.config.initial_agent_count
         
+        self.next_agent_id = self.config.population_config.initial_agent_count
+        self.max_age = self.config.population_config.max_age
+
         # create world
         world_seed: np.int64 = self.master_ss.spawn(1)[0]
         # create new seed, for world setup
@@ -68,13 +70,13 @@ class Engine:
         self.world = World( world_seed, self.config ,change_condition)
         self.energy_params = self._derive_energy_params()
         
-        self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.initial_agent_count) 
+        self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.population_config.initial_agent_count) 
 
 
-        self.max_age = self.config.max_age 
+        
         
     def _assert_invariants(self) -> None:
-        assert len(self.agents) <= self.config.max_agent_count, "Agent count exceeds max_agent_count"
+        assert len(self.agents) <= self.config.population_config.max_agent_count, "Agent count exceeds max_agent_count"
         for agent_id, agent in self.agents.items():
             assert agent_id == agent.id, "Agent id does not match dict key"
             assert 0 <= agent.position < self.config.world_size, "Agent position out of bounds"
@@ -261,7 +263,7 @@ class Engine:
             # Take sum of all bucket counts to get total death count
         deaths_this_tick = sum(death_bucket.count for death_bucket in pending_death.values())
         effective_population = len(self.agents) - deaths_this_tick 
-        available_capacity = self.config.max_agent_count - effective_population
+        available_capacity = self.config.population_config.max_agent_count - effective_population
         reproducers_to_commit = reproducing_agents[:available_capacity]
        
        
