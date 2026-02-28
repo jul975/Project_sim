@@ -1,14 +1,11 @@
 from engine_build.core.engineP4 import Engine
-from engine_build.core.config import SimulationConfig, EnergyConfig, EnergyRatios
-from engine_build.visualisation.plot_run import plot_metrics
+from engine_build.core.config import SimulationConfig, EnergyConfig, EnergyRatios, REGIMES
+from engine_build.visualisation.plot_run import plot_metrics 
+from engine_build.metrics.metrics import SimulationMetrics
 import argparse
 
 
-REGIMES = {
-    "extinction": (1.2, 1.0, 5),
-    "stable": (0.6, 0.8, 10),
-    "saturated": (0.4, 0.6, 6),
-}
+
 
 def make_config(alpha, beta, gamma):
     return SimulationConfig(
@@ -16,8 +13,8 @@ def make_config(alpha, beta, gamma):
             ratios=EnergyRatios(alpha=alpha, beta=beta, gamma=gamma)
         )
     )
-
-def run_experiment(alpha, beta, gamma, seed=42, steps=1000):
+# NOTE fix typing!
+def run_experiment(alpha, beta, gamma, seed=42, steps=1000) -> SimulationMetrics:
     config = make_config(alpha, beta, gamma)
     eng = Engine(seed, config)
     return eng.run_with_metrics(steps)

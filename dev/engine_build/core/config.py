@@ -25,6 +25,12 @@ import numpy as np
 
 from typing import List, TYPE_CHECKING
 
+## TESTING REGIMES
+REGIMES = {
+    "extinction": (1.2, 1.0, 5),
+    "stable": (0.6, 0.8, 10),
+    "saturated": (0.4, 0.6, 6),
+}
 
 
 @dataclass(frozen=True)

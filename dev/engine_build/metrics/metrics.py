@@ -68,6 +68,8 @@ class SimulationMetrics:
 
 
         # lightweight first metrics
+        # max count needed upstream, will setup on first record. 
+        self.max_agent_count : np.int64 | None = None
         self.population : list[np.int64] = []
         self.mean_energy : list[np.float64] = []
         self.births : list[np.float64] = []
@@ -87,6 +89,8 @@ class SimulationMetrics:
                     => should be ok as is, as the recording is done after the tick is completed.
                     => but keep in mind  
         """
+        if self.max_agent_count is None:
+            self.max_agent_count = engine.config.population_config.max_agent_count
         agents = engine.agents.values()
         agent_count = len(agents)
 
@@ -107,7 +111,7 @@ class SimulationMetrics:
             self.death_causes[cause].append(bucket.count)
 
 
-def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64,  config : SimulationConfig)-> dict:
+def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> dict:
 
     population_tail = metrics.population[tail_start:]
     births_tail = metrics.births[tail_start:]
@@ -119,7 +123,7 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64,  con
     mean_tail = np.mean(population_tail)
     std_tail = np.std(population_tail)
     range_tail = max_tail - min_tail
-    cap_hit_rate = (population_tail == config.population_config.max_agent_count).mean()
+    cap_hit_rate = np.array(population_tail == metrics.max_agent_count).mean()
     
     # NOTE: review next() => usefull and didnt think about it for a while. => generator so no list construction
     extinction_tick = next((i for i, pop in enumerate(population_tail) if pop == 0), None)
@@ -150,4 +154,10 @@ def aggregate_fingerprints(fingerprints : list[dict]) -> dict:
     std_pop_over_runs = np.std([f["mean_population"] for f in fingerprints])
     # note, conditional 0, do not simplify will potential mess stat
     extinction_rate = np.mean([f["extinction_tick"] if f["extinction_tick"] is not None else 0 for f in fingerprints])
+
+    return {
+        "mean_population" : mean_pop_over_runs,
+        "std_population" : std_pop_over_runs,
+        "extinction_rate" : extinction_rate
+    }
     
