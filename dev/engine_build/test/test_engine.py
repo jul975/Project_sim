@@ -1,6 +1,6 @@
-from engine_build.engineP4 import Engine
+from engine_build.core.engineP4 import Engine
 import numpy as np
-from dev.engine_build.core.config import SimulationConfig
+from engine_build.core.config import SimulationConfig
 
 
 

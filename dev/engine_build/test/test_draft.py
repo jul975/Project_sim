@@ -20,7 +20,6 @@ python -m engine_build.test.test_engine --mode dev
 -- hash ref seed = 42 26304bd3336bd69810062c9ae8311d67a3b7fe6f872ff4fe3b2ea8501a35ba0d
 """
 
-import numpy as np
 from engine_build.core.engineP4 import Engine
 from engine_build.core.config import SimulationConfig
 from dataclasses import dataclass
@@ -129,7 +128,7 @@ def test_population_variability():
     metrics = eng.run_with_metrics(T_MEDIUM)
 
     assert len(set(metrics.population)) > 1 , f"Population variability failed. | len(set(metrics.population)) = {len(set(metrics.population))} | metrics.population = {metrics.population}"
-    assert max(metrics.population) <= BASE_CONFIG.max_agent_count , f"Population exceeds max_agent_count. | max(metrics.population) = {max(metrics.population)} | BASE_CONFIG.max_agent_count = {BASE_CONFIG.max_agent_count}"
+    assert max(metrics.population) <= BASE_CONFIG.population_config.max_agent_count , f"Population exceeds max_agent_count. | max(metrics.population) = {max(metrics.population)} | BASE_CONFIG.max_agent_count = {BASE_CONFIG.max_agent_count}"
 
 
 def test_energy_boundedness():
@@ -152,7 +151,7 @@ def test_movement_rng_isolated_from_reproduction():
     eng2.run(T_MEDIUM)
 
     # Compare the SAME identities (the original cohort only)
-    base_ids = range(BASE_CONFIG.initial_agent_count)
+    base_ids = range(BASE_CONFIG.population_config.initial_agent_count)
     common_ids = [i for i in base_ids if i in eng1.agents and i in eng2.agents]
 
     pos1 = [eng1.agents[i].position for i in common_ids]

@@ -1,9 +1,11 @@
-from engine_build.core.config import REGIMES
-from engine_build.experiments.run_experiment import run_experiment
+
+
+
 from engine_build.analytics.fingerprint import compute_fingerprint, aggregate_fingerprints
 from engine_build.core.engineP4 import Engine
 
 from engine_build.core.config import SimulationConfig
+from engine_build.metrics.metrics import SimulationMetrics
 import numpy as np
 
 """
@@ -38,7 +40,12 @@ def run_regime_batch(regime_config : SimulationConfig, seeds : list[np.int64], t
     for seed in seeds:
 
         eng = Engine(seed, regime_config)
-        metrics = eng.run_with_metrics(ticks)
+        metrics = SimulationMetrics()
+        for _ in range(ticks):
+            births_this_tick, deaths_this_tick, pending_death = eng.step()
+            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+
+            
         # NOTE: tail start is hardcoded for now. simple to get working tests for now, 
         tail_start = ticks // 4
 

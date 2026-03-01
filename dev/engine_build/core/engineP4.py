@@ -2,12 +2,10 @@ import numpy as np
 import hashlib
 
 from .state_schema import get_state_bytes
-from .rng_utils import reconstruct_rng
 from .seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
 
 from .agent import Agent
 from .world import World
-from engine_build.metrics.metrics import SimulationMetrics
 
 from .config import SimulationConfig, EnergyParams, DeathBucket
 
@@ -170,12 +168,9 @@ class Engine:
 
 
 
-    def step(self, run_metrics : bool = False) -> None | tuple[np.int64, np.int64]:
+    def step(self) -> tuple[np.int64, np.int64, dict[str, DeathBucket]]:
         """ restructuring step method in order to evaluate agents for death and birth together. 
             After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
-        
-        # if metrics are run, len(births_to_commit) and len(pending_death) are returned.
-        # should simplify light weight metrics collection. without interference
         
 
         pending_death: dict[str: [Agent]] = {
@@ -296,8 +291,8 @@ class Engine:
 
 
         # metrics return 
-        if run_metrics:
-            return len(reproducers_to_commit), deaths_this_tick, pending_death
+        
+        return len(reproducers_to_commit), deaths_this_tick, pending_death
 
 
 
@@ -409,17 +404,10 @@ class Engine:
 
 
 
-    # NOTE: CAVE: 
+"""    # NOTE: CAVE: 
             # method need to be removed in future !!!!
     def run_with_metrics(self, n_steps) -> dict[np.int64, Agent]:
-        """ runs engine for n_steps and returns metrics. """
-        """ NOTE: (copy from metrics.py)
-                -   as of now I'm using 4 lists to store the metrics, need to make sure that no ticks are missed. 
-                    => should be ok as is, as the recording is done after the tick is completed.
-                    => but keep in mind  
 
-            
-        """
 
         metrics = SimulationMetrics()
 
@@ -430,7 +418,7 @@ class Engine:
 
             metrics.record(self, births_this_tick, deaths_this_tick, pending_death)
         
-        return metrics
+        return metrics"""
     
 
 
