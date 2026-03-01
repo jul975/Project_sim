@@ -5,43 +5,33 @@ from engine_build.metrics.metrics import SimulationMetrics
 import argparse
 
 
+# NOTE: 
+        #   DECLARATIVE EXPERIMENT DEFINITION ONLY
+        # 
+        #   -   No logic, no control flow, no dependencies, no implementation details.
+        #  
+        #   -   STABLE_REGIME = SimulationConfig(...)
+        #   -   GROWTH_REGIME = SimulationConfig(...)
+        #   -   COLLAPSE_REGIME = SimulationConfig(...)
 
 
-def make_config(alpha, beta, gamma):
+def make_config(alpha, beta, gamma) -> SimulationConfig:
     return SimulationConfig(
         energy_config=EnergyConfig(
             ratios=EnergyRatios(alpha=alpha, beta=beta, gamma=gamma)
         )
     )
-# NOTE fix typing!
-def run_experiment(alpha, beta, gamma, seed=42, steps=1000) -> SimulationMetrics:
-    config = make_config(alpha, beta, gamma)
-    eng = Engine(seed, config)
-    return eng.run_with_metrics(steps)
+
+
+
 
 def analyze_metrics(metrics):
     plot_metrics(metrics)
     
 
-def main(regime: str = "stable"):
-    metrics = run_experiment(*REGIMES[regime])
-    analyze_metrics(metrics)
+# NOTE: 
+    #   -   Need to get regime as input and return regime specific config. to runner
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Ecosystem Metrics Analysis Tool")
-
-    parser.add_argument(
-        "--regime",
-        choices=["extinction", "stable", "saturated"],
-        default="stable",
-        help="Select regime type"
-    )
-
-    args = parser.parse_args()
-
-    if args.regime == "extinction":
-        main("extinction")
-    elif args.regime == "stable":
-        main("stable")
-    elif args.regime == "saturated":
-        main("saturated")
+    pass
