@@ -1,45 +1,62 @@
 import matplotlib.pyplot as plt
-from engine_build.core.engineP4 import Engine
-from engine_build.core.config import SimulationConfig
+from engine_build.metrics.metrics import SimulationMetrics
 
 
+def plot_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
+    """
+    Plot metrics for all runs in batch_metrics.
+    Each metric category gets its own figure.
+    """
 
-def plot_metrics(metrics):
-
-
-    plt.figure(figsize=(10,8))
-
-    plt.subplot(3,1,1)
-    plt.plot(metrics.population)
-    plt.title("Population")
-
-    plt.subplot(3,1,2)
-    plt.plot(metrics.births, label="Births")
-    plt.plot(metrics.deaths, label="Deaths")
+    # -----------------------
+    # 1) Population
+    # -----------------------
+    plt.figure(figsize=(10, 6))
+    for seed, metrics in batch_metrics.items():
+        plt.plot(metrics.population, label=f"seed {seed}")
+    plt.title("Population Over Time")
+    plt.xlabel("Tick")
+    plt.ylabel("Population")
     plt.legend()
-    plt.title("Births / Total Deaths")
-
-    plt.subplot(3,1,3)
-    for cause, series in metrics.death_causes.items():
-        plt.plot(series, label=cause)
-
-    plt.legend()
-    plt.title("Deaths by Cause")
-
     plt.tight_layout()
     plt.show()
-    
-def main():
-    SEED = 42
-    STEPS = 1000
 
-    eng = Engine(SEED, SimulationConfig())
-    metrics = eng.run_with_metrics(STEPS)
+    # -----------------------
+    # 2) Births & Deaths
+    # -----------------------
+    plt.figure(figsize=(10, 6))
+    for seed, metrics in batch_metrics.items():
+        plt.plot(metrics.births, label=f"births seed {seed}")
+        plt.plot(metrics.deaths, linestyle="--", label=f"deaths seed {seed}")
+    plt.title("Births and Deaths Per Tick")
+    plt.xlabel("Tick")
+    plt.ylabel("Count")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-    plot_metrics(metrics)
+    # -----------------------
+    # 3) Death Causes
+    # -----------------------
+    # One figure per death cause for clarity
+    if batch_metrics:
+        # Get cause keys from first run
+        first_metrics = next(iter(batch_metrics.values()))
+        for cause in first_metrics.death_causes.keys():
+
+            plt.figure(figsize=(10, 6))
+
+            for seed, metrics in batch_metrics.items():
+                series = metrics.death_causes[cause]
+                plt.plot(series, label=f"seed {seed}")
+
+            plt.title(f"Deaths by Cause: {cause}")
+            plt.xlabel("Tick")
+            plt.ylabel("Count")
+            plt.legend()
+            plt.tight_layout()
+            plt.show()
+
 
 if __name__ == "__main__":
-    main()
-
-
-# python -m engine_build.analysis.plot_run
+    pass

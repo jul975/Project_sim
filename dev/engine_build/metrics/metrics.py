@@ -91,7 +91,7 @@ class SimulationMetrics:
             "post_reproduction_death" : []
         }
 
-
+    # NOTE: introduce step container to containerize metrics for each step, not now but soon
     def record(self, engine : "Engine", births_this_tick : np.int64 = 0, deaths_this_tick : np.int64 = 0, pending_death : dict[str, 'DeathBucket'] | None = None) -> None:
         """ records metrics for a given engine state. """
         """ NOTE: 

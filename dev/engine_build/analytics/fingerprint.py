@@ -98,10 +98,7 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
     }
     
 
-
-
-
-
+    # condense later
     return Fingerprint(
         min_population=min_tail,
         max_population=max_tail,
