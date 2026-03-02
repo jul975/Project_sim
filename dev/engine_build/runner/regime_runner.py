@@ -22,53 +22,102 @@ CAVE:
         input: config, seeds, ticks
         output: structured result object
 
+        (master_seed)
+              ↓
+        SeedSequence
+            ↓ spawn(n)
+        ┌────┬────┬────┬────┬────┐
+        SS0  SS1  SS2  SS3  SS4
+        └────┴────┴────┴────┴────┘
+            ↓     ↓     ↓     ↓
+        run  run  run  run  run
+
+        on engine level we have:
+            SS2
+              ↓ spawn(...)
+            world_ss
+            move_ss
+            repro_ss
+            energy_ss
+
+
 """
 
+master_seed = 20250302  # master seed for batch runner. temp location will be moved to validation logic, to standanderdise validation runs.
 
 @dataclass
 class RegimeRunResults:
     aggregate_fingerprint : Dict[str, float]
     fingerprints_dict : Dict[np.int64, Dict[str, float]]
     batch_metrics : Dict[np.int64, SimulationMetrics]
-# regime: str = "stable"
-# seeds = [42, 1234, 5678, 91011, 121314]
-# ticks = 1000
 
-def run_regime_batch(regime_config : SimulationConfig, seeds : list[np.int64], ticks : np.int64) -> RegimeRunResults:
-    """ only return aggregates and results."""
 
+
+
+
+def generate_run_sequences(master_seed: int, n_runs: int) -> list[np.random.SeedSequence]:
+    """ I do NOT return master seed, state mutation must be avoided, 
+        therefore the master seed is used only to generate the run seeds.
+        And NEVER touched again 
     
-# cave regime_config has a,b, g preset. logic here is only running the regime not setting it up 
-# regime_config comes preset from experiments module, (for now)
+    """
+    ss = np.random.SeedSequence(master_seed)
+    return ss.spawn(n_runs)
+
+
+
+
+
+# NOTE: 
+#        
+
+class BatchRunner:
+    def __init__(
+            self, 
+            regime_config : SimulationConfig , 
+            n_runs : int, 
+            ticks : np.int64 ,
+            batch_id : int = master_seed
+            ) -> None:
+        """ set up batch run with master seed == batch_id. 
+            will set up run seeds internally at initialization.
+         """
         
+        self.regime_config = regime_config
+        self.n_runs = n_runs
+        self.ticks = ticks
+        self.batch_id = batch_id
+
+        self.run_seeds = generate_run_sequences(batch_id, n_runs)
+        print(f"Run seeds generated: {self.run_seeds}")
 
 
-    
-    fingerprints_dict = {}
-    batch_metrics = {}
 
-    for seed in seeds:
+    def run_regime_batch(self) -> RegimeRunResults:
+        """ only return aggregates and results."""
 
-        eng = Engine(seed, regime_config)
-        metrics = SimulationMetrics()
-        for _ in range(ticks):
-            births_this_tick, deaths_this_tick, pending_death = eng.step()
-            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+        fingerprints_dict = {}
+        batch_metrics = {}
 
-        # store metrics for later analysis
-        batch_metrics[seed] = metrics
-        # NOTE: tail start is hardcoded for now. simple to get working tests for now, 
+        for i, seed in enumerate(self.run_seeds):
+
+            eng = Engine(seed, self.regime_config)
+            metrics = SimulationMetrics()
+            for _ in range(self.ticks):
+                births_this_tick, deaths_this_tick, pending_death = eng.step()
+                metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+
+            batch_metrics[i] = metrics            
+
+            tail_start = self.ticks // 4 # NOTE: tail start is hardcoded for now. simple to get working tests for now, will be configurable later.
+
+            fingerprint = compute_fingerprint(metrics, tail_start)
+            fingerprints_dict[i] = fingerprint
+            
         
-
-        tail_start = ticks // 4
-
-        fingerprint = compute_fingerprint(metrics, tail_start)
-        fingerprints_dict[seed] = fingerprint
+        aggregate_fingerprint = aggregate_fingerprints(fingerprints_dict.values())
         
-    
-    aggregate_fingerprint = aggregate_fingerprints(fingerprints_dict.values())
-
-    return RegimeRunResults(aggregate_fingerprint, fingerprints_dict, batch_metrics)
+        return RegimeRunResults(aggregate_fingerprint, fingerprints_dict, batch_metrics)
 
 
 

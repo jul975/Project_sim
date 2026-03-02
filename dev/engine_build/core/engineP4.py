@@ -52,11 +52,11 @@ from dataclasses import asdict
 
 
 class Engine:
-    def __init__(self, seed : np.int64 , config : SimulationConfig ,change_condition=False) -> None:
+    def __init__(self, seed_seq : np.int64 , config : SimulationConfig ,change_condition=False) -> None:
 
         self.config = config
                 
-        self.master_ss = np.random.SeedSequence(seed)
+        self.master_ss = seed_seq
         
         self.next_agent_id = self.config.population_config.initial_agent_count
         self.max_age = self.config.population_config.max_age
@@ -204,12 +204,6 @@ class Engine:
                     
             - CAVE: need to formulate engine stepping logic cleary in order to not introduce hidden sources of non-determinism.
         '''
-        # single agent state update and interactions world
-
-        # NOTE: 
-        # implicit agent resource competition, 
-        # Deterministic priority harvesting
-        # Implicit age dominance
         for agent_id, agent in sorted_agents:
             # A
             # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
@@ -403,35 +397,7 @@ class Engine:
     
 
 
-
-"""    # NOTE: CAVE: 
-            # method need to be removed in future !!!!
-    def run_with_metrics(self, n_steps) -> dict[np.int64, Agent]:
-
-
-        metrics = SimulationMetrics()
-
-        for _ in range(n_steps):
-            
-
-            births_this_tick, deaths_this_tick, pending_death = self.step(run_metrics=True)
-
-            metrics.record(self, births_this_tick, deaths_this_tick, pending_death)
-        
-        return metrics"""
-    
-
-
-
-
-
-
-
-
-
-
 if __name__ == "__main__":
-    # testing => python -m engine_build.test.test_engine
     pass
 
 
