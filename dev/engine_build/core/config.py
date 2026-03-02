@@ -25,12 +25,6 @@ import numpy as np
 
 from typing import List, TYPE_CHECKING
 
-## TESTING REGIMES
-REGIMES = {
-    "extinction": (1.2, 1.0, 5),
-    "stable": (0.6, 0.8, 10),
-    "saturated": (0.4, 0.6, 6),
-}
 
 
 @dataclass(frozen=True)
@@ -117,69 +111,3 @@ class DeathBucket:
     count: int = 0
     agents: List[np.int64] = field(default_factory=list)
 
-
-## NOTE: new metrics dataclass to store and process fingerprints
-
-@dataclass(frozen=True)
-class RunMetricsConfig:
-
-    run_REGIME : str
-    run_seed : np.int64
-    tail_window_start : np.int64
-    metrics_collection_interval : np.int64
-
-@dataclass(frozen=True)
-class RunMetricsAgents:
-    min_population : np.int64
-    max_population : np.int64
-    mean_population : np.float64
-    std_population : np.float64
-    range_population : np.int64
-
-    cap_hit_rate : np.float64
-
-    extinction_tick : np.int64 | None
-    mean_deaths_per_tick : np.float64
-    mean_births_per_tick : np.float64
-    
-    mean_deaths_cause_tail : dict[str, np.float64]
-    proportion_deaths_cause_tail : dict[str, np.float64]
-    
-@dataclass(frozen=True)
-class RunMetricsWorld:
-    total_resources : np.int64
-    mean_resources : np.float64
-    depletion_fraction : np.float64
-    fertility : np.float64
-
-
-@dataclass(frozen=True)
-class RunMetricsFingerprint:
-    # NOTE: 
-        #   -   Is frozen bc internals should not be mutated after processing. 
-    run_metrics_config : RunMetricsConfig
-    agents_metrics : RunMetricsAgents
-    world_metrics : RunMetricsWorld
-
-
-
-    """ 
-        -   min, max, mean population
-        -   std/range population
-        -   cap_hit_rate
-
-        -   extinction_tick : None | tick_n
-        -   mean deaths/tick
-        -   mean births/tick
-
-        -   mean(deaths_cause_tail)
-        -   proportion: deaths_cause_tail_sum / total_deaths_tail_sum
-
-        
-        World metrics:
-        1. total resources
-        2. mean resources
-        3. depletion fraction vs fertility
-
-    """
-    pass
