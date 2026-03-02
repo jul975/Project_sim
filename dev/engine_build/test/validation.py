@@ -5,52 +5,149 @@ import numpy as np
 
 from engine_build.regimes.registry import get_regime_config
 from engine_build.runner.regime_runner import BatchRunner
+from engine_build.analytics.validation_analytics import compute_stability_cv
+from engine_build.analytics.fingerprint import AggregatedFingerprint
+from dataclasses import fields
+
+
+
 
 
 def run_validation_mode(args):
-        """ main entry point """
+    regime_config = get_regime_config(args.regime)
+    ticks, n_runs = VALIDATION_DEFAULTS["ticks"], VALIDATION_DEFAULTS["runs"]
 
-        regime_config = get_regime_config(args.regime)
-        ticks, n_runs = VALIDATION_DEFAULTS["ticks"], VALIDATION_DEFAULTS["runs"]
-        
-        runner = BatchRunner(
-            regime_config = regime_config,
-            ticks = ticks,
-            n_runs = n_runs
-            
-        )
+    runner = BatchRunner(
+        regime_config=regime_config,
+        n_runs=n_runs,
+        ticks=ticks,
+        batch_id=DEFAULT_MASTER_SEED
+    )
 
-        results : RegimeBatchResults = runner.run_regime_batch()
+    try:
+        results = runner.run_regime_batch()
         parse_by_regime(args.regime, results)
 
+        print("================================================")
+        print(f"[VALIDATION PASSED] regime= {args.regime}")
+        print("================================================")
+
+    except AssertionError as e:
+        print("================================================")
+        print(f"[VALIDATION FAILED] regime={args.regime}")
+        print(f"Reason: {e}")
+        print("================================================")
+        raise
 
 def parse_by_regime(regime : str, results : RegimeBatchResults) -> None:
-    if regime == "stable":
-        validate_stable_regime(results)
-    else:
+    if regime not in VALIDATORS:
         raise ValueError(f"Unknown regime: {regime}")
-    """elif regime == "extinction":
-        validate_extinction_regime(results)
-    elif regime == "saturated":
-        validate_saturated_regime(results)
-    else:
-        raise ValueError(f"Unknown regime: {regime}")"""
+    VALIDATORS[regime](results)
 
 
 
 def validate_stable_regime(result: RegimeBatchResults) -> None:
-    agg = result.aggregate_fingerprint
+    agg : AggregatedFingerprint = result.aggregate_fingerprint
+    # NOTE: look into -0 optimized mode run in python where asserts are ignored
 
-    assert agg["extinction_rate"] < 0.1, f"Extinction rate too high. | extinction_rate = {agg['extinction_rate']}"
-    assert agg["cap_hit_rate"] < 0.2, f"Cap hit rate too high. | cap_hit_rate = {agg['cap_hit_rate']}"
+    for f in fields(agg):
+        value = getattr(agg, f.name)
+
+        if not np.isfinite(value):
+            raise AssertionError(
+                f"Invalid value in aggregate fingerprint: "
+                f"{f.name} = {value}"
+            )
+
+    if agg.mean_population <= 0:
+        raise AssertionError(f"Mean population is non-positive. | mean_population = {agg.mean_population}")
+
+
+    if agg.extinction_rate >= 0.1:
+         raise AssertionError(f"Extinction rate too high. | extinction_rate = {agg.extinction_rate}")
+    
+    if agg.cap_hit_rate >= 0.2:
+         raise AssertionError(f"Cap hit rate too high. | cap_hit_rate = {agg.cap_hit_rate}")    
+
+
+    cv = compute_stability_cv(agg)
+    if cv > 0.2:
+        raise AssertionError(f"Coefficient of variation too high. | cv = {cv}")
+    
+    """Use symmetric band:
+Where τ ∈ [0.05, 0.15]
+Interpretation:
+τ = 0.05 → strict equilibrium
+τ = 0.1 → moderate tolerance
+τ > 0.2 → system drifting"""
+    
+    if abs(agg.birth_death_ratio - 1.0) > 0.1:
+        raise AssertionError(f"Birth death ratio out of tolerance. | birth_death_ratio = {agg.birth_death_ratio}")
     
 
-    # assert 10 < agg["mean_population"] < 50
-    # assert agg["std_population"] < 5
-
-    print("Stable regime validation passed.")
 
 
-"""def run_validation(regime : str , ticks : np.int64 , n_runs : int = 5) -> str:
-    results = run_main(regime, ticks, n_runs)
-    return validate_stable_regime(results)"""
+def validate_extinction_regime(result: RegimeBatchResults) -> None:
+    agg = result.aggregate_fingerprint
+
+    if agg.extinction_rate < 0.9:
+        raise AssertionError(
+            f"Extinction regime failed: extinction_rate too low "
+            f"({agg.extinction_rate})"
+        )
+
+    if agg.mean_population > 1:
+        raise AssertionError(
+            f"Extinction regime failed: population not collapsed "
+            f"({agg.mean_population})"
+        )
+
+    if agg.std_population > 2:
+        raise AssertionError(
+            f"Extinction regime unstable: variance too high "
+            f"({agg.std_population})"
+        )
+
+    if agg.cap_hit_rate > 0.05:
+        raise AssertionError(
+            f"Extinction regime hitting cap unexpectedly "
+            f"({agg.cap_hit_rate})"
+        )
+    if agg.birth_death_ratio >= 1:
+        raise AssertionError("Extinction regime not death-dominated")
+
+def validate_saturated_regime(result: RegimeBatchResults) -> None:
+    agg = result.aggregate_fingerprint
+    cap = result.batch_metrics[0].population_cap
+
+    if agg.cap_hit_rate < 0.8:
+        raise AssertionError(
+            f"Saturation regime failed: cap_hit_rate too low "
+            f"({agg.cap_hit_rate})"
+        )
+
+    if agg.mean_population < 0.9 * cap:
+        raise AssertionError(
+            f"Saturation regime failed: population not near cap "
+            f"({agg.mean_population})"
+        )
+
+    cv = agg.std_population / agg.mean_population
+    if cv > 0.1:
+        raise AssertionError(
+            f"Saturation unstable: CV too high ({cv})"
+        )
+
+    if agg.extinction_rate > 0.05:
+        raise AssertionError(
+            f"Saturation regime showing extinction events "
+            f"({agg.extinction_rate})"
+        )
+    if abs(agg.birth_death_ratio - 1.0) > 0.1:
+        raise AssertionError("Saturated regime not balanced")
+
+VALIDATORS = {
+    "extinction": validate_extinction_regime,
+    "stable": validate_stable_regime,
+    "saturated": validate_saturated_regime,
+}   

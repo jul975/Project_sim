@@ -2,6 +2,7 @@ from engine_build.visualisation.plot_run import plot_metrics
 from engine_build.runner.regime_runner import BatchRunner, RegimeBatchResults
 from engine_build.regimes.registry import get_regime_config
 from engine_build.execution.default import EXPERIMENT_DEFAULTS
+from engine_build.analytics.fingerprint import AggregatedFingerprint
 import numpy as np
 
 
@@ -59,8 +60,13 @@ def summarize_results(results, ticks, n_runs, regime):
     print(f"    std : {std_final:.2f}")
     print("")
     print("Aggregate Fingerprint:")
-    for k, v in results.aggregate_fingerprint.items():
-        print(f"    {k}: {v:.3f}")
+    agg : AggregatedFingerprint = results.aggregate_fingerprint
+
+    print(f"    mean_population : {agg.mean_population:.3f}")
+    print(f"    std_population  : {agg.std_population:.3f}")
+    print(f"    extinction_rate : {agg.extinction_rate:.3f}")
+    print(f"    cap_hit_rate    : {agg.cap_hit_rate:.3f}")
+    print(f"    birth_death_ratio: {agg.birth_death_ratio:.3f}")
     print("============================================================")         
 
 

@@ -1,7 +1,7 @@
 
 
 
-from engine_build.analytics.fingerprint import compute_fingerprint, aggregate_fingerprints
+from engine_build.analytics.fingerprint import compute_fingerprint, get_aggregate_fingerprints, AggregatedFingerprint
 from engine_build.core.engineP4 import Engine
 from engine_build.execution.default import DEFAULT_MASTER_SEED
 
@@ -48,9 +48,10 @@ CAVE:
 
 @dataclass
 class RegimeBatchResults:
-    aggregate_fingerprint : Dict[str, float]
+    aggregate_fingerprint : AggregatedFingerprint
     fingerprints_dict : Dict[np.int64, Dict[str, float]]
     batch_metrics : Dict[np.int64, SimulationMetrics]
+
 
 
 
@@ -109,7 +110,7 @@ class BatchRunner:
             fingerprints_dict[i] = fingerprint
             
         
-        aggregate_fingerprint = aggregate_fingerprints(fingerprints_dict.values())
+        aggregate_fingerprint : AggregatedFingerprint = get_aggregate_fingerprints(fingerprints_dict.values())
         
         return RegimeBatchResults(aggregate_fingerprint, fingerprints_dict, batch_metrics)
 

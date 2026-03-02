@@ -28,6 +28,14 @@ class Fingerprint:
     proportion_deaths_cause_tail: Dict[str, float]
 
 
+@dataclass(frozen=True)
+class AggregatedFingerprint:
+    mean_population: float
+    std_population: float
+    extinction_rate: float
+    cap_hit_rate: float
+    birth_death_ratio: float
+
 """
 # Pure transformations
 
@@ -114,7 +122,7 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
     )
 
 
-def aggregate_fingerprints(fingerprints : list[Fingerprint]) -> dict:
+def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFingerprint:
     if not fingerprints:
         raise ValueError("No fingerprints to aggregate")
 
@@ -134,12 +142,22 @@ def aggregate_fingerprints(fingerprints : list[Fingerprint]) -> dict:
     # note, cap_hit_rate can not be None, so no need to handle it. 
     cap_hit_rate = np.mean([f.cap_hit_rate for f in fingerprints])
 
-    return {
-        "mean_population" : mean_pop_over_runs,
-        "std_population" : std_pop_over_runs,
-        "extinction_rate" : extinction_rate,
-        "cap_hit_rate" : cap_hit_rate
-    }
+    # 4) mean deaths and births per tick
+    mean_deaths_per_tick = np.mean([f.mean_deaths_per_tick for f in fingerprints])
+    mean_births_per_tick = np.mean([f.mean_births_per_tick for f in fingerprints])
+    birth_death_ratio = mean_births_per_tick / mean_deaths_per_tick
+
+    return AggregatedFingerprint(
+        mean_population=mean_pop_over_runs,
+
+        std_population=std_pop_over_runs,
+
+        extinction_rate=extinction_rate,
+
+        cap_hit_rate=cap_hit_rate,
+
+        birth_death_ratio=birth_death_ratio
+    )
     
 
 
