@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 # NOTE: 
-        #   -   for now, will implement experiment routine first
+        #   -   cleanup batchrunner input ordering 
 
 # calls selected config from experiments experiments 
 
@@ -32,7 +32,12 @@ if TYPE_CHECKING:
 def run_main(regime : str , ticks : np.int64 , n_runs : int = 5) -> RegimeRunResults:
     """ run and return results of regime run. , NOTE: still need to unpack results, review current solution."""
     regime_config = pass_regime(regime)
-    br = BatchRunner(regime_config=regime_config,ticks = ticks,n_runs = n_runs)
+    br = BatchRunner(
+        regime_config = regime_config,
+        ticks = ticks,
+        n_runs = n_runs
+        
+    )
     return br.run_regime_batch()
      
     
