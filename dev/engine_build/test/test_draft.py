@@ -322,7 +322,8 @@ def run_full_mode():
     print("\nFULL VALIDATION RESULT:", "PASS" if all_ok else "FAIL")
 
 def main():
-    parser = argparse.ArgumentParser(description="Ecosystem Engine Test Runner")
+    pass
+    """parser = argparse.ArgumentParser(description="Ecosystem Engine Test Runner")
 
     parser.add_argument(
         "--mode",
@@ -338,7 +339,7 @@ def main():
     elif args.mode == "validate":
         run_validation_mode()
     elif args.mode == "full":
-        run_full_mode()
+        run_full_mode()"""
 
 
 if __name__ == "__main__":

@@ -130,10 +130,15 @@ def aggregate_fingerprints(fingerprints : list[Fingerprint]) -> dict:
     extinction_rate = np.mean([f.extinction_tick is not None for f in fingerprints])
     # NOTE: think about extinction time and mean extinction tick computes
 
+    # 3) cap hit rate
+    # note, cap_hit_rate can not be None, so no need to handle it. 
+    cap_hit_rate = np.mean([f.cap_hit_rate for f in fingerprints])
+
     return {
         "mean_population" : mean_pop_over_runs,
         "std_population" : std_pop_over_runs,
-        "extinction_rate" : extinction_rate
+        "extinction_rate" : extinction_rate,
+        "cap_hit_rate" : cap_hit_rate
     }
     
 
