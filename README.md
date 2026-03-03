@@ -236,7 +236,7 @@ Each regime has a dedicated validation contract.
 
 ---
 
-## Roadmap (12-Week Direction)
+## Roadmap 
 
 ### Stage II — Controlled Ecology (current)
 
