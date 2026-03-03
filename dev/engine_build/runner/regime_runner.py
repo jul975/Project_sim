@@ -50,7 +50,7 @@ CAVE:
 @dataclass
 class RegimeBatchResults:
     aggregate_fingerprint : AggregatedFingerprint
-    fingerprints_dict : list[Fingerprint]
+    fingerprints_dict : Dict[np.int64, Fingerprint]
     batch_metrics : Dict[np.int64, SimulationMetrics]
 
 

@@ -33,6 +33,9 @@ from engine_build.analytics.fingerprint import AggregatedFingerprint
 
 
 def compute_stability_cv(agg_fingerprint : AggregatedFingerprint) -> float:
+    # temp note for extinction regime, need to think about it. 
+    if agg_fingerprint.mean_population <= 0 or agg_fingerprint.std_population <= 0:
+        return 0.0
     return agg_fingerprint.std_population / agg_fingerprint.mean_population
 
 

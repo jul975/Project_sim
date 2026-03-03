@@ -26,6 +26,7 @@ from engine_build.runner.regime_runner import BatchRunner
 from engine_build.regimes.registry import get_regime_config
 from dataclasses import dataclass
 import argparse
+import numpy as np
 
 from engine_build.core.engineP4 import Engine
 
@@ -167,21 +168,37 @@ def test_energy_boundedness():
 
 def test_movement_rng_isolated_from_reproduction():
     regime_config = get_regime_config(TEST.regime)
-    runner1 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_a)
-    runner2 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_b)
-    eng1, _ = runner1.run_single(runner1.run_seeds[0], TEST.ticks_mid)
-    eng2, _ = runner2.run_single(runner2.run_seeds[0], TEST.ticks_mid)
+    
+    seed = TEST.seed_ref
+    eng1 = Engine(np.random.SeedSequence(seed), regime_config)
+    eng2 = Engine(np.random.SeedSequence(seed), regime_config, change_condition=True)
+
+
+
+    # advance and check position of both
+    for step in range(TEST.ticks_mid):
+        eng1.step()
+        eng2.step()
+        
+        base_ids = range(regime_config.population_config.initial_agent_count)
+        
+        for i in base_ids:
+            if i in eng1.agents and i in eng2.agents:
+                assert eng1.agents[i].position == eng2.agents[i].position, (
+                    f"Divergence at step {step} for agent {i}"
+                )
 
     # Compare the SAME identities (the original cohort only)
-    base_ids = range(regime_config.population_config.initial_agent_count)
     common_ids = [i for i in base_ids if i in eng1.agents and i in eng2.agents]
+
 
     pos1 = [eng1.agents[i].position for i in common_ids]
     pos2 = [eng2.agents[i].position for i in common_ids]
 
     assert pos1 == pos2, (
-        "Movement RNG not isolated from reproduction (base cohort differs). "
-        f"| pos1={pos1} | pos2={pos2}"
+        "Movement RNG polluted by reproduction policy toggle."
+        f"\n| pos1={pos1}"
+        f"\n| pos2={pos2}"
     )
 
 # =========================================================

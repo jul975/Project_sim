@@ -11,6 +11,11 @@ from dataclasses import fields
 
 
 
+def validate_all_regimes(args):
+    for regime in VALIDATORS:
+        args.regime = regime
+        run_validation_mode(args)
+
 
 
 def run_validation_mode(args):
@@ -48,6 +53,7 @@ def parse_by_regime(regime : str, results : RegimeBatchResults) -> None:
 
 def validate_stable_regime(result: RegimeBatchResults) -> None:
     agg : AggregatedFingerprint = result.aggregate_fingerprint
+    cap = result.batch_metrics[0].max_agent_count
     # NOTE: look into -0 optimized mode run in python where asserts are ignored
 
     for f in fields(agg):
@@ -59,7 +65,7 @@ def validate_stable_regime(result: RegimeBatchResults) -> None:
                 f"{f.name} = {value}"
             )
 
-    if agg.mean_population <= 0:
+    if agg.mean_population_over_runs <= 0:
         raise AssertionError(f"Mean population is non-positive. | mean_population = {agg.mean_population}")
 
 
@@ -70,9 +76,9 @@ def validate_stable_regime(result: RegimeBatchResults) -> None:
          raise AssertionError(f"Cap hit rate too high. | cap_hit_rate = {agg.cap_hit_rate}")    
 
     # NOTE: should go to 0.1, look at doc, right now 0.2 for dev speed.
-    cv = compute_stability_cv(agg)
-    if cv > 0.2:
-        raise AssertionError(f"Coefficient of variation too high. | cv = {cv}")
+    
+    if agg.mean_time_cv_over_runs > 0.2:
+        raise AssertionError(f"Coefficient of variation too high. | cv = {agg.mean_time_cv_over_runs}")
     
     """Use symmetric band:
 Where τ ∈ [0.05, 0.15]
@@ -89,7 +95,7 @@ Interpretation:
 
 def validate_extinction_regime(result: RegimeBatchResults) -> None:
     agg = result.aggregate_fingerprint
-    cap = result.batch_metrics[0].population_cap
+    cap = result.batch_metrics[0].max_agent_count
 
     for f in fields(agg):
         value = getattr(agg, f.name)
@@ -106,17 +112,16 @@ def validate_extinction_regime(result: RegimeBatchResults) -> None:
             f"({agg.extinction_rate})"
         )
 
-    if agg.mean_population > 0.1 * cap:
+    if agg.mean_population_over_runs > 0.1 * cap:
         raise AssertionError(
             f"Extinction regime failed: population not collapsed "
-            f"({agg.mean_population})"
+            f"({agg.mean_population_over_runs})"
         )
-
-    cv = compute_stability_cv(agg)
-    if cv > 0.2:
-        raise AssertionError(
-            f"Extinction regime unstable: CV too high ({cv})"
-        )
+    
+    for f in result.fingerprints_dict.values():
+        if f.extinction_tick is None:
+            raise AssertionError("Extinction regime failed: not all runs extinguished")
+    
 
     if agg.cap_hit_rate > 0.1:
         raise AssertionError(
@@ -130,7 +135,7 @@ def validate_extinction_regime(result: RegimeBatchResults) -> None:
 
 def validate_saturated_regime(result: RegimeBatchResults) -> None:
     agg = result.aggregate_fingerprint
-    cap = result.batch_metrics[0].population_cap
+    cap = result.batch_metrics[0].max_agent_count
 
     for f in fields(agg):
         value = getattr(agg, f.name)
@@ -147,17 +152,15 @@ def validate_saturated_regime(result: RegimeBatchResults) -> None:
             f"({agg.cap_hit_rate})"
         )
 
-    if agg.mean_population < 0.8 * cap:
+    if agg.mean_population_over_runs < 0.8 * cap:
         raise AssertionError(
             f"Saturation regime failed: population not near cap "
-            f"({agg.mean_population})"
+            f"({agg.mean_population_over_runs})"
         )
 
-    cv = agg.std_population / agg.mean_population
-    if cv > 0.2:
-        raise AssertionError(
-            f"Saturation unstable: CV too high ({cv})"
-        )
+    if agg.mean_time_cv_over_runs > 0.2:
+        raise AssertionError(f"Coefficient of variation too high, unstable regime | cv = {agg.mean_time_cv_over_runs}")
+
 
     if agg.extinction_rate > 0.05:
         raise AssertionError(

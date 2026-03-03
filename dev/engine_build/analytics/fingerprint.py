@@ -30,11 +30,12 @@ class Fingerprint:
 
 @dataclass(frozen=True)
 class AggregatedFingerprint:
-    mean_population: float
-    std_population: float
+    mean_population_over_runs: float
+    std_mean_population_over_runs: float
     extinction_rate: float
     cap_hit_rate: float
     birth_death_ratio: float
+    mean_time_cv_over_runs: float
 
 """
 # Pure transformations
@@ -129,7 +130,7 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
 
     # 1) simple mean and std aggregation
     mean_pop_over_runs = np.mean([f.mean_population for f in fingerprints])
-    std_pop_over_runs = np.std([f.mean_population for f in fingerprints])
+    std_mean_population_over_runs = np.std([f.mean_population for f in fingerprints])
 
 
 
@@ -145,18 +146,35 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
     # 4) mean deaths and births per tick
     mean_deaths_per_tick = np.mean([f.mean_deaths_per_tick for f in fingerprints])
     mean_births_per_tick = np.mean([f.mean_births_per_tick for f in fingerprints])
-    birth_death_ratio = mean_births_per_tick / mean_deaths_per_tick
+
+    if mean_deaths_per_tick > 0:
+        birth_death_ratio = mean_births_per_tick / mean_deaths_per_tick
+    else:
+        birth_death_ratio = np.inf
+
+    cv_per_run = []
+    for f in fingerprints:
+        if f.mean_population > 0:
+            cv_per_run.append(f.std_population / f.mean_population)
+        else:
+            cv_per_run.append(0.0)  # extinction run → no fluctuation
+
+
+
+    mean_time_cv_over_runs = np.mean(cv_per_run)
 
     return AggregatedFingerprint(
-        mean_population=mean_pop_over_runs,
+        mean_population_over_runs=mean_pop_over_runs,
 
-        std_population=std_pop_over_runs,
+        std_mean_population_over_runs=std_mean_population_over_runs,
 
         extinction_rate=extinction_rate,
 
         cap_hit_rate=cap_hit_rate,
 
-        birth_death_ratio=birth_death_ratio
+        birth_death_ratio=birth_death_ratio,
+
+        mean_time_cv_over_runs = mean_time_cv_over_runs
     )
     
 
