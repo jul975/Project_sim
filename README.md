@@ -1,358 +1,270 @@
-
----
-
 # Ecosystem Emergent Behavior Simulator
 
-A deterministic multi-agent simulation engine for studying emergent behavior in stochastic systems.
+A deterministic multi-agent simulation engine for studying emergent behavior under controlled stochasticity.
 
-The simulator is designed as a **deterministic state machine with explicit entropy control**, enabling:
+$$S_{t+1} = T(S_t)$$
 
-* Bit-for-bit reproducibility
-* Snapshot branching
-* Controlled evolutionary experiments
+**Core idea:** the simulator is a deterministic state machine with explicit entropy control.
+
+It provides:
+
+* Bit-for-bit reproducibility (hash-level)
+* Snapshot → clone → continuation equivalence
+* Controlled regime experiments (extinction / stable / saturated)
 * Deterministic replay of stochastic dynamics
 
 ---
 
-# Core Design Goal
+## Determinism Contract
 
-> Given identical initial seed and state, the simulation must evolve identically — at the hash level.
+> Given identical seed + configuration + initial state, the simulation evolves identically — at the canonical state hash.
 
-Determinism is not treated as a convenience feature.
-It is treated as a formal invariant.
-
----
-
-# Current Architecture
-
-## 1. Engine
-
-**Location:** `engineP4.py`
-
-### Responsibilities
-
-* Maintains global simulation state
-* Owns world instance
-* Owns agent registry (`dict[id → Agent]`)
-* Enforces invariants
-* Handles reproduction and death ordering
-* Produces canonical state hash
-* Creates snapshots
-* Reconstructs from snapshot
-
-### Engine Invariants
-
-1. **Spatial invariant**
-
-```python
-0 <= position < world_size
-```
-
-Enforced via toroidal wrapping.
-
-2. **Identity invariant**
-   Agent ID equals dictionary key.
-
-3. **Population invariant**
-
-```python
-len(agents) <= max_agent_count
-```
-
-4. **Deterministic stepping invariant**
-   Agents are stepped in sorted ID order.
+Determinism is treated as a formal invariant, not a convenience feature.
 
 ---
 
-## 2. Agent
+## Current Status
 
-**Location:** `agent.py`
+**Stage II — Controlled Ecological Dynamics (operational)**
 
-Each agent contains:
+Implemented:
 
-* Stable ID
-* Position
-* Energy level
-* Alive state
-* Spawn lineage metadata
-* Independent RNG streams:
+* Engine / World / Agent separation
+* Independent RNG streams per agent
+* Energy → harvest → reproduction coupling
+* Resource field with regeneration
+* Deterministic birth/death commit ordering
+* Batch runner with regime presets
+* Determinism test suite (same-seed, snapshot continuation, seed sensitivity)
+* Regime validation pipeline (extinction / stable / saturated)
+* CLI control for seed, runs, ticks, plotting
 
-  * `move_rng`
-  * `repro_rng`
-  * `energy_rng`
+In progress:
 
-### RNG Design
-
-Each agent:
-
-* Receives a `SeedSequence`
-* Spawns 3 child streams
-* Stores spawn lineage data manually
-* Restores full RNG state during snapshot reconstruction
-
-RNG reconstruction uses:
-
-* `bit_generator.state` restore
-* Custom seed sequence reconstruction
-
-No global RNG is ever used.
+* Documentation consolidation
+* Metric semantics refinement
+* Naming cleanup and freeze polish
 
 ---
 
-## 3. World
+## Quickstart
 
-**Location:** `world.py`
-
-Minimal world state:
-
-* `tick`
-* `world_size`
-* `change_condition`
-
-Implements toroidal topology:
-
-```python
-position = position % world_size
-```
-
----
-
-## 4. Configuration
-
-**Location:** `config.py`
-
-Frozen dataclass defining:
-
-* Population limits
-* Energy parameters
-* Reproduction parameters
-* World size
-* Future resource parameters
-
-All engine behavior derives from configuration.
-
----
-
-## 5. Canonical State Schema
-
-**Location:** `state_schema.py`
-
-State Schema v1:
-
-```text
-schema_version
-world.tick
-agent_count
-for each agent (sorted):
-    id
-    position
-    energy
-    alive
-```
-
-Serialized to bytes → hashed via SHA256.
-
-This is the backbone of determinism validation.
-
----
-
-## 6. Metrics Layer
-
-**Location:** `metrics.py`
-
-Collected per tick:
-
-* Population
-* Mean energy
-* Births
-* Deaths
-
-Metrics recording never mutates engine state.
-
----
-
-# Deterministic Testing Framework
-
-**Location:** `test_engine.py`
-
-The engine is validated against six invariants:
-
----
-
-## 1. Same Seed Determinism
-
-Two engines with identical seed → identical world.
-
----
-
-## 2. Canonical Determinism (Primary Test)
-
-Procedure:
-
-1. Run engine to `T_mid`
-2. Snapshot
-3. Clone from snapshot
-4. Continue both
-
-Must satisfy:
-
-```python
-eng1 == clone
-```
-
-Optional full-trajectory check:
-
-```python
-eng_full == eng_interrupted
-```
-
----
-
-## 3. Snapshot Idempotence
-
-Snapshot and immediate reconstruction must preserve state exactly.
-
----
-
-## 4. Multi-Clone Consistency
-
-Multiple clones from identical snapshot must be identical.
-
----
-
-## 5. Seed Sensitivity
-
-Different seeds must produce different state hashes.
-
----
-
-## 6. Agent Health Test
-
-Ensures population dynamics vary over time.
-
----
-
-# Current Stage Status
-
-## Stage 1 — Deterministic Core
-
-**Status: ~90% complete**
-
-### Completed
-
-* Explicit RNG streams
-* Deterministic ordering
-* Snapshot/restore
-* Canonical hashing
-* Agent dict refactor
-* World separation
-* Metrics separation
-* Population capacity logic
-
-### Remaining
-
-* Removal of remaining SeedSequence lineage coupling
-* Final ID monotonicity formalization
-* Formal RNG independence test
-* Death-stability identity test
-* Schema v2 planning
-
----
-
-# Execution Model
-
-Per tick:
-
-1. Agents step (sorted order)
-2. Deaths recorded
-3. Reproduction candidates recorded
-4. Capacity computed
-5. Deaths committed
-6. Births committed
-7. World tick increments
-
-Death occurs before birth.
-This ordering is deterministic and intentional.
-
----
-
-# Installation
+### Setup
 
 ```bash
-git clone https://github.com/<username>/ecosystem-emergent-simulator.git
-cd ecosystem-emergent-simulator
+git clone https://github.com/jul975/Poject_sim.git
+cd Poject_sim
 python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
+# Windows:
+.venv\Scripts\activate
+# Linux/macOS:
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
 ---
 
-# Running Tests
+## Running Experiments
+
+Run a default experiment (stable regime):
 
 ```bash
-python -m engine_build.test.test_engine
+python -m engine_build.main --mode experiment --regime stable
 ```
 
-Primary determinism test:
+Override experiment parameters:
 
-```python
-test_canonical_determinism_suite(42, full_trajectory=True)
+```bash
+python -m engine_build.main \
+    --mode experiment \
+    --regime stable \
+    --seed 42 \
+    --runs 10 \
+    --ticks 1000 \
+    --plot
 ```
+
+Parameters:
+
+* `--regime` → stable | extinction | saturated
+* `--seed` → master seed (optional; default is canonical seed)
+* `--runs` → number of runs in batch
+* `--ticks` → ticks per run
+* `--plot` → show ensemble + dispersion plots
+
+Experiment mode is flexible and exploration-oriented.
 
 ---
 
-# Design Philosophy
+## Running Validation
 
-* Determinism > Convenience
-* Explicit entropy > Hidden randomness
-* State machine > simulation script
-* Reproducibility > speed
+Validate a single regime:
+
+```bash
+python -m engine_build.main --mode validation --regime stable
+```
+
+Validate all regimes:
+
+```bash
+python -m engine_build.main --mode validation --regime all
+```
+
+Validation mode:
+
+* Uses canonical defaults
+* Is deterministic by design
+* Enforces regime-specific invariant contracts
+
+---
+
+## Determinism Test Suite
+
+Run system tests:
+
+```bash
+python -m engine_build.test.test_determinism --mode dev
+```
+
+Modes:
+
+* `dev` → fast core checks
+* `validate` → full system verification
+* `full` → includes baseline reference hash checks
+
+Core tests include:
+
+* Same-seed determinism
+* Snapshot → clone → continuation equivalence
+* Seed sensitivity
+* Structural invariants
+* RNG stream isolation
+
+---
+
+## Architecture Overview
+
+### Core
+
+* `engine_build/core/engineP4.py`
+  Global state machine, birth/death ordering, snapshot, state hash.
+
+* `engine_build/core/agent.py`
+  Agent state + independent RNG streams:
+
+  * `move_rng`
+  * `repro_rng`
+  * `energy_rng`
+
+* `engine_build/core/world.py`
+  Resource field, regeneration, toroidal topology.
+
+* `engine_build/core/config.py`
+  Frozen dataclasses; all behavior derives from configuration.
+
+---
+
+### Execution & Pipelines
+
+* `engine_build/runner/regime_runner.py`
+  Batch orchestration: seed → runs → metrics → fingerprints.
+
+* `engine_build/regimes/registry.py`
+  Declarative regime presets.
+
+* `engine_build/experiments/`
+  Experiment pipeline + plotting.
+
+* `engine_build/test/validation.py`
+  Regime validation matrix.
+
+* `engine_build/test/test_determinism.py`
+  Determinism + invariant suites.
+
+---
+
+### Analytics
+
+* `engine_build/analytics/fingerprint.py`
+
+Pure transformations:
+
+* Per-run fingerprints (tail-window metrics)
+* Aggregated fingerprints (across-run dispersion + within-run stability)
+
+Clear separation:
+
+* Within-run volatility (temporal CV)
+* Across-run dispersion (mean-of-means STD)
+
+---
+
+## State Hash & Snapshot Model
+
+Canonical state hashing is the ground truth of determinism.
+
+Snapshot includes:
+
+* Engine seed lineage metadata
+* Config + derived parameters
+* World state (resources, fertility, RNG state)
+* Agent state (id, position, energy, alive, age, RNG states)
+
+State is serialized deterministically and hashed via SHA256.
+
+---
+
+## Regimes
+
+The engine currently supports three canonical ecological regimes:
+
+* **Extinction** → population collapse
+* **Stable** → bounded fluctuation around equilibrium
+* **Saturated** → population near capacity ceiling
+
+Each regime has a dedicated validation contract.
+
+---
+
+## Design Principles
+
+* Determinism > convenience
+* Explicit entropy > hidden randomness
 * Invariants > assumptions
+* Snapshot/replay > ad-hoc scripts
+* Validation > visual intuition
 
 ---
 
-# Future Stages
+## Roadmap (12-Week Direction)
 
-## Stage 2 — Ecology Layer
+### Stage II — Controlled Ecology (current)
 
-* Resource fields
-* Energy harvesting
-* Predator/prey interactions
+* Finalize validation semantics
+* Harden metric definitions
+* Documentation freeze
 
-## Stage 3 — Evolution
+### Stage III — Stronger Interaction
+
+* Enhanced spatial competition mechanics
+* Optional 2D topology
+* Parameter sweep tooling
+
+### Stage IV — Evolution
 
 * Heritable traits
 * Mutation
 * Selection pressure
+* Lineage constraints
 
-## Stage 4 — Machine Learning
+### Stage V — Research Platform
 
-* Policy-driven agents
-* Reinforcement learning hooks
-* Deterministic training replay
-
-## Stage 5 — Research Platform
-
-* Batch runner
-* Parameter sweeps
-* Statistical analysis
-* Visualization
+* Batch sweeps + dashboards
+* Reproducible experiment artifacts
+* Deterministic replay hooks for ML
 
 ---
 
-# Why This Engine Is Different
-
-Most ABM frameworks:
-
-* Leak entropy
-* Cannot replay exact trajectories
-* Do not hash canonical state
-
-This engine treats stochastic simulation as a formally verifiable deterministic process.
-
----
-
-# Author
+## Author
 
 Jules Lowette
