@@ -4,6 +4,7 @@ from engine_build.metrics.metrics import SimulationMetrics
 from dataclasses import dataclass
 from typing import Optional, Dict
 
+
 @dataclass(frozen=True)
 class Fingerprint:
 

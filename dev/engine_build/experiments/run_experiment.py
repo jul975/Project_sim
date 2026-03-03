@@ -62,8 +62,8 @@ def summarize_results(results, ticks, n_runs, regime):
     print("Aggregate Fingerprint:")
     agg : AggregatedFingerprint = results.aggregate_fingerprint
 
-    print(f"    mean_population : {agg.mean_population:.3f}")
-    print(f"    std_population  : {agg.std_population:.3f}")
+    print(f"    mean_population : {agg.mean_population_over_runs:.3f}")
+    print(f"    std_population  : {agg.std_mean_population_over_runs:.3f}")
     print(f"    extinction_rate : {agg.extinction_rate:.3f}")
     print(f"    cap_hit_rate    : {agg.cap_hit_rate:.3f}")
     print(f"    birth_death_ratio: {agg.birth_death_ratio:.3f}")

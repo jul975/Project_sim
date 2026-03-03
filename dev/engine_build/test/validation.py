@@ -5,7 +5,6 @@ import numpy as np
 
 from engine_build.regimes.registry import get_regime_config
 from engine_build.runner.regime_runner import BatchRunner
-from engine_build.analytics.validation_analytics import compute_stability_cv
 from engine_build.analytics.fingerprint import AggregatedFingerprint
 from dataclasses import fields
 
@@ -53,7 +52,7 @@ def parse_by_regime(regime : str, results : RegimeBatchResults) -> None:
 
 def validate_stable_regime(result: RegimeBatchResults) -> None:
     agg : AggregatedFingerprint = result.aggregate_fingerprint
-    cap = result.batch_metrics[0].max_agent_count
+    # cap = result.batch_metrics[0].max_agent_count
     # NOTE: look into -0 optimized mode run in python where asserts are ignored
 
     for f in fields(agg):
@@ -66,7 +65,7 @@ def validate_stable_regime(result: RegimeBatchResults) -> None:
             )
 
     if agg.mean_population_over_runs <= 0:
-        raise AssertionError(f"Mean population is non-positive. | mean_population = {agg.mean_population}")
+        raise AssertionError(f"Mean population is non-positive. | mean_population = {agg.mean_population_over_runs}")
 
 
     if agg.extinction_rate >= 0.1:
@@ -95,7 +94,8 @@ Interpretation:
 
 def validate_extinction_regime(result: RegimeBatchResults) -> None:
     agg = result.aggregate_fingerprint
-    cap = result.batch_metrics[0].max_agent_count
+    # guarding for empty dict
+    cap = next(iter(result.batch_metrics.values())).max_agent_count
 
     for f in fields(agg):
         value = getattr(agg, f.name)
