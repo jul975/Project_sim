@@ -1,4 +1,7 @@
+
 """
+NOTE: older notes base is still oke
+
 TEST PROTOCOL — Ecosystem Engine
 
 Domains:
@@ -19,16 +22,12 @@ python -m engine_build.test.test_engine --mode dev
 
 -- hash ref seed = 42 26304bd3336bd69810062c9ae8311d67a3b7fe6f872ff4fe3b2ea8501a35ba0d
 """
-
-from engine_build.core.engineP4 import Engine
-from engine_build.core.config import SimulationConfig
+from engine_build.runner.regime_runner import BatchRunner
+from engine_build.regimes.registry import get_regime_config
 from dataclasses import dataclass
 import argparse
 
-# ---------------------------------------------------------
-# CONFIG
-# ---------------------------------------------------------
-
+from engine_build.core.engineP4 import Engine
 
 @dataclass
 class TestResult:
@@ -36,11 +35,21 @@ class TestResult:
     passed: bool
     message: str = ""
 
-BASE_CONFIG = SimulationConfig()
-SEED = 42
-T_SHORT = 100
-T_MEDIUM = 500
-T_LONG = 2000
+
+@dataclass(frozen=True)
+class TestConfig:
+    regime: str = "stable"
+    ticks_short: int = 200
+    ticks_mid: int = 1000
+    ticks_long: int = 5000
+    seed_ref: int = 42
+    seed_a: int = 1
+    seed_b: int = 2
+
+TEST = TestConfig()
+
+
+
 # TEST RUNNER
 def run_test(test_func):
     try:
@@ -51,39 +60,50 @@ def run_test(test_func):
     except Exception as e:
         return TestResult(test_func.__name__, False, f"Unexpected error: {e}")
 
+
+
 # =========================================================
 # 1. DETERMINISM SUITE
 # =========================================================
 
 def test_same_seed_determinism():
-    eng1 = Engine(SEED, BASE_CONFIG)
-    eng2 = Engine(SEED, BASE_CONFIG)
-
-    eng1.run(T_MEDIUM)
-    eng2.run(T_MEDIUM)
+    regime_config = get_regime_config(TEST.regime)
+    runner1 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    runner2 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    eng1, _ = runner1.run_single(runner1.run_seeds[0], TEST.ticks_mid)
+    eng2, _ = runner2.run_single(runner2.run_seeds[0], TEST.ticks_mid)
+    
 
     assert eng1 == eng2 , f"Same seed => different worlds. \n |eng1.get_state_hash() = {eng1.get_state_hash()}\n | eng2.get_state_hash() = {eng2.get_state_hash()}"
 
 
 def test_snapshot_equivalence():
-    eng = Engine(SEED, BASE_CONFIG)
-    eng.run(T_MEDIUM)
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    # run for a short amount of time to create some variability.
+    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_short)
+
+
+    
 
     snapshot = eng.get_snapshot()
     clone = Engine.from_snapshot(snapshot)
+    # run for a long time to create some variability.
+    for _ in range(TEST.ticks_mid):
+        eng.step()
+        clone.step()
 
-    assert eng == clone, f"Snapshot equivalence failed. \n |eng.get_state_hash() = {eng.get_state_hash()}\n | clone.get_state_hash() = {clone.get_state_hash()}"
+    assert eng.get_state_hash() == clone.get_state_hash(), f"Snapshot hash equivalence failed. \n |eng.get_state_hash() = {eng.get_state_hash()}\n | clone.get_state_hash() = {clone.get_state_hash()}"
 
 
 def test_seed_sensitivity():
-    eng1 = Engine(1, BASE_CONFIG)
-    eng2 = Engine(2, BASE_CONFIG)
-
-    eng1.run(T_MEDIUM)
-    eng2.run(T_MEDIUM)
+    regime_config = get_regime_config(TEST.regime)
+    runner1 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_a)
+    runner2 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_b)
+    eng1, _ = runner1.run_single(runner1.run_seeds[0], TEST.ticks_mid)
+    eng2, _ = runner2.run_single(runner2.run_seeds[0], TEST.ticks_mid)
 
     assert eng1 != eng2 , f"Seed sensitivity failed. \n |eng1.get_state_hash() = {eng1.get_state_hash()}\n | eng2.get_state_hash() = {eng2.get_state_hash()}"
-
 
 
 # =========================================================
@@ -91,24 +111,27 @@ def test_seed_sensitivity():
 # =========================================================
 
 def test_spatial_invariants():
-    eng = Engine(SEED, BASE_CONFIG)
-    eng.run(T_LONG)
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     for agent in eng.agents.values():
         assert 0 <= agent.position < eng.world_size , f"Agent position out of bounds. | agent.position = {agent.position} | eng.world_size = {eng.world_size}"
 
 
 def test_resource_bounds():
-    eng = Engine(SEED, BASE_CONFIG)
-    eng.run(T_LONG)
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     assert (eng.world.resources >= 0).all() , f"Negative resources found. | eng.world.resources = {eng.world.resources}"
     assert (eng.world.resources <= eng.world.fertility).all() , f"Resources exceed fertility. | eng.world.resources = {eng.world.resources} | eng.world.fertility = {eng.world.fertility}"
 
 
 def test_identity_monotonicity():
-    eng = Engine(SEED, BASE_CONFIG)
-    eng.run(T_LONG)
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
     
     ids = sorted(eng.agents.keys())
     # if there are agents, the highest id should be less than the next_agent_id
@@ -116,24 +139,23 @@ def test_identity_monotonicity():
         assert max(ids) < eng.next_agent_id, f"Identity monotonicity failed. | max(ids) = {max(ids)} | eng.next_agent_id = {eng.next_agent_id}"
 
     
-
-
-
 # =========================================================
 # 3. DYNAMICS SANITY SUITE
 # =========================================================
 
 def test_population_variability():
-    eng = Engine(SEED, BASE_CONFIG)
-    metrics = eng.run_with_metrics(T_MEDIUM)
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    _, metrics = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     assert len(set(metrics.population)) > 1 , f"Population variability failed. | len(set(metrics.population)) = {len(set(metrics.population))} | metrics.population = {metrics.population}"
-    assert max(metrics.population) <= BASE_CONFIG.population_config.max_agent_count , f"Population exceeds max_agent_count. | max(metrics.population) = {max(metrics.population)} | BASE_CONFIG.max_agent_count = {BASE_CONFIG.max_agent_count}"
+    assert max(metrics.population) <= regime_config.population_config.max_agent_count , f"Population exceeds max_agent_count. | max(metrics.population) = {max(metrics.population)} | regime_config.population_config.max_agent_count = {regime_config.population_config.max_agent_count}"
 
 
 def test_energy_boundedness():
-    eng = Engine(SEED, BASE_CONFIG)
-    eng.run(T_MEDIUM)
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     for agent in eng.agents.values():
         assert agent.energy_level >= 0 , f"Negative energy found. | agent.energy_level = {agent.energy_level}"
@@ -144,14 +166,14 @@ def test_energy_boundedness():
 # =========================================================
 
 def test_movement_rng_isolated_from_reproduction():
-    eng1 = Engine(SEED, BASE_CONFIG, change_condition=False)
-    eng2 = Engine(SEED, BASE_CONFIG, change_condition=True)
-
-    eng1.run(T_MEDIUM)
-    eng2.run(T_MEDIUM)
+    regime_config = get_regime_config(TEST.regime)
+    runner1 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_a)
+    runner2 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_b)
+    eng1, _ = runner1.run_single(runner1.run_seeds[0], TEST.ticks_mid)
+    eng2, _ = runner2.run_single(runner2.run_seeds[0], TEST.ticks_mid)
 
     # Compare the SAME identities (the original cohort only)
-    base_ids = range(BASE_CONFIG.population_config.initial_agent_count)
+    base_ids = range(regime_config.population_config.initial_agent_count)
     common_ids = [i for i in base_ids if i in eng1.agents and i in eng2.agents]
 
     pos1 = [eng1.agents[i].position for i in common_ids]
@@ -167,8 +189,9 @@ def test_movement_rng_isolated_from_reproduction():
 # =========================================================
 
 def test_reference_hash():
-    eng = Engine(SEED, BASE_CONFIG)
-    eng.run(T_MEDIUM)
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     expected_hash = "26304bd3336bd69810062c9ae8311d67a3b7fe6f872ff4fe3b2ea8501a35ba0d"
     assert eng.get_state_hash() == expected_hash , f"Reference hash failed. | eng.get_state_hash() = {eng.get_state_hash()} | expected_hash = {expected_hash}"
@@ -177,6 +200,7 @@ def test_reference_hash():
 
 
 # =========================================================
+
 
 def run_determinism_suite():
     tests = [
@@ -322,8 +346,8 @@ def run_full_mode():
     print("\nFULL VALIDATION RESULT:", "PASS" if all_ok else "FAIL")
 
 def main():
-    pass
-    """parser = argparse.ArgumentParser(description="Ecosystem Engine Test Runner")
+    
+    parser = argparse.ArgumentParser(description="Ecosystem Engine Determinism Test")
 
     parser.add_argument(
         "--mode",
@@ -339,7 +363,7 @@ def main():
     elif args.mode == "validate":
         run_validation_mode()
     elif args.mode == "full":
-        run_full_mode()"""
+        run_full_mode()
 
 
 if __name__ == "__main__":

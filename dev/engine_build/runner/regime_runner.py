@@ -1,9 +1,10 @@
 
 
 
-from engine_build.analytics.fingerprint import compute_fingerprint, get_aggregate_fingerprints, AggregatedFingerprint
+from engine_build.analytics.fingerprint import compute_fingerprint, get_aggregate_fingerprints, AggregatedFingerprint, Fingerprint
 from engine_build.core.engineP4 import Engine
 from engine_build.execution.default import DEFAULT_MASTER_SEED
+
 
 from engine_build.core.config import SimulationConfig
 from engine_build.metrics.metrics import SimulationMetrics
@@ -49,7 +50,7 @@ CAVE:
 @dataclass
 class RegimeBatchResults:
     aggregate_fingerprint : AggregatedFingerprint
-    fingerprints_dict : Dict[np.int64, Dict[str, float]]
+    fingerprints_dict : list[Fingerprint]
     batch_metrics : Dict[np.int64, SimulationMetrics]
 
 
@@ -86,6 +87,22 @@ class BatchRunner:
 
         self.run_seeds = generate_run_sequences(self.batch_id , n_runs)
 
+    def run_single(self, seed : np.random.SeedSequence, ticks : np.int64) -> tuple[Engine, SimulationMetrics]:
+    
+        eng = Engine(seed, self.regime_config)
+        metrics = SimulationMetrics()
+        for _ in range(ticks):
+            births_this_tick, deaths_this_tick, pending_death = eng.step()
+            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+
+        return eng, metrics
+    
+    def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> tuple[Engine, SimulationMetrics]:
+        for _ in range(ticks):
+            births_this_tick, deaths_this_tick, pending_death = eng.step()
+            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+        return eng, metrics
+
 
 
     def run_regime_batch(self) -> RegimeBatchResults:
@@ -95,12 +112,10 @@ class BatchRunner:
         batch_metrics = {}
 
         for i, seed in enumerate(self.run_seeds):
+            _, metrics = self.run_single(seed, self.ticks)
 
-            eng = Engine(seed, self.regime_config)
-            metrics = SimulationMetrics()
-            for _ in range(self.ticks):
-                births_this_tick, deaths_this_tick, pending_death = eng.step()
-                metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+##
+
 
             batch_metrics[i] = metrics            
 

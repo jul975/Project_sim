@@ -74,27 +74,24 @@ class SimulationConfig:
 
     @classmethod
     def from_dict(cls, d: dict) -> "SimulationConfig":
-        # rebuild nested dataclasses explicitly
-        
-        ec_dict = d["energy_config"]
-        # GUARD if energy_config is not in passed dictionary, use default_factory
-        if ec_dict is None:
-            return cls(**d)
-      
-
-
-        r_dict = ec_dict["ratios"]
-
-        ratios = EnergyRatios(**r_dict)
-        energy_config = EnergyConfig(
-            max_harvest=ec_dict["max_harvest"],
-            ratios=ratios
-        )
-
         outer = dict(d)
-        outer["energy_config"] = energy_config
+
+        # rebuild population_config
+        pc_dict = outer.get("population_config")
+        if isinstance(pc_dict, dict):
+            outer["population_config"] = PopulationConfig(**pc_dict)
+
+        # rebuild energy_config (your existing logic, slightly guarded)
+        ec_dict = outer.get("energy_config")
+        if isinstance(ec_dict, dict):
+            r_dict = ec_dict.get("ratios")
+            ratios = EnergyRatios(**r_dict) if isinstance(r_dict, dict) else EnergyRatios()
+            outer["energy_config"] = EnergyConfig(
+                max_harvest=ec_dict.get("max_harvest", EnergyConfig().max_harvest),
+                ratios=ratios
+            )
+
         return cls(**outer)
-    
 
 
 
