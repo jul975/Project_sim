@@ -135,7 +135,7 @@ def validate_extinction_regime(result: RegimeBatchResults) -> None:
 
 def validate_saturated_regime(result: RegimeBatchResults) -> None:
     agg = result.aggregate_fingerprint
-    cap = result.batch_metrics[0].max_agent_count
+    cap = next(iter(result.batch_metrics.values())).max_agent_count
 
     for f in fields(agg):
         value = getattr(agg, f.name)

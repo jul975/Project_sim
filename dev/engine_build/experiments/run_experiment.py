@@ -19,12 +19,17 @@ import numpy as np
 def run_experiment_mode(args) -> None:
     """ main entry point """
     regime_config = get_regime_config(args.regime)
-    ticks, n_runs = EXPERIMENT_DEFAULTS["ticks"], EXPERIMENT_DEFAULTS["runs"]
+    # NOTE: 
+        #   -   want to standerdize default beheavior and not let that be controled by main.py
+
+    ticks = args.ticks if args.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
+    n_runs = args.runs if args.runs is not None else EXPERIMENT_DEFAULTS["runs"]
     
     runner = BatchRunner(
         regime_config = regime_config,
         ticks = ticks,
-        n_runs = n_runs
+        n_runs = n_runs,
+        batch_id = args.seed
         
     )
 

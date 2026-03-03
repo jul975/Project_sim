@@ -27,6 +27,24 @@ def parse_args():
         help="Select ecological regime type"
     )
     parser.add_argument(
+    "--seed",
+    type=int,
+    default=None,
+    help="Optional master seed override"
+    )
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=None,
+        help="Number of runs to average over"
+    )
+    parser.add_argument(
+        "--ticks",
+        type=int,
+        default=None,
+        help="Number of ticks to run for"
+    )
+    parser.add_argument(
         "--plot",
         action="store_true",
         help="Plot batch population dynamics (experiment only)"

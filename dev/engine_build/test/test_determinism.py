@@ -174,13 +174,13 @@ def test_movement_rng_isolated_from_reproduction():
     eng2 = Engine(np.random.SeedSequence(seed), regime_config, change_condition=True)
 
 
-
+    base_ids = range(regime_config.population_config.initial_agent_count)
     # advance and check position of both
     for step in range(TEST.ticks_mid):
         eng1.step()
         eng2.step()
         
-        base_ids = range(regime_config.population_config.initial_agent_count)
+        
         
         for i in base_ids:
             if i in eng1.agents and i in eng2.agents:

@@ -1,6 +1,4 @@
 
-from engine_build.analytics.fingerprint import AggregatedFingerprint
-
 
 
 # =============================================================================

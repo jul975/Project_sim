@@ -114,7 +114,7 @@ class BatchRunner:
         for i, seed in enumerate(self.run_seeds):
             _, metrics = self.run_single(seed, self.ticks)
 
-##
+
 
 
             batch_metrics[i] = metrics            
@@ -125,7 +125,7 @@ class BatchRunner:
             fingerprints_dict[i] = fingerprint
             
         
-        aggregate_fingerprint : AggregatedFingerprint = get_aggregate_fingerprints(fingerprints_dict.values())
+        aggregate_fingerprint : AggregatedFingerprint = get_aggregate_fingerprints(list(fingerprints_dict.values()))
         
         return RegimeBatchResults(aggregate_fingerprint, fingerprints_dict, batch_metrics)
 
