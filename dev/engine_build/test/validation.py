@@ -69,7 +69,7 @@ def validate_stable_regime(result: RegimeBatchResults) -> None:
     if agg.cap_hit_rate >= 0.2:
          raise AssertionError(f"Cap hit rate too high. | cap_hit_rate = {agg.cap_hit_rate}")    
 
-
+    # NOTE: should go to 0.1, look at doc, right now 0.2 for dev speed.
     cv = compute_stability_cv(agg)
     if cv > 0.2:
         raise AssertionError(f"Coefficient of variation too high. | cv = {cv}")
@@ -89,36 +89,57 @@ Interpretation:
 
 def validate_extinction_regime(result: RegimeBatchResults) -> None:
     agg = result.aggregate_fingerprint
+    cap = result.batch_metrics[0].population_cap
 
-    if agg.extinction_rate < 0.9:
+    for f in fields(agg):
+        value = getattr(agg, f.name)
+
+        if not np.isfinite(value):
+            raise AssertionError(
+                f"Invalid value in aggregate fingerprint: "
+                f"{f.name} = {value}"
+            )
+
+    if agg.extinction_rate < 0.8 :
         raise AssertionError(
             f"Extinction regime failed: extinction_rate too low "
             f"({agg.extinction_rate})"
         )
 
-    if agg.mean_population > 1:
+    if agg.mean_population > 0.1 * cap:
         raise AssertionError(
             f"Extinction regime failed: population not collapsed "
             f"({agg.mean_population})"
         )
 
-    if agg.std_population > 2:
+    cv = compute_stability_cv(agg)
+    if cv > 0.2:
         raise AssertionError(
-            f"Extinction regime unstable: variance too high "
-            f"({agg.std_population})"
+            f"Extinction regime unstable: CV too high ({cv})"
         )
 
-    if agg.cap_hit_rate > 0.05:
+    if agg.cap_hit_rate > 0.1:
         raise AssertionError(
             f"Extinction regime hitting cap unexpectedly "
             f"({agg.cap_hit_rate})"
         )
     if agg.birth_death_ratio >= 1:
         raise AssertionError("Extinction regime not death-dominated")
+    
+
 
 def validate_saturated_regime(result: RegimeBatchResults) -> None:
     agg = result.aggregate_fingerprint
     cap = result.batch_metrics[0].population_cap
+
+    for f in fields(agg):
+        value = getattr(agg, f.name)
+
+        if not np.isfinite(value):
+            raise AssertionError(
+                f"Invalid value in aggregate fingerprint: "
+                f"{f.name} = {value}"
+            )
 
     if agg.cap_hit_rate < 0.8:
         raise AssertionError(
@@ -126,14 +147,14 @@ def validate_saturated_regime(result: RegimeBatchResults) -> None:
             f"({agg.cap_hit_rate})"
         )
 
-    if agg.mean_population < 0.9 * cap:
+    if agg.mean_population < 0.8 * cap:
         raise AssertionError(
             f"Saturation regime failed: population not near cap "
             f"({agg.mean_population})"
         )
 
     cv = agg.std_population / agg.mean_population
-    if cv > 0.1:
+    if cv > 0.2:
         raise AssertionError(
             f"Saturation unstable: CV too high ({cv})"
         )

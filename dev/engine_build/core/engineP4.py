@@ -7,9 +7,10 @@ from .seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
 from .agent import Agent
 from .world import World
 
-from .config import SimulationConfig, EnergyParams, DeathBucket
+from .config import SimulationConfig, EnergyParams, DeathBucket, PopulationConfig
 
 from dataclasses import asdict
+
 
 """
     NOTE: 
@@ -52,7 +53,7 @@ from dataclasses import asdict
 
 
 class Engine:
-    def __init__(self, seed_seq : np.int64 , config : SimulationConfig ,change_condition=False) -> None:
+    def __init__(self, seed_seq : np.random.SeedSequence , config : SimulationConfig ,change_condition=False) -> None:
 
         self.config = config
                 
@@ -62,7 +63,7 @@ class Engine:
         self.max_age = self.config.population_config.max_age
 
         # create world
-        world_seed: np.int64 = self.master_ss.spawn(1)[0]
+        world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
         # create new seed, for world setup
 
         self.world = World( world_seed, self.config ,change_condition)
@@ -314,6 +315,7 @@ class Engine:
 
 
 
+
             "world" : {
                 "tick" : self.world.tick,
                 "change_condition" : self.world.change_condition,
@@ -362,9 +364,14 @@ class Engine:
         """ create engine from snapshot. """
         engine_clone = object.__new__(cls)
 
-        engine_clone.config = SimulationConfig.from_dict(snapshot["config"])
+        engine_clone.config = SimulationConfig.from_dict(snapshot["config"]) 
+        # assert isinstance(engine_clone.config, SimulationConfig), type(engine_clone.config)
+        assert isinstance(engine_clone.config.population_config, PopulationConfig), type(engine_clone.config.population_config)
+        
+        
         engine_clone.energy_params = engine_clone._derive_energy_params()
         engine_clone.max_age = snapshot["max_age"]
+        
 
 
         # engine master_ss doesnt need to be reconstructed.
@@ -389,12 +396,6 @@ class Engine:
 
 
 
-    def run(self, n_steps) -> dict[np.int64, Agent]:
-        for _ in range(n_steps):
-            self.step()
-
-        return self.agents
-    
 
 
 if __name__ == "__main__":
