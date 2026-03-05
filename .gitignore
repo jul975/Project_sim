@@ -1,61 +1,49 @@
-
 # =============================
-#   Ecosystem Engine Project
+# Ecosystem Engine Project
 # =============================
 
-
-
-# -----------------------------
 # Python bytecode
-# -----------------------------
-
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
 
-# -----------------------------
 # Virtual environments
-# -----------------------------
 .venv/
 venv/
 env/
 ENV/
 
-# -----------------------------
 # Distribution / packaging
-# -----------------------------
 build/
 dist/
 *.egg-info/
 
-# -----------------------------
 # Testing / coverage
-# -----------------------------
 .coverage
 .coverage.*
+coverage.xml
 htmlcov/
 .pytest_cache/
 
-# -----------------------------
 # Jupyter / notebooks
-# -----------------------------
 .ipynb_checkpoints/
 
-# -----------------------------
+# Environment variables / secrets
+.env
+.env.*
+
 # OS files
-# -----------------------------
 .DS_Store
 Thumbs.db
 
-# -----------------------------
 # IDE / Editor
-# -----------------------------
 .vscode/
 .idea/
 
-
-# -----------------------------
 # Logs
-# -----------------------------
-*.log 
+*.log
+
+# Dev archive
 archive/
