@@ -1,78 +1,94 @@
 # Ecosystem Emergent Behavior Simulator
 
-A deterministic multi-agent simulation engine for studying emergent behavior under controlled stochasticity.
+A deterministic multi-agent simulation engine for studying **emergent ecological dynamics under controlled stochasticity**.
+
 
 $$S_{t+1} = T(S_t)$$
 
-**Core idea:** the simulator is a deterministic state machine with explicit entropy control.
-
-It provides:
-
-* Bit-for-bit reproducibility (hash-level)
-* Snapshot → clone → continuation equivalence
-* Controlled regime experiments (extinction / stable / saturated)
-* Deterministic replay of stochastic dynamics
+The simulator treats the environment as a **deterministic state machine with explicit entropy control**, enabling reproducible exploration of stochastic ecological systems.
 
 ---
 
-## Determinism Contract
+# Project Overview
 
-> Given identical seed + configuration + initial state, the simulation evolves identically — at the canonical state hash.
+The Ecosystem Engine provides a controlled environment for exploring how population dynamics emerge from simple local interactions such as:
 
-Determinism is treated as a formal invariant, not a convenience feature.
+- movement
+- energy consumption
+- resource harvesting
+- reproduction
 
----
+Despite stochastic agent behavior, the engine guarantees **bit-level reproducibility**.
 
-## Current Status
+Given identical seed, configuration, and initial state:
 
-**Stage II — Controlled Ecological Dynamics (operational)**
 
-Implemented:
+same inputs → identical simulation trajectory → identical state hash
 
-* Engine / World / Agent separation
-* Independent RNG streams per agent
-* Energy → harvest → reproduction coupling
-* Resource field with regeneration
-* Deterministic birth/death commit ordering
-* Batch runner with regime presets
-* Determinism test suite (same-seed, snapshot continuation, seed sensitivity)
-* Regime validation pipeline (extinction / stable / saturated)
-* CLI control for seed, runs, ticks, plotting
 
-In progress:
+This makes the engine suitable for:
 
-* Documentation consolidation
-* Metric semantics refinement
-* Naming cleanup and freeze polish
+- deterministic simulation research
+- controlled regime experimentation
+- reproducible ecological modeling
+- emergent behavior studies
 
 ---
 
-## Quickstart
+# Key Features
 
-### Setup
+### Deterministic Simulation Core
+
+- Explicit RNG stream separation
+- Canonical state serialization
+- SHA256 state hashing
+- Snapshot → clone → continuation equivalence
+
+### Ecological Dynamics
+
+- Energy-driven survival and reproduction
+- Resource fields with regeneration
+- Spatial competition
+- Configurable ecological regimes
+
+### Experiment Infrastructure
+
+- Batch runner for ensemble experiments
+- Regime presets (extinction / stable / saturated)
+- Determinism and invariant validation suites
+- Metrics and fingerprint analytics
+
+---
+
+# Quickstart
+
+## Setup
 
 ```bash
 git clone https://github.com/jul975/Poject_sim.git
 cd Poject_sim
-python -m venv .venv
-# Windows:
-.venv\Scripts\activate
-# Linux/macOS:
-source .venv/bin/activate
-pip install -r requirements.txt
+
+python -m venv .venv 
 ```
 
----
-
-## Running Experiments
-
-Run a default experiment (stable regime):
-
+# Windows
 ```bash
+.venv\Scripts\activate
+```
+
+# Linux/macOS
+```bash
+source .venv/bin/activate
+
+pip install -r requirements.txt
+Running Experiments
+
+Run a default experiment:
+
 python -m engine_build.main --mode experiment --regime stable
 ```
 
-Override experiment parameters:
+### Custom run:
 
 ```bash
 python -m engine_build.main \
@@ -82,188 +98,193 @@ python -m engine_build.main \
     --runs 10 \
     --ticks 1000 \
     --plot
+Parameters
+Parameter	Description
+--regime	stable | extinction | saturated
+--seed	master RNG seed
+--runs	number of runs in batch
+--ticks	ticks per run
+--plot	show ensemble plots
 ```
 
-Parameters:
+Experiment mode is designed for exploration and regime analysis.
 
-* `--regime` → stable | extinction | saturated
-* `--seed` → master seed (optional; default is canonical seed)
-* `--runs` → number of runs in batch
-* `--ticks` → ticks per run
-* `--plot` → show ensemble + dispersion plots
+### Running Validation
 
-Experiment mode is flexible and exploration-oriented.
-
----
-
-## Running Validation
-
-Validate a single regime:
+Validate a specific regime:
 
 ```bash
 python -m engine_build.main --mode validation --regime stable
-```
 
 Validate all regimes:
 
-```bash
 python -m engine_build.main --mode validation --regime all
+
 ```
 
 Validation mode:
 
-* Uses canonical defaults
-* Is deterministic by design
-* Enforces regime-specific invariant contracts
+- uses canonical configurations
 
----
+- verifies deterministic guarantees
 
-## Determinism Test Suite
+- checks regime-specific invariants
 
-Run system tests:
+### Determinism Test Suite
+
+Run deterministic system tests:
 
 ```bash
 python -m engine_build.test.test_determinism --mode dev
+
 ```
 
 Modes:
 
-* `dev` → fast core checks
-* `validate` → full system verification
-* `full` → includes baseline reference hash checks
+```bash
+  Mode	    -> Purpose
+  dev	    -> fast core checks
+  validate	-> full deterministic verification
+  full	    -> includes reference state hash checks
+```
 
 Core tests include:
 
-* Same-seed determinism
-* Snapshot → clone → continuation equivalence
-* Seed sensitivity
-* Structural invariants
-* RNG stream isolation
+- same-seed determinism
 
----
+- snapshot → clone → continuation equivalence
+ - seed sensitivity
 
-## Architecture Overview
+- structural invariants
 
-### Core
+- RNG stream isolation
 
-* `engine_build/core/engineP4.py`
-  Global state machine, birth/death ordering, snapshot, state hash.
+## Architecture (High Level)
 
-* `engine_build/core/agent.py`
-  Agent state + independent RNG streams:
+The engine is composed of four main subsystems.
+```bash
+Engine
+├── World
+├── Agents
+├── RNG Infrastructure
+└── Analytics / Experiments
+```
 
-  * `move_rng`
-  * `repro_rng`
-  * `energy_rng`
+###  Engine
 
-* `engine_build/core/world.py`
-  Resource field, regeneration, toroidal topology.
+**Global simulation orchestrator.**
 
-* `engine_build/core/config.py`
-  Frozen dataclasses; all behavior derives from configuration.
+Responsible for:
+- tick progression
 
----
+- deterministic update ordering
 
-### Execution & Pipelines
+- birth/death commit
 
-* `engine_build/runner/regime_runner.py`
-  Batch orchestration: seed → runs → metrics → fingerprints.
+- snapshot and state hashing
 
-* `engine_build/regimes/registry.py`
-  Declarative regime presets.
+### World
 
-* `engine_build/experiments/`
-  Experiment pipeline + plotting.
+Environmental state.
 
-* `engine_build/test/validation.py`
-  Regime validation matrix.
+Contains:
 
-* `engine_build/test/test_determinism.py`
-  Determinism + invariant suites.
+- resource field
 
----
+- fertility limits
 
-### Analytics
+- regeneration mechanics
 
-* `engine_build/analytics/fingerprint.py`
+- toroidal topology
 
-Pure transformations:
+### Agents
 
-* Per-run fingerprints (tail-window metrics)
-* Aggregated fingerprints (across-run dispersion + within-run stability)
+Autonomous entities with independent stochastic behavior.
 
-Clear separation:
+Each agent owns three RNG streams:
 
-* Within-run volatility (temporal CV)
-* Across-run dispersion (mean-of-means STD)
+1. movement RNG
 
----
+2. reproduction RNG
 
-## State Hash & Snapshot Model
+3. energy initialization RNG
 
-Canonical state hashing is the ground truth of determinism.
+### Experiment Pipeline
 
-Snapshot includes:
+Supports:
 
-* Engine seed lineage metadata
-* Config + derived parameters
-* World state (resources, fertility, RNG state)
-* Agent state (id, position, energy, alive, age, RNG states)
+1. batch experiments
 
-State is serialized deterministically and hashed via SHA256.
+2. regime validation
 
----
+3. metrics aggregation
 
-## Regimes
+4. fingerprint analytics
 
-The engine currently supports three canonical ecological regimes:
+### Ecological Regimes
 
-* **Extinction** → population collapse
-* **Stable** → bounded fluctuation around equilibrium
-* **Saturated** → population near capacity ceiling
+Three canonical regimes are currently supported.
 
-Each regime has a dedicated validation contract.
+```bash
+Regime	Behavior
+Extinction   ->   population collapse
+Stable       ->   bounded equilibrium dynamics
+Saturated    ->   population near capacity ceiling
+```
 
----
+Each regime includes a validation contract to verify expected system behavior.
+
+Documentation
+
+Detailed documentation is located in /docs.
+
+```bash
+Document	              Description
+ARCHITECTURE.md	          System architecture
+DETERMINISM.md	          Determinism guarantees
+MATHEMATICAL_MODEL.md	  Formal model of system dynamics
+SIMULATION_PIPELINE.md	  Execution order of simulation steps
+RNG_ARCHITECTURE.md	      RNG lineage and isolation
+Current                   Status
+```
+
+## Stage II — Controlled Ecological Dynamics
+
+**Implemented:**
+
+- deterministic engine core
+
+- resource-energy coupling
+
+- regime experiment pipeline
+
+- validation and determinism tests
+
+**Next stage:**
+
+## Stage III — Stronger Interaction
+
+**Planned:**
+
+- enhanced spatial competition
+
+- optional 2D topology
+
+- expanded parameter sweep tooling
 
 ## Design Principles
 
-* Determinism > convenience
-* Explicit entropy > hidden randomness
-* Invariants > assumptions
-* Snapshot/replay > ad-hoc scripts
-* Validation > visual intuition
+The system follows several core engineering principles.
 
----
+- Determinism over convenience
 
-## Roadmap 
+- Explicit entropy over hidden randomness
 
-### Stage II — Controlled Ecology (current)
+- Formal invariants over assumptions
 
-* Finalize validation semantics
-* Harden metric definitions
-* Documentation freeze
+- Snapshot/replay over ad-hoc scripts
 
-### Stage III — Stronger Interaction
-
-* Enhanced spatial competition mechanics
-* Optional 2D topology
-* Parameter sweep tooling
-
-### Stage IV — Evolution
-
-* Heritable traits
-* Mutation
-* Selection pressure
-* Lineage constraints
-
-### Stage V — Research Platform
-
-* Batch sweeps + dashboards
-* Reproducible experiment artifacts
-* Deterministic replay hooks for ML
-
----
+- Validation over visual intuition
 
 ## Author
 

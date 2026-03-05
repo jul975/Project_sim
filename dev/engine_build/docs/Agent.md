@@ -1,98 +1,266 @@
-This guide organizes your dimensionless ratios and calibration logic into a clean, professional Markdown format. It uses LaTeX for mathematical clarity and tables for quick reference.
+# Agent Energy Dynamics and Ratio Calibration
+
+## Overview
+
+Agent behavior in the simulation is governed by a **dimensionless energy system**.
+Instead of relying on arbitrary absolute values, biological dynamics are controlled through **dimensionless ratios** derived from a small set of energy parameters.
+
+This approach provides several advantages:
+
+* **Scale invariance** — parameters remain meaningful regardless of numeric magnitude.
+* **Predictable regime tuning** — survival, reproduction, and lifecycle dynamics can be adjusted systematically.
+* **Reproducible experimentation** — behavioral regimes can be defined and reproduced through configuration.
+
+These ratios define the **metabolic constraints and reproductive dynamics** of agents within the ecosystem.
 
 ---
 
-# **Agent-Based Model: Dimensionless Ratio Calibration**
+# 1. Core Energy Parameters
 
-Stop tuning raw numbers blindly. By using **dimensionless ratios**, you can ensure your agents' metabolic and reproductive cycles remain stable regardless of the absolute scale of your variables.
+The agent energy model is defined by four primary parameters:
 
-## **1. Core Ratio Definitions**
+| Parameter                | Description                                                       |
+| ------------------------ | ----------------------------------------------------------------- |
+| `movement_cost`          | Energy spent per tick for movement                                |
+| `max_harvest`            | Maximum energy an agent can harvest from the environment per tick |
+| `reproduction_threshold` | Energy level required before reproduction becomes possible        |
+| `reproduction_cost`      | Energy lost when reproduction occurs                              |
 
-| Ratio | Name | Formula | Recommended Range |
-| --- | --- | --- | --- |
-| \alpha | **Metabolic Pressure** | $\alpha = \frac{\text{movement\_cost}}{\text{max\_harvest}}$ | $0.6 - 0.9$ |
-| $\beta$ | **Reproductive Depletion** | $\beta = \frac{\text{reproduction\_cost}}{\text{reproduction\_threshold}}$ | $0.8 - 1.0$ |
-| $\gamma$ | **Energy Maturity Scale** | $\gamma = \frac{\text{reproduction\_threshold}}{\text{movement\_cost}}$ | $5 - 15$ |
-
----
-
-## **2. Detailed Interpretation**
-
-### **$\alpha$: Metabolic Pressure**
-
-Determines the baseline difficulty of survival.
-
-* **If $\alpha \to 1$:** Agents spend almost all gathered energy on movement. Survival is precarious.
-* **If $\alpha \ll 1$:** Huge energy surplus. This typically leads to a population explosion.
-
-### **$\beta$: Reproductive Depletion**
-
-Determines the "recovery phase" after an agent gives birth.
-
-* **If $\beta < 0.5$:** Agents remain well above the energy threshold after reproducing.
-* **If $\beta \approx 1$:** Reproduction nearly exhausts the agent, requiring a significant recovery period.
-
-### **$\gamma$: Energy Maturity Scale**
-
-Controls the length of the lifecycle.
-
-* **If $\gamma$ is small:** Agents reach reproductive maturity very quickly.
-* **If $\gamma$ is large:** Long accumulation phase; reproduction is a rare, significant event.
-* **Rule of Thumb:** $\text{reproduction\_threshold} = \gamma \times \text{movement\_cost}$.
+These parameters determine the **energy balance** governing agent survival and population growth.
 
 ---
 
-## **3. Concrete Calibration Example**
+# 2. Dimensionless Control Ratios
 
-Instead of picking random integers, use the following sequence to calibrate your world:
+Three key ratios define the biological regime of the system.
 
-**Step 1: Set Environmental Constraints**
+## 2.1 Metabolic Pressure (α)
 
-* $\text{movement\_cost} = 2$
-* $\text{max\_harvest} = 3$
-* **Result:** $\alpha = \frac{2}{3} \approx 0.67$ (Healthy survival, but requires effort).
+[
+\alpha = \frac{movement_cost}{max_harvest}
+]
 
-**Step 2: Define Life Cycle via Ratios**
+This ratio represents the **baseline difficulty of survival**.
 
-* Set $\gamma = 10 \rightarrow \text{reproduction\_threshold} = 20$.
-* Set $\beta = 0.9 \rightarrow \text{reproduction\_cost} = 18$.
+| α Range     | Interpretation                                                             |
+| ----------- | -------------------------------------------------------------------------- |
+| α → 1       | Movement nearly consumes all harvested energy. Survival becomes difficult. |
+| α ≈ 0.6–0.9 | Balanced regime. Agents must actively gather resources to survive.         |
+| α ≪ 1       | Energy surplus. Population growth may become explosive.                    |
 
-**Step 3: Analyze Timing**
-If the average net surplus $S \approx 1$ per tick:
+Recommended operating range:
 
-* $T_{\text{energy}} \approx 20 \text{ ticks}$ (Time to reach threshold).
-* If we set probability $p = 0.1$, then the chance of reproduction $\frac{1}{p} \approx 10 \text{ ticks}$.
-* **Conclusion:** Energy accumulation dominates the cycle, leading to smooth, non-explosive growth.
+```
+0.6 ≤ α ≤ 0.9
+```
 
 ---
 
-## **4. Population Stability Check ($R_0$)**
+## 2.2 Reproductive Depletion (β)
 
-To avoid total extinction or infinite expansion, monitor the **Basic Reproduction Number ($R_0$)**:
+[
+\beta = \frac{reproduction_cost}{reproduction_threshold}
+]
 
-$$R_0 = L \times R$$
+This ratio determines the **post-reproduction recovery cost**.
+
+| β Value     | Interpretation                            |
+| ----------- | ----------------------------------------- |
+| β < 0.5     | Reproduction has little energetic impact  |
+| β ≈ 0.8–1.0 | Reproduction nearly depletes agent energy |
+
+Recommended range:
+
+```
+0.8 ≤ β ≤ 1.0
+```
+
+High β values introduce **natural spacing between births** by forcing agents to recover energy before reproducing again.
+
+---
+
+## 2.3 Energy Maturity Scale (γ)
+
+[
+\gamma = \frac{reproduction_threshold}{movement_cost}
+]
+
+This ratio determines the **energy accumulation period required for reproduction**.
+
+| γ Value | Interpretation                              |
+| ------- | ------------------------------------------- |
+| γ small | Agents reach maturity quickly               |
+| γ large | Long accumulation phase before reproduction |
+
+Recommended range:
+
+```
+5 ≤ γ ≤ 15
+```
+
+Rule of thumb:
+
+```
+reproduction_threshold = γ × movement_cost
+```
+
+---
+
+# 3. Example Calibration
+
+The following example demonstrates a stable parameter configuration.
+
+### Step 1 — Environmental Constraints
+
+```
+movement_cost = 2
+max_harvest   = 3
+```
+
+Result:
+
+```
+α = 2 / 3 ≈ 0.67
+```
+
+This creates moderate metabolic pressure.
+
+---
+
+### Step 2 — Lifecycle Parameters
+
+Select lifecycle ratio:
+
+```
+γ = 10
+```
+
+Derive reproduction threshold:
+
+```
+reproduction_threshold = 20
+```
+
+Set reproduction depletion:
+
+```
+β = 0.9
+reproduction_cost = 18
+```
+
+---
+
+### Step 3 — Energy Accumulation Time
+
+If the average net surplus per tick is:
+
+```
+S ≈ 1 energy / tick
+```
+
+Then expected accumulation time is:
+
+```
+T_energy ≈ reproduction_threshold / S
+         ≈ 20 ticks
+```
+
+This determines the **typical reproductive cycle length**.
+
+---
+
+# 4. Population Stability
+
+Population stability can be approximated using the **basic reproduction number**.
+
+[
+R_0 = L \times R
+]
 
 Where:
 
-* $L$ = Expected lifespan.
-* $R$ = Expected reproduction rate per tick.
+| Variable | Meaning                             |
+| -------- | ----------------------------------- |
+| (L)      | Expected agent lifespan             |
+| (R)      | Expected reproduction rate per tick |
 
-**Targets:**
+Interpretation:
 
-* **$R_0 \approx 1.0 - 1.5$:** Stable/Manageable growth.
-* **$R_0 \gg 1$:** Population explosion.
-* **$R_0 < 1$:** Systemic extinction.
+| R₀ Range   | System Behavior     |
+| ---------- | ------------------- |
+| R₀ < 1     | Population collapse |
+| R₀ ≈ 1–1.5 | Stable population   |
+| R₀ ≫ 1     | Exponential growth  |
+
+This metric is useful when evaluating simulation regimes during batch experiments.
 
 ---
 
-## **5. Implementation Strategy**
+# 5. Calibration Workflow
 
-1. **Fix** $\text{movement\_cost}$ and $\text{max\_harvest}$ first.
-2. **Measure** the empirical average energy gain ($\Delta E$) during a test run.
-3. **Set** $\text{reproduction\_threshold} = \gamma \times \text{movement\_cost}$.
-4. **Set** $\text{reproduction\_cost} \approx 0.9 \times \text{threshold}$.
-5. **Choose** $p$ (probability of birth) so that $\frac{1}{p}$ is between $0.5 \times T_{\text{energy}}$ and $1.0 \times T_{\text{energy}}$.
-6. **Run and Measure:** Record average lifespan and $R_0$.
-7. **Adjust** only **one** ratio at a time.
+Recommended tuning procedure:
 
-**Would you like me to help you write a small Python snippet or pseudo-code to automate these ratio checks during your simulation's runtime?**
+1. **Fix environmental parameters**
+
+   ```
+   movement_cost
+   max_harvest
+   ```
+
+2. **Run exploratory simulations** to measure average energy gain
+
+3. **Set lifecycle scale**
+
+   ```
+   reproduction_threshold = γ × movement_cost
+   ```
+
+4. **Set reproduction cost**
+
+   ```
+   reproduction_cost ≈ 0.9 × reproduction_threshold
+   ```
+
+5. **Run simulations and measure**
+
+   * lifespan distribution
+   * reproduction frequency
+   * population trajectory
+
+6. **Adjust one ratio at a time**
+
+Maintaining controlled adjustments preserves **experimental interpretability**.
+
+---
+
+# 6. Design Rationale
+
+The ratio-based approach provides several structural advantages:
+
+### Scale Independence
+
+Agent dynamics remain stable across different absolute energy scales.
+
+### Systematic Regime Definition
+
+Different ecological regimes can be created by modifying a small set of ratios.
+
+### Extensibility
+
+Future model expansions (multi-species ecosystems, genetic variation, adaptive behavior) can build upon the same energy framework.
+
+---
+
+# 7. Future Extensions
+
+Possible extensions to the current energy model include:
+
+* **genetic variation in metabolic ratios**
+* **age-dependent energy efficiency**
+* **species-specific parameter sets**
+* **adaptive reproduction strategies**
+* **energy storage constraints**
+
+These extensions allow the system to evolve toward **heterogeneous ecological dynamics** while maintaining the same underlying ratio framework.
+
+---
