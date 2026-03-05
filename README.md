@@ -132,7 +132,6 @@ Population approaches the configured capacity ceiling.
 - [Agent/Energy Notes](docs/canonical_docs/Agent.md)
 
 ### Project status and release
-- [Current Stage Status](docs/Project_Status/CURRENT.md)
 - [Roadmap](docs/Project_Status/ROADMAP.md)
 - [Release Note v0.2](docs/releases/v0.2.md)
 
@@ -157,6 +156,7 @@ Next focus (Stage III / v0.3):
 
 ## Author
 Jules Lowette
+
 
 
 
