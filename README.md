@@ -1,291 +1,163 @@
-# Ecosystem Emergent Behavior Simulator
+﻿# Ecosystem Emergent Behavior Simulator
 
-A deterministic multi-agent simulation engine for studying **emergent ecological dynamics under controlled stochasticity**.
-
+A deterministic multi-agent simulation engine for studying emergent ecological dynamics under controlled stochasticity.
 
 $$S_{t+1} = T(S_t)$$
 
-The simulator treats the environment as a **deterministic state machine with explicit entropy control**, enabling reproducible exploration of stochastic ecological systems.
-
----
-
-# Project Overview
-
-The Ecosystem Engine provides a controlled environment for exploring how population dynamics emerge from simple local interactions such as:
-
+## Overview
+The project models population dynamics from local rules:
 - movement
-- energy consumption
+- energy expenditure
 - resource harvesting
-- reproduction
+- stochastic reproduction
 
-Despite stochastic agent behavior, the engine guarantees **bit-level reproducibility**.
+Despite stochastic events, trajectories are reproducible under fixed `(seed, configuration, code version, runtime)`.
 
-Given identical seed, configuration, and initial state:
+## Core Capabilities
+### Deterministic simulation
+- isolated RNG streams
+- canonical state serialization and SHA256 state hashing
+- snapshot -> clone -> continuation consistency
+- reference-hash regression checks
 
+### Ecological dynamics
+- 1D toroidal world
+- fertility/resource fields with bounded regeneration
+- energy-gated reproduction and death pathways
+- regime-driven behavior (`extinction`, `stable`, `saturated`)
 
-same inputs → identical simulation trajectory → identical state hash
+### Experiment tooling
+- batch runner for multi-run experiments
+- validation contracts per regime
+- aggregate metrics and fingerprint analytics
 
-
-This makes the engine suitable for:
-
-- deterministic simulation research
-- controlled regime experimentation
-- reproducible ecological modeling
-- emergent behavior studies
-
----
-
-# Key Features
-
-### Deterministic Simulation Core
-
-- Explicit RNG stream separation
-- Canonical state serialization
-- SHA256 state hashing
-- Snapshot → clone → continuation equivalence
-
-### Ecological Dynamics
-
-- Energy-driven survival and reproduction
-- Resource fields with regeneration
-- Spatial competition
-- Configurable ecological regimes
-
-### Experiment Infrastructure
-
-- Batch runner for ensemble experiments
-- Regime presets (extinction / stable / saturated)
-- Determinism and invariant validation suites
-- Metrics and fingerprint analytics
-
----
-
-# Quickstart
-
-## Setup
-
+## Quickstart
+### Setup
 ```bash
 git clone https://github.com/jul975/Poject_sim.git
 cd Poject_sim
-
-python -m venv .venv 
+python -m venv .venv
 ```
 
-# Windows
+Activate environment:
+
+Windows:
 ```bash
 .venv\Scripts\activate
 ```
 
-# Linux/macOS
+Linux/macOS:
 ```bash
 source .venv/bin/activate
+```
 
+Install dependencies:
+```bash
 pip install -r requirements.txt
-Running Experiments
+```
 
-Run a default experiment:
-
+### Run experiments
+Default experiment:
+```bash
 python -m engine_build.main --mode experiment --regime stable
 ```
 
-### Custom run:
-
+Custom experiment:
 ```bash
-python -m engine_build.main \
-    --mode experiment \
-    --regime stable \
-    --seed 42 \
-    --runs 10 \
-    --ticks 1000 \
-    --plot
-Parameters
-Parameter	Description
---regime	stable | extinction | saturated
---seed	master RNG seed
---runs	number of runs in batch
---ticks	ticks per run
---plot	show ensemble plots
+python -m engine_build.main --mode experiment --regime stable --seed 42 --runs 10 --ticks 1000 --plot
 ```
 
-Experiment mode is designed for exploration and regime analysis.
-
-### Running Validation
-
-Validate a specific regime:
-
+### Run validation
+Single regime:
 ```bash
 python -m engine_build.main --mode validation --regime stable
-
-Validate all regimes:
-
-python -m engine_build.main --mode validation --regime all
-
 ```
 
-Validation mode:
-
-- uses canonical configurations
-
-- verifies deterministic guarantees
-
-- checks regime-specific invariants
-
-### Determinism Test Suite
-
-Run deterministic system tests:
-
+All regimes:
 ```bash
-python -m engine_build.test.test_determinism --mode dev
+python -m engine_build.main --mode validation --regime all
+```
 
+### Run determinism suite
+```bash
+python -m engine_build.test.test_determinism --mode full
 ```
 
 Modes:
+- `dev`: core determinism + structural invariants
+- `validate`: `dev` + dynamics sanity + RNG isolation
+- `full`: `validate` + reference baseline hash
+- `reference`: print current baseline candidate hash
 
-```bash
-  Mode	    -> Purpose
-  dev	    -> fast core checks
-  validate	-> full deterministic verification
-  full	    -> includes reference state hash checks
-```
+## Regimes
+- `extinction`: collapse-dominant behavior
+- `stable`: bounded population dynamics
+- `saturated`: near-capacity occupancy dynamics
 
-Core tests include:
+## Example Regimes
 
-- same-seed determinism
+The simulator can produce several characteristic ecological regimes depending on parameter configuration.
 
-- snapshot → clone → continuation equivalence
- - seed sensitivity
+### Stable Regime
 
-- structural invariants
+![Stable Regime](docs/images/regime_stable.png)
 
-- RNG stream isolation
+Population fluctuates around a stable equilibrium.
 
-## Architecture (High Level)
+---
 
-The engine is composed of four main subsystems.
-```bash
-Engine
-├── World
-├── Agents
-├── RNG Infrastructure
-└── Analytics / Experiments
-```
+### Extinction Regime
 
-###  Engine
+![Extinction Regime](docs/images/regime_extinction.png)
 
-**Global simulation orchestrator.**
+Energy constraints lead to population collapse.
 
-Responsible for:
-- tick progression
+---
 
-- deterministic update ordering
+### Saturated Regime
 
-- birth/death commit
+![Saturated Regime](docs/images/regime_saturated.png)
 
-- snapshot and state hashing
+Population approaches the configured capacity ceiling.
 
-### World
+## Documentation
+### Canonical technical docs
+- [Architecture](docs/canonical_docs/ARCHITECTURE.md)
+- [Simulation Pipeline](docs/canonical_docs/SIMULATION_PIPELINE.md)
+- [Mathematical Model](docs/canonical_docs/MATHEMATICAL_MODEL.md)
+- [RNG Architecture](docs/canonical_docs/RNG_ARCHITECTURE.md)
+- [Determinism](docs/canonical_docs/DETERMINISM.md)
+- [Configuration](docs/canonical_docs/CONFIGURATION.md)
+- [Experiments and Regime Validation](docs/canonical_docs/EXPERIMENTS.md)
+- [Agent/Energy Notes](docs/canonical_docs/Agent.md)
 
-Environmental state.
+### Project status and release
+- [Current Stage Status](docs/Project_Status/CURRENT.md)
+- [Roadmap](docs/Project_Status/ROADMAP.md)
+- [Release Note v0.2](docs/releases/v0.2.md)
 
-Contains:
+## Current Stage
+Current baseline: **Stage II / beta0.2**.
 
-- resource field
+Implemented focus:
+- deterministic ecological core
+- reproducible validation pipeline
+- canonical regime validation for `extinction`, `stable`, `saturated`
 
-- fertility limits
-
-- regeneration mechanics
-
-- toroidal topology
-
-### Agents
-
-Autonomous entities with independent stochastic behavior.
-
-Each agent owns three RNG streams:
-
-1. movement RNG
-
-2. reproduction RNG
-
-3. energy initialization RNG
-
-### Experiment Pipeline
-
-Supports:
-
-1. batch experiments
-
-2. regime validation
-
-3. metrics aggregation
-
-4. fingerprint analytics
-
-### Ecological Regimes
-
-Three canonical regimes are currently supported.
-
-```bash
-Regime	Behavior
-Extinction   ->   population collapse
-Stable       ->   bounded equilibrium dynamics
-Saturated    ->   population near capacity ceiling
-```
-
-Each regime includes a validation contract to verify expected system behavior.
-
-Documentation
-
-Detailed documentation is located in /docs.
-
-```bash
-Document	              Description
-ARCHITECTURE.md	          System architecture
-DETERMINISM.md	          Determinism guarantees
-MATHEMATICAL_MODEL.md	  Formal model of system dynamics
-SIMULATION_PIPELINE.md	  Execution order of simulation steps
-RNG_ARCHITECTURE.md	      RNG lineage and isolation
-Current                   Status
-```
-
-## Stage II — Controlled Ecological Dynamics
-
-**Implemented:**
-
-- deterministic engine core
-
-- resource-energy coupling
-
-- regime experiment pipeline
-
-- validation and determinism tests
-
-**Next stage:**
-
-## Stage III — Stronger Interaction
-
-**Planned:**
-
-- enhanced spatial competition
-
-- optional 2D topology
-
-- expanded parameter sweep tooling
+Next focus (Stage III / v0.3):
+- explicit interaction and competition mechanics
+- stronger spatial structure
+- validation expansion while preserving determinism guarantees
 
 ## Design Principles
-
-The system follows several core engineering principles.
-
-- Determinism over convenience
-
-- Explicit entropy over hidden randomness
-
-- Formal invariants over assumptions
-
-- Snapshot/replay over ad-hoc scripts
-
-- Validation over visual intuition
+- determinism over convenience
+- explicit entropy over hidden randomness
+- invariants before features
+- reproducibility before optimization
 
 ## Author
-
 Jules Lowette
+
+
+
+

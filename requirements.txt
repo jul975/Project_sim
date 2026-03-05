@@ -1,0 +1,11 @@
+# Core numerical computation
+numpy>=1.26
+
+# Visualization for experiment plots
+matplotlib>=3.8
+
+# Testing framework
+pytest>=8.0
+
+# Optional: convenient CLI / config handling (if used later)
+# click>=8.1
