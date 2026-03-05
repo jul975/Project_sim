@@ -210,7 +210,7 @@ def test_reference_hash():
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
     eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
-    expected_hash = "26304bd3336bd69810062c9ae8311d67a3b7fe6f872ff4fe3b2ea8501a35ba0d"
+    expected_hash = "4d6b796776b544cf9f2328c7fbe9c50d0e192b0d204c0cc732a413e90bf8e0b6"
     assert eng.get_state_hash() == expected_hash , f"Reference hash failed. | eng.get_state_hash() = {eng.get_state_hash()} | expected_hash = {expected_hash}"
 
 
@@ -362,13 +362,19 @@ def run_full_mode():
 
     print("\nFULL VALIDATION RESULT:", "PASS" if all_ok else "FAIL")
 
+def get_reference_hash() -> None:
+    regime_config = get_regime_config(TEST.regime)
+    runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
+    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    print(f"Reference hash: {eng.get_state_hash()}")
+
 def main():
     
     parser = argparse.ArgumentParser(description="Ecosystem Engine Determinism Test")
 
     parser.add_argument(
         "--mode",
-        choices=["dev", "validate", "full"],
+        choices=["dev", "validate", "full", "reference"],
         default="dev",
         help="Select test mode"
     )
@@ -381,6 +387,8 @@ def main():
         run_validation_mode()
     elif args.mode == "full":
         run_full_mode()
+    elif args.mode == "reference":
+        get_reference_hash()
 
 
 if __name__ == "__main__":

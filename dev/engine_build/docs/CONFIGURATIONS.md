@@ -1,229 +1,126 @@
-# Configuration Reference
+﻿# Configuration Reference
 
-This document describes the configurable parameters controlling the behavior of the **Ecosystem Emergent Behavior Simulator**.
+## Purpose
+This document defines all configuration surfaces used by the ecosystem engine and experiment runner.
 
-The simulator is designed so that **all system behavior derives from explicit configuration**, ensuring reproducibility and transparency.
+Determinism depends on:
+- seed
+- configuration values
+- code version
 
----
+## 1. Configuration Model
+Core simulation settings are defined as immutable dataclasses in `core/config.py`:
 
-# Configuration Philosophy
+```text
+SimulationConfig
++- population_config: PopulationConfig
++- world_size: int
++- energy_init_range: tuple[int, int]
++- reproduction_probability: float
++- reproduction_probability_change_condition: float
++- resource_regen_rate: int
++- energy_config: EnergyConfig
++- max_resource_level: int
 
-The configuration system follows three principles:
+PopulationConfig
++- max_agent_count: int
++- initial_agent_count: int
++- max_age: int
 
-1. **Explicit parameters**  
-   All ecological dynamics derive from configuration values.
-
-2. **Dimensionless ratios**  
-   Core energy dynamics are controlled by ratios instead of absolute constants.
-
-3. **Reproducibility**  
-   A simulation is uniquely determined by:
-
-
-        seed + configuration + code version
-
-
----
-
-# Core Configuration Groups
-
-Configuration parameters are grouped into four logical categories:
-
-```bash
-Simulation
-World
-Population
-Energy Dynamics
+EnergyConfig
++- max_harvest: int
++- ratios: EnergyRatios(alpha, beta, gamma)
 ```
 
+All config dataclasses are `frozen=True`.
 
----
+## 2. Default Values (Current)
+### 2.1 `SimulationConfig`
+| Field | Default | Meaning |
+|---|---:|---|
+| `world_size` | `200` | Number of cells in the 1D toroidal world |
+| `energy_init_range` | `(30, 60)` | Spawn energy sampling range, high-exclusive |
+| `reproduction_probability` | `0.25` | Reproduction probability in normal condition |
+| `reproduction_probability_change_condition` | `0.50` | Reproduction probability when `change_condition=True` |
+| `resource_regen_rate` | `2` | Resource regeneration per tick |
+| `max_resource_level` | `80` | Upper bound used for fertility initialization (`[0, 79]`) |
 
-# 1. Simulation Parameters
+### 2.2 `PopulationConfig`
+| Field | Default | Meaning |
+|---|---:|---|
+| `initial_agent_count` | `10` | Population at tick 0 |
+| `max_agent_count` | `1000` | Hard population cap |
+| `max_age` | `200` | Age threshold that marks agents dead |
 
-General parameters controlling experiment execution.
+### 2.3 `EnergyConfig` / `EnergyRatios`
+| Field | Default | Meaning |
+|---|---:|---|
+| `max_harvest` | `5` | Max resources harvestable per agent per tick |
+| `alpha` | `0.6` | Metabolic pressure |
+| `beta` | `0.8` | Reproductive depletion |
+| `gamma` | `10.0` | Energy maturity scale |
 
-| Parameter | Description |
-|----------|-------------|
-| `seed` | Master random seed used to initialize the simulation |
-| `ticks` | Number of simulation steps to execute |
-| `runs` | Number of runs in a batch experiment |
-| `mode` | Execution mode (`experiment` or `validation`) |
+## 3. Derived Runtime Energy Parameters
+At engine construction, `EnergyParams` are derived from ratios:
 
-The seed initializes the **master SeedSequence**, from which all RNG streams derive.
+$$
+\begin{aligned}
+\text{movement\_cost} &= \text{int}(\alpha \cdot \text{max\_harvest}) \\
+\text{reproduction\_threshold} &= \text{int}(\gamma \cdot \text{movement\_cost}) \\
+\text{reproduction\_cost} &= \text{int}(\beta \cdot \text{reproduction\_threshold})
+\end{aligned}
+$$
 
----
+`int(...)` follows Python truncation behavior.
 
-# 2. World Parameters
+## 4. Regime Presets
+Defined in `regimes/registry.py` as `(alpha, beta, gamma)`:
 
-Define the spatial environment and resource dynamics.
+| Regime | alpha | beta | gamma |
+|---|---:|---:|---:|
+| `extinction` | `1.2` | `1.0` | `5` |
+| `stable` | `0.6` | `0.8` | `10` |
+| `saturated` | `0.4` | `0.6` | `6` |
 
-| Parameter | Description |
-|----------|-------------|
-| `world_size` | Number of spatial cells in the environment |
-| `regen_rate` | Resource regeneration per tick |
-| `max_harvest` | Maximum resources an agent can harvest per tick |
-| `fertility_range` | Range used to generate the fertility field |
+`get_regime_config(regime)` builds a `SimulationConfig` by applying these ratios and keeping other defaults.
 
-The world maintains two arrays:
+## 5. Execution-Level Parameters (Runner/CLI)
+These values are not part of `SimulationConfig`, but control experiments and validation.
 
+### 5.1 Seed and batch defaults
+From `execution/default.py`:
+- `DEFAULT_MASTER_SEED = 20250302`
+- `EXPERIMENT_DEFAULTS = {"ticks": 1000, "runs": 10}`
+- `VALIDATION_DEFAULTS = {"ticks": 300, "runs": 2}`
 
-fertility $x$ → maximum resource capacity
-resources $x$ → current resource level
+### 5.2 CLI overrides
+`main.py` supports:
+- `--mode {experiment,validation}`
+- `--regime {extinction,stable,saturated,all}`
+- `--seed` (master seed override)
+- `--runs` and `--ticks` (experiment mode)
+- `--plot` (experiment mode)
 
+In validation mode, canonical validation defaults are used.
 
-Resource update rule:
+## 6. Determinism Notes
+For reproducible runs:
+- keep config immutable during execution
+- use explicit seed input
+- avoid mid-run parameter mutation
+- keep code version fixed
 
+The engine’s canonical state hash and RNG architecture assume this contract.
 
-$$resources[x] = min(fertility[x], resources[x] + regen_rate)$$
-
-
----
-
-# 3. Population Parameters
-
-Define limits on population size and agent lifecycle.
-
-| Parameter | Description |
-|----------|-------------|
-| `initial_agent_count` | Number of agents at simulation start |
-| `max_agent_count` | Maximum allowed population |
-| `spawn_energy_range` | Energy range for newly created agents |
-
-Population cap rule:
-
-
-population ≤ max_agent_count
-
-
-If reproduction would exceed the cap, spawning is suppressed.
-
----
-
-# 4. Energy Dynamics
-
-Energy dynamics govern agent survival and reproduction.
-
-Energy evolves according to:
-
-
-$$ E(t+1) = E(t) - movement_cost + harvest $$
-
-
-Where harvest depends on resource availability.
-
----
-
-# 4.1 Dimensionless Energy Ratios
-
-The engine uses **dimensionless ratios** to derive energy parameters.
-
-| Symbol | Name | Meaning |
-|------|------|---------|
-| α | Metabolic pressure | Energy cost of movement |
-| β | Reproductive depletion | Energy lost during reproduction |
-| γ | Energy maturity scale | Energy required before reproduction |
-
-Derived parameters:
-
-
-$$movement\_cost = α * max\_harvest$$
-$$reproduction\_threshold = γ * movement\_cost$$
-$$reproduction\_cost = β * reproduction\_threshold$$
-
-
-Using ratios instead of absolute constants allows ecological regimes to be tuned while maintaining stability.
-
----
-
-# 5. Ecological Regimes
-
-The simulator includes predefined **regime configurations**.
-
-| Regime | Description |
-|------|-------------|
-| `extinction` | population collapses |
-| `stable` | bounded population equilibrium |
-| `saturated` | population approaches capacity ceiling |
-
-Regimes modify parameters such as:
-
-- regeneration rate
-- energy ratios
-- harvest limits
-
-These presets allow consistent experimentation across known ecological dynamics.
-
----
-
-# 6. Deterministic Constraints
-
-The configuration system must preserve the engine's determinism guarantees.
-
-Key rules:
-
-- configuration objects must be **immutable during a run**
-- parameters must not change mid-simulation
-- random seeds must be defined explicitly
-
-Violation of these rules can break reproducibility.
-
----
-
-# 7. Example Configuration
-
-Example parameter set for a stable regime:
-
+## 7. Minimal Example
 ```python
-world_size = 200
-initial_agent_count = 10
-max_agent_count = 1000
+from engine_build.core.config import SimulationConfig, EnergyConfig, EnergyRatios
 
-regen_rate = 2
-max_harvest = 5
-
-alpha = 0.8
-beta = 0.6
-gamma = 6.0
+cfg = SimulationConfig(
+    energy_config=EnergyConfig(
+        ratios=EnergyRatios(alpha=0.6, beta=0.8, gamma=10.0)
+    )
+)
 ```
-These values create conditions where:
 
-- agents can sustainably harvest resources
-
-- reproduction occurs periodically
-
-- population stabilizes near equilibrium.
-
-# 8. Adding New Parameters
-
-When adding new configuration values:
-
-- Place them in the appropriate category
-
-- Document them in this file
-
-- Ensure they do not violate determinism guarantees
-
-- Update regime presets if necessary
-
-Configuration changes should remain explicit and reproducible.
-
----
-
-# Summary
-
-All simulation behavior derives from configuration parameters governing:
-
-
-    environment
-    population limits
-    energy dynamics
-    random seed initialization
-
-This design ensures the simulator remains:
-
-- reproducible
-
-- transparent
-
-- experimentally controllable
+For predefined regimes, prefer `get_regime_config("stable")`.
