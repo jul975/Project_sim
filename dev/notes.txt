@@ -1,62 +1,77 @@
-bit generator content simplified : 
+﻿Determinism Notes
+=================
 
+Bit Generator State (Simplified)
+--------------------------------
+
+```python
 {
-    'bit_generator': 'PCG64',
-    'state': {
-        'state': 12345678901234567890,
-        'inc': 10987654321098765432
+    "bit_generator": "PCG64",
+    "state": {
+        "state": 12345678901234567890,
+        "inc": 10987654321098765432,
     },
-    'has_uint32': 0,
-    'uinteger': 0
+    "has_uint32": 0,
+    "uinteger": 0,
 }
+```
 
+Do You Have a Determinism-Breaking Bug Right Now?
+--------------------------------------------------
 
-Do you have a determinism-breaking bug right now?
+Not necessarily, if all of the following hold:
+- You never use `master_ss` after initialization.
+- You never call `agent_seed.spawn()` after initialization.
+- Current determinism tests (forward clone + full trajectory) pass.
 
-Not necessarily, if:
+Do You Have a Future Risk?
+--------------------------
 
-you never use master_ss after init,
+Yes.
 
-you never use agent_seed.spawn() after init,
+As soon as you add new streams via `.spawn()` on reconstructed `SeedSequence` objects (`agent_seed`, `master_ss`), the current reconstruction scheme can diverge.
 
-and your current tests (forward clone + full trajectory) are passing.
+Also:
+- `schema v1` may fail to catch environment-level divergence.
 
-Do you have a “future gun to the foot”?
+How to Make This Future-Proof Without Breaking Lineage
+------------------------------------------------------
 
-Yes, absolutely:
+Choose and enforce one invariant strategy.
 
-the moment you add new streams via .spawn() on reconstructed SeedSequences (agent_seed, master_ss), your current reconstruction scheme can produce divergence.
+Option 1: Explicit Lineage Only (Recommended)
+---------------------------------------------
 
-schema v1 may not catch environment divergence.
+Invariant:
+- After initialization, never call `.spawn()` on `SeedSequence` objects that must survive clone/restore.
 
-How to make this future-proof without breaking lineage
+For new streams (for example, combat/weather), derive seeds from stable keys:
 
-You need to choose and enforce one of these invariants:
+```python
+SeedSequence(entropy=agent_entropy, spawn_key=agent_spawn_key + (STREAM_TAG,))
+```
 
-Option 1 — Explicit lineage only (recommended for your plan)
+or:
 
-Invariant: After init, you never call .spawn() on SeedSequences that must survive clone/restore.
+```python
+spawn_key + (STREAM_TAG, stream_index)
+```
 
-For new streams (combat/weather), derive them explicitly from stable keys:
+Rules:
+- Track only explicit counters (for example, `agent_spawn_count`).
+- Include those counters in snapshot/hashing.
+- Treat `agent_seed` as init-only splitter.
+- Treat `master_ss` as init-only.
 
-e.g., SeedSequence(entropy=agent_entropy, spawn_key=agent_spawn_key + (STREAM_TAG,))
+This matches the current mental model.
 
-or spawn_key + (STREAM_TAG, stream_index)
+Option 2: True SeedSequence Continuation
+----------------------------------------
 
-Track only your explicit counters (like agent_spawn_count) and include them in snapshot/hashing later.
+If you want to call `.spawn()` later on `agent_seed` or `master_ss`, you must:
+- Track "children spawned so far" counters yourself.
+- Restore by recreating the `SeedSequence`, then advance it (`spawn(k)` and discard).
+- Include these counters in snapshot state.
 
-Treat agent_seed as an init-only splitter. Treat master_ss as init-only.
-
-This matches your stated mental model.
-
-Option 2 — True SeedSequence continuation
-
-If you want to call .spawn() later on agent_seed or master_ss, then you must:
-
-track “children spawned so far” yourself
-
-restore by recreating the SeedSequence and advancing it (spawn(k) and discard)
-
-and include these counters in snapshot
-
-Your current “append spawn_count to spawn_key” is not that.
+Important:
+- Current "append `spawn_count` to `spawn_key`" is not equivalent to true continuation.
