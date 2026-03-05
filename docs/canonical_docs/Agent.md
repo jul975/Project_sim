@@ -36,9 +36,7 @@ Three key ratios define the biological regime of the system.
 
 ## 2.1 Metabolic Pressure (α)
 
-[
-\alpha = \frac{movement_cost}{max_harvest}
-]
+$$\alpha = \frac{movement\_cost}{max\_harvest}$$
 
 This ratio represents the **baseline difficulty of survival**.
 
@@ -58,9 +56,7 @@ Recommended operating range:
 
 ## 2.2 Reproductive Depletion (β)
 
-[
-\beta = \frac{reproduction_cost}{reproduction_threshold}
-]
+$$\beta = \frac{reproduction\_cost}{reproduction\_threshold}$$
 
 This ratio determines the **post-reproduction recovery cost**.
 
@@ -81,9 +77,9 @@ High β values introduce **natural spacing between births** by forcing agents to
 
 ## 2.3 Energy Maturity Scale (γ)
 
-[
-\gamma = \frac{reproduction_threshold}{movement_cost}
-]
+
+$$\gamma = \frac{reproduction\_threshold}{movement\_cost}$$
+
 
 This ratio determines the **energy accumulation period required for reproduction**.
 
@@ -173,9 +169,7 @@ This determines the **typical reproductive cycle length**.
 
 Population stability can be approximated using the **basic reproduction number**.
 
-[
-R_0 = L \times R
-]
+$$R_0 = L \times R$$
 
 Where:
 
