@@ -4,6 +4,7 @@
 from engine_build.experiments.run_experiment import run_experiment_mode
 from engine_build.test.validation import run_validation_mode, validate_all_regimes
 
+from engine_build.experiments.fertility_dist_plot import run_and_plot_population_dynamics
 import argparse
 
 
@@ -54,6 +55,11 @@ def parse_args():
         action="store_true",
         help="Plot development figures (verbose)"
     )
+    parser.add_argument(
+        "--fertility",
+        action="store_true",
+        help="Run fertility experiment"
+    )
 
     return parser.parse_args()
 
@@ -68,6 +74,9 @@ def main():
             validate_all_regimes(args)
         else:
             run_validation_mode(args)
+            
+    elif args.fertility:
+        run_and_plot_population_dynamics()
 
     elif args.mode == "experiment":
         if args.regime == "all":

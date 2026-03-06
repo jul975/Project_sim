@@ -52,12 +52,25 @@ class PopulationConfig:
     max_age: int = 200
 
 
+#PL 
+# ρ_L = k / W
+# k = ρ_L * W
+# 0.03
+# 0.055
+# 0.1
+@dataclass(frozen=True)
+class FertilityConfig:
+    fertility_correlation_ratio: float = 0.055
+    fertility_floor_ratio: float = 0.0
+    fertility_contrast_ratio: float = 1.0
 
 
 @dataclass(frozen=True)
 class SimulationConfig:
     population_config: PopulationConfig = field(default_factory=PopulationConfig)
     world_size: int = 200
+
+    fertility_config: FertilityConfig = field(default_factory=FertilityConfig)
 
     energy_init_range: tuple[int, int] = (30, 60)
 
@@ -90,6 +103,12 @@ class SimulationConfig:
                 max_harvest=ec_dict.get("max_harvest", EnergyConfig().max_harvest),
                 ratios=ratios
             )
+        
+        # rebuild fertility_config
+        fc_dict = outer.get("fertility_config")
+        if isinstance(fc_dict, dict):
+            outer["fertility_config"] = FertilityConfig(**fc_dict)
+        
 
         return cls(**outer)
 

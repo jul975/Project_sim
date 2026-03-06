@@ -17,6 +17,21 @@ K(x)=fertility[x]
 
 """
 
+"""
+Fertility Smoothing: Landscape Correlation Ratio
+
+The core idea is defined by the following relationship:
+
+$$\rho_L = \frac{k}{W}$$
+
+Where:
+* k  = Kernel size
+* W  = World size
+* \rho_L = Landscape correlation ratio
+
+This ratio determines the spatial influence of fertility across the environment.
+"""
+
 
 
 class World:
@@ -29,11 +44,42 @@ class World:
         self.rng_world = np.random.default_rng(world_seed)
 
         # need to cleanup type hints, 
-        self.fertility = self.rng_world.integers(0, config.max_resource_level, self.world_size) # NOTE: => scalar field 
+        self.fertility = self._generate_fertility_fields()
         self.resources = self.fertility.copy()
         self.resource_regen_rate = config.resource_regen_rate
 
         self.max_harvest = config.energy_config.max_harvest
+
+
+
+
+
+    def _generate_fertility_fields(self) -> np.ndarray:
+        """ generates fertility fields for the world. random noise → smooth fertility landscape. """
+        raw_kernel = self.config.fertility_config.fertility_correlation_ratio * self.world_size
+        kernel_size = max(3, int(round(raw_kernel)))
+
+        if kernel_size % 2 == 0:
+            kernel_size += 1
+
+        # averaging kernel for spatial smoothing
+        kernel = np.ones(kernel_size) / kernel_size
+
+        noise = self.rng_world.random(self.world_size) # => range [0, 1)
+
+        # NOTE: 
+            #   -   np.convolve() => out of bounds handling?
+            #   Cells near index 0 and world_size-1 do not interact. index 0 - index n discontinuous. fix later
+        smooth = np.convolve(
+            noise, 
+            kernel, 
+            mode='same'
+        )
+        fertility = (smooth * self.config.max_resource_level).astype(np.int64)
+        
+        return fertility
+
+
 
 
 
@@ -155,8 +201,8 @@ class World:
                             continue
 
                 agent.age_agent()
-                
-        return reproducing_agents, pending_death, 
+
+        return reproducing_agents, pending_death
     
     
     
