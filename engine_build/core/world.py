@@ -42,7 +42,7 @@ class World:
         self.world_width = config.world_width
         self.world_height = config.world_height
 
-        self.world_area = np.ndarray[self.world_width, self.world_height]
+        # self.world_area = 
         
         self.change_condition = change_condition
         self.config = config
@@ -63,7 +63,7 @@ class World:
 
     def _generate_fertility_fields(self) -> np.ndarray:
         """ generates fertility fields for the world. random noise → smooth fertility landscape. """
-        raw_kernel = self.config.fertility_config.fertility_correlation_ratio * self.world_size
+        raw_kernel = self.config.fertility_config.fertility_correlation_ratio * self.world_width
         kernel_size = max(3, int(round(raw_kernel)))
 
         if kernel_size % 2 == 0:
