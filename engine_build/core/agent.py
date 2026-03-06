@@ -88,9 +88,10 @@ class Agent:
         self.energy_rng = np.random.default_rng(self.energy_ss)
 
 # NOTE: 
-    # need to change created agent spam logic NOW, wil be spread to much.  
-        # initialize position
-        self.position : np.int64 = self.move_rng.integers(0, engine.world_size)
+    
+        # CAVE: upper bound exclusive but size == 16, total range [0, 15]
+        # not rng consumption
+        self.position : tuple[np.int64, np.int64] = tuple(self.move_rng.integers(0, engine.config.world_width, size=2) )
         self.alive : bool = True
 
         
@@ -100,6 +101,9 @@ class Agent:
 
         # idea is that this would create a 1% chance of reproducing per tick.
         self.p = engine.config.reproduction_probability if not engine.world.change_condition else engine.config.reproduction_probability_change_condition
+
+
+
 
     def reproduce(self) -> np.random.SeedSequence:
         # I'm returning the child seed in order to maintain sep of consernce. reproduction should be a method of the engine. (for now)

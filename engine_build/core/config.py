@@ -69,8 +69,22 @@ class FertilityConfig:
 @dataclass(frozen=True)
 class SimulationConfig:
     population_config: PopulationConfig = field(default_factory=PopulationConfig)
-    world_size: int = 200
+    world_size: int = 256
+    
+    # future proving 
+    def __post_init__(self):
+        side = int(np.sqrt(self.world_size))
+        if side * side != self.world_size:
+            raise ValueError("world_size must be a perfect square")
 
+    @property
+    def world_width(self) -> int:
+        return int(np.sqrt(self.world_size))
+
+    @property
+    def world_height(self) -> int:
+        return int(np.sqrt(self.world_size))
+    
     fertility_config: FertilityConfig = field(default_factory=FertilityConfig)
 
     energy_init_range: tuple[int, int] = (30, 60)

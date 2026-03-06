@@ -87,13 +87,21 @@ class Engine:
 
         return {i : Agent(self, i, agent_seeds[i]) for i in range(agent_count)}
     
+    # NOTE: temp 
+    def check_initial_population_spread(self) -> None:
+        density = np.zeros((self.config.world_height, self.config.world_width))
+
+        for agent in self.agents.values():
+            x, y = agent.position
+            density[y, x] += 1
+    
 
     ## NOTE:
     ## config -> engine -> subsystem delegation
 
     @property
-    def world_size(self) -> np.int64:
-        return self.config.world_size
+    def get_world_size(self) -> np.int64:
+        return self.config.world_width
     
     @property
     def max_resource_level(self) -> np.int64:

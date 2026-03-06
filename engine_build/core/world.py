@@ -38,6 +38,12 @@ class World:
     def __init__(self, world_seed : np.int64 ,config : SimulationConfig, change_condition=False) -> None:   
         self.tick : np.int64 = 0
         self.world_size = config.world_size
+
+        self.world_width = config.world_width
+        self.world_height = config.world_height
+
+        self.world_area = np.ndarray[self.world_width, self.world_height]
+        
         self.change_condition = change_condition
         self.config = config
 
@@ -49,7 +55,8 @@ class World:
         self.resource_regen_rate = config.resource_regen_rate
 
         self.max_harvest = config.energy_config.max_harvest
-
+    
+ 
 
 
 
