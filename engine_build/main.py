@@ -49,6 +49,11 @@ def parse_args():
         action="store_true",
         help="Plot batch population dynamics (experiment only)"
     )
+    parser.add_argument(
+        "--plot_dev",
+        action="store_true",
+        help="Plot development figures (verbose)"
+    )
 
     return parser.parse_args()
 

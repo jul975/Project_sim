@@ -165,7 +165,12 @@ class Engine:
             return NotImplemented
         
         return self.get_state_hash() == other.get_state_hash()
-
+        """        pending_death: dict[str: [Agent]] = {
+            "old_age" : DeathBucket(),
+            "metabolic_starvation" : DeathBucket(),
+            "post_harvest_starvation" : DeathBucket(),
+            "post_reproduction_death" : DeathBucket()
+            }"""
 
 
 
@@ -174,11 +179,9 @@ class Engine:
             After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
         
 
-        pending_death: dict[str: [Agent]] = {
+        pending_agent_iteration_death: dict[str: [DeathBucket]] = {
             "old_age" : DeathBucket(),
-            "metabolic_starvation" : DeathBucket(),
-            "post_harvest_starvation" : DeathBucket(),
-            "post_reproduction_death" : DeathBucket()
+            "metabolic_starvation" : DeathBucket()
             }
         
         reproducing_agents: list[Agent] = []
@@ -201,43 +204,80 @@ class Engine:
 
             - CAVE: ORDERING OF DEATH AND BIRTH IS IMPORTANT! 
                     => RIGHT NOW, DEATH OCCURS BEFORE BIRTH. !!!!!!!
+
+        
         
                     
             - CAVE: need to formulate engine stepping logic cleary in order to not introduce hidden sources of non-determinism.
         '''
+            # M: move agents
+            # H: world.resolve_harvest()
+            # R: world.resolve_reproduction()
+            # G: world.resolve_agent_aging()
+            # Π: commit births/deaths
+
+        occupied_positions : dict[np.int64, list[Agent]] = {}
+
+
         for agent_id, agent in sorted_agents:
             # A
             # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
             if not agent.alive:
-                pending_death["old_age"].count += 1
-                pending_death["old_age"].agents.append(agent_id)
+                pending_agent_iteration_death["old_age"].count += 1
+                pending_agent_iteration_death["old_age"].agents.append(agent_id)
                 continue
             # M
             if not agent.move_agent():
-                pending_death["metabolic_starvation"].count += 1
-                pending_death["metabolic_starvation"].agents.append(agent_id)
+                pending_agent_iteration_death["metabolic_starvation"].count += 1
+                pending_agent_iteration_death["metabolic_starvation"].agents.append(agent_id)
                 continue
-                
-
-            # H
-            if not agent.harvest_resources():
-                pending_death["post_harvest_starvation"].count += 1
-                pending_death["post_harvest_starvation"].agents.append(agent_id)
-                continue
-            # spends energy and moves to new position.
-            # potentially reproduces, store that
-
-            # R
-            if agent.can_reproduce():
-                if agent.does_reproduce():
-                    reproducing_agents.append(agent)
-                    if agent.energy_level <= 0:
-                        pending_death["post_reproduction_death"].count += 1
-                        pending_death["post_reproduction_death"].agents.append(agent_id)
-                        continue
-            agent.step()
-
             
+            # move agents to positional dict 
+            # NOTE: 
+                # as agents get added by a sorted itererative process, order is preserved. 
+                # However, this has to accounted for in the future by a check, as it can lead to hidden non-determinism even if stable for now
+            if agent.position in occupied_positions:
+                occupied_positions[agent.position].append(agent)
+            else:
+                occupied_positions[agent.position] = [agent]
+
+        occupied_cells = len(occupied_positions)
+        moved_surviving_agents  = sum(len(v) for v in occupied_positions.values())
+        mean_occupancy = (moved_surviving_agents  / len(occupied_positions)) if occupied_positions else 0
+        max_occupancy = max(len(v) for v in occupied_positions.values()) if occupied_positions else 0
+        ratio_t = max_occupancy / mean_occupancy if mean_occupancy > 0 else 0
+
+        occupancy_metrics = {
+            "occupied_cells" : occupied_cells,
+            "mean_occupancy" : mean_occupancy,
+            "max_occupancy" : max_occupancy,
+            "ratio_t" : ratio_t
+        }
+        
+        
+        reproducing_agents, pending_world_death = self.world.resolve_harvest_world(occupied_positions)
+        pending_death = pending_agent_iteration_death | pending_world_death
+        
+            
+            # agent_step gets called in world.harvest_world
+
+        """NOTE:
+            1) Mutation is localised
+
+                World → resources mutate
+                Agent → energy mutates
+                Engine → population mutates
+
+            2) Commit still happens only at engine level
+
+                Births/deaths are still pending collections, not immediate structural mutations.
+
+            3) Ordering is explicit
+
+                Move → Harvest → Reproduce → Age → Commit
+                So should ensure architectural stability.
+                
+                """
             
         
             
@@ -255,6 +295,8 @@ class Engine:
         effective_population = len(self.agents) - deaths_this_tick 
         available_capacity = self.config.population_config.max_agent_count - effective_population
         reproducers_to_commit = reproducing_agents[:available_capacity]
+
+        
        
        
        
@@ -287,7 +329,7 @@ class Engine:
 
         # metrics return 
         
-        return len(reproducers_to_commit), deaths_this_tick, pending_death
+        return len(reproducers_to_commit), deaths_this_tick, pending_death, occupancy_metrics
 
 
 

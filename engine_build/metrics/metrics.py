@@ -84,6 +84,7 @@ class SimulationMetrics:
         self.mean_energy : list[np.float64] = []
         self.births : list[np.float64] = []
         self.deaths : list[np.float64] = []
+        self.occupancy_metrics : list[dict[str, np.float64]] = []
         self.death_causes : dict[str, list[np.int64]] = {
             "old_age" : [],
             "metabolic_starvation" : [],
@@ -92,7 +93,12 @@ class SimulationMetrics:
         }
 
     # NOTE: introduce step container to containerize metrics for each step, not now but soon
-    def record(self, engine : "Engine", births_this_tick : np.int64 = 0, deaths_this_tick : np.int64 = 0, pending_death : dict[str, 'DeathBucket'] | None = None) -> None:
+    def record(self, 
+               engine : "Engine", 
+               births_this_tick : np.int64 = 0, 
+               deaths_this_tick : np.int64 = 0, 
+               pending_death : dict[str, 'DeathBucket'] | None = None,
+               occupancy_metrics : dict[str, np.float64] | None = None) -> None:
         """ records metrics for a given engine state. """
         """ NOTE: 
                 -   as of now I'm using 4 lists to store the metrics, need to make sure that no ticks are missed. 
@@ -119,7 +125,9 @@ class SimulationMetrics:
         
         for cause, bucket in pending_death.items():
             self.death_causes[cause].append(bucket.count)
-
+        
+        self.occupancy_metrics.append(occupancy_metrics)
+        
 
 
 

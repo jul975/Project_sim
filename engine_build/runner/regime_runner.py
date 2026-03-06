@@ -92,8 +92,8 @@ class BatchRunner:
         eng = Engine(seed, self.regime_config)
         metrics = SimulationMetrics()
         for _ in range(ticks):
-            births_this_tick, deaths_this_tick, pending_death = eng.step()
-            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+            births_this_tick, deaths_this_tick, pending_death, occupancy_metrics = eng.step()
+            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death, occupancy_metrics)
 
         return eng, metrics
     

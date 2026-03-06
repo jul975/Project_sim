@@ -114,13 +114,9 @@ class Agent:
         self.agent_spawn_count += 1
         return child_seed
 
-    def harvest_resources(self) -> bool:
+    def harvest_resources(self, harvest : np.int64) -> None:
         """ harvests resources from current position. """
-        harvested_resources = self.engine.world.harvest(self.position)
-        if harvested_resources:
-            self.energy_level += harvested_resources
-            ## value harvested is internal agent state, no need to return anything.
-        return True if self.energy_level > 0 else False
+        self.energy_level += harvest
 
 
 
@@ -194,7 +190,7 @@ class Agent:
             return False
          
 
-    def step(self) -> None:
+    def age_agent(self) -> None:
         
         
 

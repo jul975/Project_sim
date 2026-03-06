@@ -1,6 +1,9 @@
 import numpy as np
 from .config import SimulationConfig
 from .rng_utils import reconstruct_rng
+from .agent import Agent
+
+from .config import DeathBucket
 """
 NOTE: 
 => topological helpers, 
@@ -35,22 +38,34 @@ class World:
 
 
 
-    def harvest(self, position : np.int64) -> np.int64 | bool:
-        """ harvests resources from a given position. """
-        """ NOTE: as harvest is agent based, the return value should either be an int representing the harvested quantity or False:
-                            
-                                   => if available resource at postion is falsy, return False
-                                      -> will not modify streams and easy to handle in agent logic.
-        """
+    def harvest(self, agents : list[Agent], position : np.int64) -> np.int64:
+        """ harvests resources from a given cell, deterministically. """
+        
        
         available_resources = self.resources[position]
-        
-        # NOTE: 
-        # => future implementation with dynamic harvest values, right now keeping it simple
-        harvest = min(available_resources, self.max_harvest)
-        # self.resources[position] -= harvest
+        if available_resources <= 0:
+            return 0
+        agents = sorted(agents, key=lambda a: a.id)
+
+        n_agents = len(agents)
+        total_demand = n_agents * self.max_harvest
+        harvest = min(available_resources, total_demand)
+
+        base_agent_harvest = harvest // n_agents
+        remaining_harvest = harvest % n_agents
+
+        for i, agent in enumerate(agents):
+            # distribute remainder deterministically while conserving energy
+            agent_harvest = base_agent_harvest + 1 if i < remaining_harvest else base_agent_harvest
+            # note, removes explicit agent method, 
+            agent.harvest_resources(agent_harvest)
+
         self.resources[position] -= harvest
         return harvest
+
+
+        
+        
         
 
     def regrow_resources(self) -> None:
@@ -89,4 +104,60 @@ class World:
         clone_world.world_size = world_snapshot["world_size"]
         return clone_world
     
+
+            # NOTE: 
+                # future: will prop need to sep resolve_harvest into diff sub steps.
+                # right now, this is the cleanest step, despite seeming bloated.
+                # => Need more logic in order to structure it properly. will create problems if i do it now
     
+            # M: move agents
+            # H: world.resolve_harvest()
+            # R: world.resolve_reproduction()
+            # G: world.resolve_agent_aging()
+            # Π: commit births/deaths
+        """
+        | Mean occupancy | Meaning               |
+        | -------------- | --------------------- |
+        | ≈ 1            | agents evenly spread  |
+        | 2-3            | moderate clustering   |
+        | 4-6            | strong clustering     |
+        | >6             | severe local pressure |
+        """
+
+    
+    def resolve_harvest_world(self, occupied_positions : dict[np.int64, list[Agent]]) -> None:
+
+        pending_death: dict[str: DeathBucket] = {
+            "post_harvest_starvation" : DeathBucket(),
+            "post_reproduction_death" : DeathBucket()
+            }
+        
+        reproducing_agents: list[Agent] = []
+
+        for position, agents in occupied_positions.items():
+
+            harvest = self.harvest(agents, position)
+            if harvest <= 0:
+                for agent in agents:
+                    if agent.energy_level <= 0:
+                        pending_death["post_harvest_starvation"].count += 1
+                        pending_death["post_harvest_starvation"].agents.append(agent.id)
+                        continue
+
+                # R
+            for agent in agents:
+                if agent.can_reproduce():
+                    if agent.does_reproduce():
+                        reproducing_agents.append(agent)
+                        if agent.energy_level <= 0:
+                            pending_death["post_reproduction_death"].count += 1
+                            pending_death["post_reproduction_death"].agents.append(agent.id)
+                            continue
+
+                agent.age_agent()
+                
+        return reproducing_agents, pending_death, 
+    
+    
+    
+
