@@ -58,6 +58,7 @@ class PopulationConfig:
 # 0.03
 # 0.055
 # 0.1
+# NOTE: move to regime config => clearer
 @dataclass(frozen=True)
 class FertilityConfig:
     fertility_correlation_ratio: float = 0.055
