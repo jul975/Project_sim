@@ -89,7 +89,7 @@ class Agent:
 
 # NOTE: 
     
-        # CAVE: upper bound exclusive but size == 16, total range [0, 15]
+        # CAVE: upper bound exclusive but range is [0, world_width - 1] and [0, world_height - 1]) => ok
         # not rng consumption
         self.position : tuple[np.int64, np.int64] = tuple(self.move_rng.integers(0, engine.config.world_width, size=2) )
         self.alive : bool = True
@@ -172,7 +172,14 @@ class Agent:
     def move_agent(self) -> bool:
         # M, if energy <= 0, agent dies of metabolic starvation.
         self.energy_level -= self.engine.energy_params.movement_cost     
-        self.position += self.move_rng.choice([-1, 1])
+        moves = np.array([(-1, 0), (1, 0), (0, -1), (0, 1)])
+        dx, dy = moves[self.move_rng.integers(0, 4)]
+        
+        x, y = self.position
+
+        self.position = (x + dx, y + dy)
+
+
         self.position = self.engine.world.wrap_around(self.position)
 
         if self.energy_level <= 0:

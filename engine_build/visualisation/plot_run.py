@@ -1,6 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
+
+
 from engine_build.metrics.metrics import SimulationMetrics
+from engine_build.core.engineP4 import Engine
+from engine_build.runner.regime_runner import BatchRunner
+from engine_build.regimes.registry import get_regime_config
+
 
 
 def plot_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
@@ -70,5 +76,63 @@ def plot_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
     plt.show()
 
 
+
+def plot_world_state() -> None:
+    """
+    Visualize the spatial state of the world.
+
+    Produces three heatmaps:
+        1) Fertility landscape
+        2) Current resource levels
+        3) Agent spatial density
+    """
+    regime_config = get_regime_config("stable")
+
+    runner = BatchRunner(regime_config, n_runs=1, ticks=1000, batch_id=42)
+    eng, _ = runner.run_single(runner.run_seeds[0], 1000)
+    world = eng.world
+
+    fertility = world.fertility
+    resources = world.resources
+
+    height, width = fertility.shape
+
+    # --------------------------------------------------
+    # Build agent density map
+    # --------------------------------------------------
+    density = np.zeros((height, width))
+
+    for agent in eng.agents.values():
+        x, y = agent.position
+        density[y, x] += 1
+
+    # --------------------------------------------------
+    # Plot heatmaps
+    # --------------------------------------------------
+    fig, axes = plt.subplots(1, 3, figsize=(15, 5))
+
+    # Fertility
+    im0 = axes[0].imshow(fertility, vmin=0, vmax=eng.config.max_resource_level)
+    axes[0].set_title("Fertility Field")
+    plt.colorbar(im0, ax=axes[0], fraction=0.046)
+
+    # Resources
+    im1 = axes[1].imshow(resources)
+    axes[1].set_title("Current Resources")
+    plt.colorbar(im1, ax=axes[1], fraction=0.046)
+
+    # Agent density
+    im2 = axes[2].imshow(density)
+    axes[2].set_title(f"Agent Density | {eng.get_agent_count()} agents")
+    plt.colorbar(im2, ax=axes[2], fraction=0.046)
+
+    for ax in axes:
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    plt.tight_layout()
+    plt.show()
+
 if __name__ == "__main__":
+    plot_world_state()
     pass

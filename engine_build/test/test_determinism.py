@@ -117,7 +117,7 @@ def test_spatial_invariants():
     eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     for agent in eng.agents.values():
-        assert 0 <= agent.position < eng.world_size , f"Agent position out of bounds. | agent.position = {agent.position} | eng.world_size = {eng.world_size}"
+        assert 0 <= agent.position[0] < eng.config.world_width and 0 <= agent.position[1] < eng.config.world_height , f"Agent position out of bounds. | agent.position = {agent.position} | eng.config.world_width = {eng.config.world_width} | eng.config.world_height = {eng.config.world_height}"
 
 
 def test_resource_bounds():

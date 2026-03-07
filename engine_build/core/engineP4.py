@@ -78,7 +78,7 @@ class Engine:
         assert len(self.agents) <= self.config.population_config.max_agent_count, "Agent count exceeds max_agent_count"
         for agent_id, agent in self.agents.items():
             assert agent_id == agent.id, "Agent id does not match dict key"
-            assert 0 <= agent.position < self.config.world_size, "Agent position out of bounds"
+            assert 0 <= agent.position[0] < self.config.world_width and 0 <= agent.position[1] < self.config.world_height, "Agent position out of bounds"
         
         
 
@@ -99,9 +99,7 @@ class Engine:
     ## NOTE:
     ## config -> engine -> subsystem delegation
 
-    @property
-    def get_world_size(self) -> np.int64:
-        return self.config.world_width
+
     
     @property
     def max_resource_level(self) -> np.int64:
@@ -224,7 +222,7 @@ class Engine:
             # G: world.resolve_agent_aging()
             # Π: commit births/deaths
 
-        occupied_positions : dict[np.int64, list[Agent]] = {}
+        occupied_positions : dict[tuple[np.int64, np.int64], list[Agent]] = {}
 
 
         for agent_id, agent in sorted_agents:
@@ -263,8 +261,8 @@ class Engine:
         }
         
         
-        reproducing_agents, pending_world_death = self.world.resolve_harvest_world(occupied_positions)
-        pending_death = pending_agent_iteration_death | pending_world_death
+        reproducing_agents , pending_world_death = self.world.resolve_harvest_world(occupied_positions)
+        pending_death : dict[str, DeathBucket] = pending_agent_iteration_death | pending_world_death
         
             
             # agent_step gets called in world.harvest_world
@@ -369,7 +367,9 @@ class Engine:
             "world" : {
                 "tick" : self.world.tick,
                 "change_condition" : self.world.change_condition,
-                "world_size" : self.world.world_size,
+                "world_width" : self.world.world_width,
+                "world_height" : self.world.world_height,
+
 
                 "rng_world": self.world.rng_world.bit_generator.state,
 
@@ -387,7 +387,7 @@ class Engine:
 
         
 
-    def get_agent_snapshot(self, agent) -> dict:
+    def get_agent_snapshot(self, agent : Agent) -> dict:
         return {
             "id" : agent.id, 
             "agent_spawn_count" : agent.agent_spawn_count,

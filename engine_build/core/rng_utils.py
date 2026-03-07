@@ -7,11 +7,14 @@ import struct
 
 
 # helpers 
-def set_int64(x, signed=False):
+def set_int64(x, signed=False) -> bytes:
     # position can be negative so use signed=True
     return int(x).to_bytes(8, 'big', signed=signed)
 
-def set_uint8(x):
+def set_int64_pair(x, y, signed=False) -> bytes:
+    return set_int64(x, signed=signed) + set_int64(y, signed=signed)
+
+def set_uint8(x) -> bytes:
     return int(x).to_bytes(1, 'big', signed=False)
 
 

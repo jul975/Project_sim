@@ -1,7 +1,7 @@
 
 
 
-from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key, serialize_rule_environment
+from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key, serialize_rule_environment , set_int64_pair
 
 
 
@@ -37,7 +37,7 @@ SCHEMA_VERSION = 2
 
 
 
-def get_state_bytes(engine) -> bytes:
+def get_state_bytes(engine ) -> bytes:
     if SCHEMA_VERSION == 1:
         return _schema_v1(engine)
     elif SCHEMA_VERSION == 2:
@@ -56,7 +56,9 @@ Engine:
   max_age
 
 World:
-  world_size
+  
+  world_width
+  world_height
   max_harvest
   resource_regen_rate
   resources[]
@@ -79,7 +81,7 @@ Agents (sorted by id):
 
 """
 
-def _schema_v2(engine) -> bytes:
+def _schema_v2(engine ) -> bytes:
     # tick, agent_count, agent: id, position, energy, alive
     buffer = bytearray()
 
@@ -98,7 +100,8 @@ def _schema_v2(engine) -> bytes:
     buffer += serialize_rule_environment(engine)
 
     # World
-    buffer += set_int64(engine.world.world_size)
+    buffer += set_int64(engine.config.world_width)
+    buffer += set_int64(engine.config.world_height)
     buffer += set_int64(engine.world.max_harvest)
     buffer += set_int64(engine.world.resource_regen_rate)
 
@@ -117,7 +120,7 @@ def _schema_v2(engine) -> bytes:
 
         buffer += set_int64(agent.id)
         # position can be negative so use signed=True
-        buffer += set_int64(agent.position, signed=True)
+        buffer += set_int64_pair(agent.position[0], agent.position[1])
         buffer += set_int64(agent.energy_level)
         buffer += set_int64(agent.age)
         buffer += set_uint8(int(agent.alive))

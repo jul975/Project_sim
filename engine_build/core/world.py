@@ -54,6 +54,8 @@ class World:
         self.resources = self.fertility.copy()
         self.resource_regen_rate = config.resource_regen_rate
 
+
+
         self.max_harvest = config.energy_config.max_harvest
     
  
@@ -75,39 +77,43 @@ class World:
         #        ↓
         # scaled fertility 20×20 field
 
-        # 
-        raw_kernel : np.float64  = self.config.fertility_config.fertility_correlation_ratio * self.world_width
-        # Forcing the kernel to be at least 3 wide and always odd, this will create a clear center unit, helps prevent shifts of data during operations.
-        kernel_size : np.int64 = max(3, int(round(raw_kernel)))
+            # 
+        raw_kernel = (
+            self.config.fertility_config.fertility_correlation_ratio
+            * self.world_width
+        )
+
+        kernel_size = max(3, int(round(raw_kernel)))
 
         if kernel_size % 2 == 0:
             kernel_size += 1
 
-        # averaging kernel for spatial smoothing
-        # creates array of len kernel_size, with all values = 1 
-        kernel : np.ndarray = np.ones(kernel_size) / kernel_size
+        radius = kernel_size // 2
 
-        # generate random noise, ie raw chaos
-        # cave order of inputs h - w
-        noise : np.ndarray = self.rng_world.random(self.world_height, self.world_width) # => range [0, 1)
+        # random 2D noise
+        noise = self.rng_world.random((self.world_height, self.world_width))
 
-        # NOTE: 
-            #   -   np.convolve() => out of bounds handling?
-            #   Cells near index 0 and world_size-1 do not interact. index 0 - index n discontinuous. fix later
+        smooth = np.zeros_like(noise)
 
-            # kernel slide across noise, creating smooth noise.
+        for y in range(self.world_height):
+            for x in range(self.world_width):
 
-        # smooth[y, x] = average of the 3×3 block centered on (y, x)
-        # => (9,9)   (10,9)   (11,9)
-        #    (9,10)  (10,10)  (11,10)
-        #    (9,11)  (10,11)  (11,11)
-        smooth = np.convolve(
-            noise, 
-            kernel, 
-            mode='same'
-        )
+                total = 0.0
+                count = 0
+
+                for dy in range(-radius, radius + 1):
+                    for dx in range(-radius, radius + 1):
+
+                        ny = (y + dy) % self.world_height
+                        nx = (x + dx) % self.world_width
+
+                        total += noise[ny, nx]
+                        count += 1
+
+                smooth[y, x] = total / count
+
         fertility = (smooth * self.config.max_resource_level).astype(np.int64)
-        
+
         return fertility
 
 
@@ -115,11 +121,12 @@ class World:
 
 
 
-    def harvest(self, agents : list[Agent], position : np.int64) -> np.int64:
+    def harvest(self, agents : list[Agent], position : tuple[np.int64, np.int64]) -> np.int64:
         """ harvests resources from a given cell, deterministically. """
         
+        x, y = position
        
-        available_resources = self.resources[position]
+        available_resources = self.resources[y, x]
         if available_resources <= 0:
             return 0
         agents = sorted(agents, key=lambda a: a.id)
@@ -137,7 +144,7 @@ class World:
             # note, removes explicit agent method, 
             agent.harvest_resources(agent_harvest)
 
-        self.resources[position] -= harvest
+        self.resources[y, x] -= harvest
         return harvest
 
 
@@ -159,9 +166,9 @@ class World:
 
 
     # wrap around logic needs to be cleared up 
-    def wrap_around(self, position : np.int64) -> np.int64:
+    def wrap_around(self, position : tuple[np.int64, np.int64]) -> tuple[np.int64, np.int64]:
         """ wraps position around world size. """
-        return position % self.world_size
+        return (position[0] % self.world_width, position[1] % self.world_height)
 
 
     @classmethod
@@ -178,7 +185,10 @@ class World:
 
         clone_world.resource_regen_rate = world_snapshot["resource_regen_rate"]
         clone_world.max_harvest = world_snapshot["max_harvest"]
-        clone_world.world_size = world_snapshot["world_size"]
+        # derive
+        clone_world.world_width = world_snapshot["world_width"]
+        clone_world.world_height = world_snapshot["world_height"]
+        clone_world.world_size = clone_world.world_width * clone_world.world_height
         return clone_world
     
 
@@ -202,7 +212,7 @@ class World:
         """
 
     
-    def resolve_harvest_world(self, occupied_positions : dict[np.int64, list[Agent]]) -> None:
+    def resolve_harvest_world(self, occupied_positions : dict[tuple[np.int64, np.int64], list[Agent]]) -> None:
 
         pending_death: dict[str: DeathBucket] = {
             "post_harvest_starvation" : DeathBucket(),
