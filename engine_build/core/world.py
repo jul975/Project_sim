@@ -63,20 +63,44 @@ class World:
 
     def _generate_fertility_fields(self) -> np.ndarray:
         """ generates fertility fields for the world. random noise → smooth fertility landscape. """
-        raw_kernel = self.config.fertility_config.fertility_correlation_ratio * self.world_width
-        kernel_size = max(3, int(round(raw_kernel)))
+
+        # ρ_L = k / W
+        # k = ρ_L * W
+        # k = ρ_L * sqrt(W)
+        # random 20×20 noise
+        #        ↓
+        # local 3×3 averaging
+        #        ↓
+        # smoothed 20×20 field
+        #        ↓
+        # scaled fertility 20×20 field
+
+        # 
+        raw_kernel : np.float64  = self.config.fertility_config.fertility_correlation_ratio * self.world_width
+        # Forcing the kernel to be at least 3 wide and always odd, this will create a clear center unit, helps prevent shifts of data during operations.
+        kernel_size : np.int64 = max(3, int(round(raw_kernel)))
 
         if kernel_size % 2 == 0:
             kernel_size += 1
 
         # averaging kernel for spatial smoothing
-        kernel = np.ones(kernel_size) / kernel_size
+        # creates array of len kernel_size, with all values = 1 
+        kernel : np.ndarray = np.ones(kernel_size) / kernel_size
 
-        noise = self.rng_world.random(self.world_size) # => range [0, 1)
+        # generate random noise, ie raw chaos
+        # cave order of inputs h - w
+        noise : np.ndarray = self.rng_world.random(self.world_height, self.world_width) # => range [0, 1)
 
         # NOTE: 
             #   -   np.convolve() => out of bounds handling?
             #   Cells near index 0 and world_size-1 do not interact. index 0 - index n discontinuous. fix later
+
+            # kernel slide across noise, creating smooth noise.
+
+        # smooth[y, x] = average of the 3×3 block centered on (y, x)
+        # => (9,9)   (10,9)   (11,9)
+        #    (9,10)  (10,10)  (11,10)
+        #    (9,11)  (10,11)  (11,11)
         smooth = np.convolve(
             noise, 
             kernel, 
