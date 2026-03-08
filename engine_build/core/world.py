@@ -76,7 +76,6 @@ class World:
         # smoothed 20×20 field
         #        ↓
         # scaled fertility 20×20 field
-
             # 
         raw_kernel = (
             self.config.fertility_config.fertility_correlation_ratio
