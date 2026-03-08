@@ -71,8 +71,8 @@ def test_same_seed_determinism():
     regime_config = get_regime_config(TEST.regime)
     runner1 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
     runner2 = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    eng1, _ = runner1.run_single(runner1.run_seeds[0], TEST.ticks_mid)
-    eng2, _ = runner2.run_single(runner2.run_seeds[0], TEST.ticks_mid)
+    eng1, _, _ = runner1.run_single(runner1.run_seeds[0], TEST.ticks_mid)
+    eng2, _, _ = runner2.run_single(runner2.run_seeds[0], TEST.ticks_mid)
     
 
     assert eng1 == eng2 , f"Same seed => different worlds. \n |eng1.get_state_hash() = {eng1.get_state_hash()}\n | eng2.get_state_hash() = {eng2.get_state_hash()}"
@@ -82,7 +82,7 @@ def test_snapshot_equivalence():
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
     # run for a short amount of time to create some variability.
-    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_short)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_short)
 
 
     
@@ -114,7 +114,7 @@ def test_seed_sensitivity():
 def test_spatial_invariants():
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     for agent in eng.agents.values():
         assert 0 <= agent.position[0] < eng.config.world_width and 0 <= agent.position[1] < eng.config.world_height , f"Agent position out of bounds. | agent.position = {agent.position} | eng.config.world_width = {eng.config.world_width} | eng.config.world_height = {eng.config.world_height}"
@@ -123,7 +123,7 @@ def test_spatial_invariants():
 def test_resource_bounds():
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     assert (eng.world.resources >= 0).all() , f"Negative resources found. | eng.world.resources = {eng.world.resources}"
     assert (eng.world.resources <= eng.world.fertility).all() , f"Resources exceed fertility. | eng.world.resources = {eng.world.resources} | eng.world.fertility = {eng.world.fertility}"
@@ -132,7 +132,7 @@ def test_resource_bounds():
 def test_identity_monotonicity():
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
     
     ids = sorted(eng.agents.keys())
     # if there are agents, the highest id should be less than the next_agent_id
@@ -147,7 +147,7 @@ def test_identity_monotonicity():
 def test_population_variability():
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    _, metrics = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    _, metrics, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     assert len(set(metrics.population)) > 1 , f"Population variability failed. | len(set(metrics.population)) = {len(set(metrics.population))} | metrics.population = {metrics.population}"
     assert max(metrics.population) <= regime_config.population_config.max_agent_count , f"Population exceeds max_agent_count. | max(metrics.population) = {max(metrics.population)} | regime_config.population_config.max_agent_count = {regime_config.population_config.max_agent_count}"
@@ -156,7 +156,7 @@ def test_population_variability():
 def test_energy_boundedness():
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     for agent in eng.agents.values():
         assert agent.energy_level >= 0 , f"Negative energy found. | agent.energy_level = {agent.energy_level}"
@@ -208,7 +208,7 @@ def test_movement_rng_isolated_from_reproduction():
 def test_reference_hash():
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
 
     expected_hash = "4d6b796776b544cf9f2328c7fbe9c50d0e192b0d204c0cc732a413e90bf8e0b6"
     assert eng.get_state_hash() == expected_hash , f"Reference hash failed. | eng.get_state_hash() = {eng.get_state_hash()} | expected_hash = {expected_hash}"
@@ -365,7 +365,7 @@ def run_full_mode():
 def get_reference_hash() -> None:
     regime_config = get_regime_config(TEST.regime)
     runner = BatchRunner(regime_config, n_runs=1, ticks=TEST.ticks_mid, batch_id=TEST.seed_ref)
-    eng, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], TEST.ticks_mid)
     print(f"Reference hash: {eng.get_state_hash()}")
 
 def main():
