@@ -11,6 +11,7 @@ from engine_build.metrics.metrics import SimulationMetrics
 import numpy as np
 from dataclasses import dataclass
 from typing import Dict
+from engine_build.metrics.world_frames import WorldFrames
 
 """
 CAVE:
@@ -87,15 +88,19 @@ class BatchRunner:
 
         self.run_seeds = generate_run_sequences(self.batch_id , n_runs)
 
-    def run_single(self, seed : np.random.SeedSequence, ticks : np.int64) -> tuple[Engine, SimulationMetrics]:
+    def run_single(self, seed : np.random.SeedSequence, ticks : np.int64) -> tuple[Engine, SimulationMetrics, WorldFrames]:
     
         eng = Engine(seed, self.regime_config)
         metrics = SimulationMetrics()
-        for _ in range(ticks):
+
+        world_frames = WorldFrames( capture_every=10 if ticks > 100 else 1)
+        for tick in range(ticks):
             births_this_tick, deaths_this_tick, pending_death, occupancy_metrics = eng.step()
             metrics.record(eng, births_this_tick, deaths_this_tick, pending_death, occupancy_metrics)
+            if tick % world_frames.capture_every == 0:
+                world_frames.capture(eng)
 
-        return eng, metrics
+        return eng, metrics, world_frames
     
     def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> tuple[Engine, SimulationMetrics]:
         for _ in range(ticks):

@@ -7,7 +7,7 @@ from engine_build.regimes.registry import get_regime_config
 def run_fertility_experiment():
     regime_config = get_regime_config("stable")
     runner = BatchRunner(regime_config , n_runs=1, ticks=1000, batch_id=42)
-    eng, _ = runner.run_single(runner.run_seeds[0], 100)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], 100)
     return eng
 
 

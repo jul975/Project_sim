@@ -89,7 +89,7 @@ def plot_world_state() -> None:
     regime_config = get_regime_config("stable")
 
     runner = BatchRunner(regime_config, n_runs=1, ticks=1000, batch_id=42)
-    eng, _ = runner.run_single(runner.run_seeds[0], 1000)
+    eng, _, _ = runner.run_single(runner.run_seeds[0], 1000)
     world = eng.world
 
     fertility = world.fertility
