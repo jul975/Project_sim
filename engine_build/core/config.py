@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 """
+
+
 alpha = **Metabolic pressure**
 
 alpha ≈ 0.6 - 0.9
@@ -53,11 +55,11 @@ class PopulationConfig:
 
 
 #PL 
-# ρ_L = k / W
-# k = ρ_L * W
-# 0.03
-# 0.055
-# 0.1
+    # ρ_L = k / W
+    # k = ρ_L * W
+        # 0.03
+        # 0.055
+        # 0.1
 # NOTE: move to regime config => clearer
 @dataclass(frozen=True)
 class FertilityConfig:
@@ -69,7 +71,7 @@ class FertilityConfig:
 @dataclass(frozen=True)
 class SimulationConfig:
     population_config: PopulationConfig = field(default_factory=PopulationConfig)
-    world_size: int = 256
+    world_size: int = 400
     
     # future proving 
     def __post_init__(self):
