@@ -91,16 +91,16 @@ class Agent:
     
         # CAVE: upper bound exclusive but range is [0, world_width - 1] and [0, world_height - 1]) => ok
         # not rng consumption
-        self.position : tuple[np.int64, np.int64] = tuple(self.move_rng.integers(0, engine.config.world_width, size=2) )
+        self.position : tuple[np.int64, np.int64] = tuple(self.move_rng.integers(0, engine.world_params.world_width, size=2) )
         self.alive : bool = True
 
         
-        self.energy_level = self.energy_rng.integers(engine.config.energy_init_range[0], engine.config.energy_init_range[1])
+        self.energy_level = self.energy_rng.integers(engine.energy_params.energy_init_range[0], engine.energy_params.energy_init_range[1])
 
 
 
         # idea is that this would create a 1% chance of reproducing per tick.
-        self.p = engine.config.reproduction_probability if not engine.world.change_condition else engine.config.reproduction_probability_change_condition
+        self.p = engine.reproduction_params.probability if not engine.world.change_condition else engine.config.reproduction_params.probability_change_condition
 
 
 
@@ -164,7 +164,7 @@ class Agent:
         instance.repro_rng = reconstruct_rng(snapshot["repro_rng"])
         instance.energy_rng = reconstruct_rng(snapshot["energy_rng"])
 
-        instance.p = engine.config.reproduction_probability if not engine.world.change_condition else engine.config.reproduction_probability_change_condition
+        instance.p = engine.reproduction_params.probability if not engine.world.change_condition else engine.reproduction_params.probability_change_condition
 
 
         return instance
@@ -211,7 +211,7 @@ class Agent:
         # NOTE: 
         #       -   gonna change >= to > but need to change in documentation first.
         self.age += 1
-        if self.age >= self.engine.max_age:
+        if self.age >= self.engine.population_params.max_age:
             self.alive = False
         
 

@@ -102,3 +102,50 @@ class CompiledRegime:
 
     # metrics
     # → Engine → Metrics
+
+
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "CompiledRegime":
+        outer = dict(d)
+
+        ep = outer.get("energy_params")
+        if isinstance(ep, dict):
+            outer["energy_params"] = EnergyParams(**ep)
+
+        rp = outer.get("resource_params")
+        if isinstance(rp, dict):
+            outer["resource_params"] = ResourceParams(**rp)
+
+        rep = outer.get("reproduction_params")
+        if isinstance(rep, dict):
+            outer["reproduction_params"] = ReproductionParams(**rep)
+
+        lp = outer.get("landscape_params")
+        if isinstance(lp, dict):
+            outer["landscape_params"] = LandscapeParams(**lp)
+
+        pp = outer.get("population_params")
+        if isinstance(pp, dict):
+            outer["population_params"] = PopulationParams(**pp)
+
+        wp = outer.get("world_params")
+        if isinstance(wp, dict):
+            outer["world_params"] = WorldParams(**wp)
+
+        return cls(**outer)
+    
+
+
+
+
+
+'''
+    
+    # future proving 
+    def __post_init__(self):
+        side = int(np.sqrt(self.world_size))
+        if side * side != self.world_size:
+            raise ValueError("world_size must be a perfect square")
+
+'''

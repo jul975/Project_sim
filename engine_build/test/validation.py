@@ -3,7 +3,10 @@ from engine_build.runner.regime_runner import RegimeBatchResults
 from engine_build.execution.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 import numpy as np
 
-from engine_build.regimes.registry import get_regime_config
+
+from engine_build.regimes.registry import get_regime_spec
+from engine_build.regimes.compiler import compile_regime
+
 from engine_build.runner.regime_runner import BatchRunner
 from engine_build.analytics.fingerprint import AggregatedFingerprint
 from dataclasses import fields
@@ -18,7 +21,8 @@ def validate_all_regimes(args):
 
 
 def run_validation_mode(args):
-    regime_config = get_regime_config(args.regime)
+    regime_spec = get_regime_spec(args.regime)
+    regime_config = compile_regime(regime_spec)
     ticks, n_runs = VALIDATION_DEFAULTS["ticks"], VALIDATION_DEFAULTS["runs"]
 
     runner = BatchRunner(

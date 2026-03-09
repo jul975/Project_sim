@@ -1,9 +1,14 @@
 import numpy as np
-from .config import SimulationConfig
 from .rng_utils import reconstruct_rng
 from .agent import Agent
 
-from .config import DeathBucket
+from engine_build.regimes.compiled import CompiledRegime
+
+from .transitions import DeathBucket
+
+
+
+
 """
 NOTE: 
 => topological helpers, 
@@ -35,28 +40,32 @@ This ratio determines the spatial influence of fertility across the environment.
 
 
 class World:
-    def __init__(self, world_seed : np.int64 ,config : SimulationConfig, change_condition=False) -> None:   
+    def __init__(self, world_seed : np.int64 , config : CompiledRegime , change_condition=False) -> None:   
         self.tick : np.int64 = 0
-        self.world_size = config.world_size
 
-        self.world_width = config.world_width
-        self.world_height = config.world_height
+        self.world_params = config.world_params
+        self.resource_params = config.resource_params
+        self.landscape_params = config.landscape_params
 
+        self.world_size = self.world_params.world_width * self.world_params.world_height
+
+        self.world_width = self.world_params.world_width
+        self.world_height = self.world_params.world_height
         # self.world_area = 
         
         self.change_condition = change_condition
-        self.config = config
+        self.world_params = self.world_params
 
         self.rng_world = np.random.default_rng(world_seed)
 
         # need to cleanup type hints, 
         self.fertility = self._generate_fertility_fields()
         self.resources = self.fertility.copy()
-        self.resource_regen_rate = config.resource_regen_rate
+        self.resource_regen_rate = self.resource_params.regen_rate
 
 
 
-        self.max_harvest = config.energy_config.max_harvest
+        self.max_harvest = config.energy_params.max_harvest
     
  
 
@@ -78,7 +87,7 @@ class World:
         # scaled fertility 20×20 field
             # 
         raw_kernel = (
-            self.config.fertility_config.fertility_correlation_ratio
+            self.landscape_params.correlation
             * self.world_width
         )
 
@@ -111,7 +120,7 @@ class World:
 
                 smooth[y, x] = total / count
 
-        fertility = (smooth * self.config.max_resource_level).astype(np.int64)
+        fertility = (smooth * self.resource_params.max_resource_level).astype(np.int64)
 
         return fertility
 

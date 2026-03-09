@@ -105,8 +105,8 @@ class BatchRunner:
     
     def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> tuple[Engine, SimulationMetrics]:
         for _ in range(ticks):
-            births_this_tick, deaths_this_tick, pending_death = eng.step()
-            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death)
+            births_this_tick, deaths_this_tick, pending_death, occupancy_metrics = eng.step()
+            metrics.record(eng, births_this_tick, deaths_this_tick, pending_death, occupancy_metrics)
         return eng, metrics
 
 
@@ -118,7 +118,7 @@ class BatchRunner:
         batch_metrics = {}
 
         for i, seed in enumerate(self.run_seeds):
-            _, metrics = self.run_single(seed, self.ticks)
+            _, metrics, _ = self.run_single(seed, self.ticks)
 
 
 
