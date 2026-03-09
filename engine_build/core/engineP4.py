@@ -11,8 +11,6 @@ from .transitions import DeathBucket
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
-
-
 from dataclasses import asdict
 
 
@@ -36,28 +34,14 @@ from dataclasses import asdict
 
                                 4) Energy invariant (optional)
                                                     energy_level ≥ 0  OR  agent.alive == False
-
-
-
-
-
-
-
 """
-
-
-
-
-
-
-
-
-
-
-
 
 class Engine:
     def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime ,change_condition=False) -> None:
+
+
+        self.master_ss = seed_seq
+        world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
 
         self.config : CompiledRegime = config
         
@@ -68,19 +52,10 @@ class Engine:
         self.population_params : PopulationParams = self.config.population_params
         self.world_params : WorldParams = self.config.world_params
 
-
-
-        self.master_ss = seed_seq
-        
         self.max_agent_count = self.population_params.max_agent_count
         self.next_agent_id = self.population_params.initial_agent_count
         self.max_age = self.population_params.max_age
         
-
-        # create world
-        world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
-        # create new seed, for world setup
-
         self.world = World( world_seed, self.config ,change_condition)
         
         self.agents : dict[np.int64, Agent] = self.initialize_state(self.next_agent_id) 
@@ -89,6 +64,7 @@ class Engine:
         
         
     def _assert_invariants(self) -> None:
+        """ asserts engine invariants. """
         assert len(self.agents) <= self.max_agent_count, "Agent count exceeds max_agent_count"
         for agent_id, agent in self.agents.items():
             assert agent_id == agent.id, "Agent id does not match dict key"
@@ -97,12 +73,14 @@ class Engine:
         
 
     def initialize_state(self, agent_count) -> dict[np.int64, Agent]:
+        """ creates initial agent population. """
         agent_seeds = self.master_ss.spawn(agent_count)
 
         return {i : Agent(self, i, agent_seeds[i]) for i in range(agent_count)}
     
     # NOTE: temp 
     def check_initial_population_spread(self) -> None:
+        """ checks initial population spread. => not wired yet, needs to check if it's necessary. """
         density = np.zeros((self.world_params.world_height, self.world_params.world_width))
 
         for agent in self.agents.values():
@@ -110,26 +88,9 @@ class Engine:
             density[y, x] += 1
     
 
-    ## NOTE:
-    ## config -> engine -> subsystem delegation
-
-
-
-  
-    
-
-
-
-
-
-
-
-
-
-
     
     def create_new_agent(self, parent_agent : Agent) -> None:
-
+        """ creates new agent from parent_agent. """
         
 
         child_seed = self.get_child_seed(parent_agent)
@@ -140,25 +101,16 @@ class Engine:
 
 
     def get_child_seed(self, parent_agent : Agent) -> np.random.SeedSequence:
+        """ gets child seed from parent_agent. """
         return parent_agent.reproduce()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
     def get_agent_count(self) -> np.int64:
+        """ returns agent count. """
         return len(self.agents)
 
     def __eq__(self, other) -> bool:
+        """ compares two engine objects. """
         if not isinstance(other, Engine):
             return NotImplemented
         
@@ -245,7 +197,7 @@ class Engine:
         max_occupancy = max(len(v) for v in occupied_positions.values()) if occupied_positions else 0
         ratio_t = max_occupancy / mean_occupancy if mean_occupancy > 0 else 0
 
-        occupancy_metrics = {
+        occupancy_metrics : dict[str, np.float64] = {
             "occupied_cells" : occupied_cells,
             "mean_occupancy" : mean_occupancy,
             "max_occupancy" : max_occupancy,
@@ -325,7 +277,6 @@ class Engine:
             self._assert_invariants()
 
 
-        # metrics return 
         
         return len(reproducers_to_commit), deaths_this_tick, pending_death, occupancy_metrics
 
@@ -336,6 +287,7 @@ class Engine:
 
     
     def get_state_hash(self) -> str:
+        """ returns state hash. """
         return hashlib.sha256(get_state_bytes(self)).hexdigest()
     
 
@@ -345,6 +297,7 @@ class Engine:
 
 
     def get_snapshot(self) -> dict:
+        """ returns engine snapshot. """
         engine_snapshot = {
             
             "master_ss" : get_seed_seq_dict(self.master_ss),
