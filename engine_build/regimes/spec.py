@@ -40,10 +40,11 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class EnergySpec:
-    alpha: float = 0.6 # METABOLIC PRESSURE => movement_cost / max_harvest => temp hardcoded, clearly sustainable movement and meaningful metabolic pressure
     beta: float
     gamma: float
     harvest_fraction: float
+
+    alpha: float = 0.6 # METABOLIC PRESSURE => movement_cost / max_harvest => temp hardcoded, clearly sustainable movement and meaningful metabolic pressure
 
     initial_energy_low_ratio : float = 0.3
     initial_energy_high_ratio : float = 0.6
@@ -63,13 +64,14 @@ class ResourceSpec:
 class LandscapeSpec:
     # ρ_L = k / W
     # σ_F = (F_max - f_min) / R_max
-    # temp hardcoded
-    correlation: float = 0.055
-    contrast: float = 1.0
-    floor: float = 0.0
+    
+    correlation: float 
+    contrast: float 
+    floor: float 
 
 @dataclass(frozen=True)
 class PopulationSpec:
+    # NOTE: move to simulationDomain later (simulationDomain = world size + population config + ... )
 
     max_agent_count: int
     initial_agent_count: int
@@ -106,18 +108,12 @@ class RegimeSpec:
     # landscape = LandscapeRatios
     # population = PopulationConfig
 
-    # biological anchors
     max_energy: int = 100                 # E_max => anchor
-    
-    # environmental anchors              
     max_resource_level: int  = 80        # R_max => anchor
-    
-    # world anchors
-    # NOTE: move to simulationDomain later             
-    world_size: int = 400                 # W => anchor 
+    world_size: int = 400                 # W => anchor  NOTE: move to simulationDomain later
 
-    energy: EnergySpec
-    resources: ResourceSpec
-    landscape: LandscapeSpec
-    reproduction: ReproductionSpec
-    population: PopulationSpec
+    energy_spec: EnergySpec
+    resources_spec: ResourceSpec
+    landscape_spec: LandscapeSpec
+    reproduction_spec: ReproductionSpec
+    population_spec: PopulationSpec

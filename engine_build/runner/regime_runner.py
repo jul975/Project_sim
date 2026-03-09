@@ -6,7 +6,8 @@ from engine_build.core.engineP4 import Engine
 from engine_build.execution.default import DEFAULT_MASTER_SEED
 
 
-from engine_build.core.config import SimulationConfig
+from engine_build.regimes.compiled import CompiledRegime
+
 from engine_build.metrics.metrics import SimulationMetrics
 import numpy as np
 from dataclasses import dataclass
@@ -72,7 +73,7 @@ def generate_run_sequences(master_seed: int, n_runs: int) -> list[np.random.Seed
 class BatchRunner:
     def __init__(
             self, 
-            regime_config : SimulationConfig , 
+            regime_config : CompiledRegime , 
             n_runs : int, 
             ticks : np.int64 ,
             batch_id : int| None = None

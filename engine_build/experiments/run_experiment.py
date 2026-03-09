@@ -1,8 +1,16 @@
 from engine_build.visualisation.plot_run import plot_metrics 
 from engine_build.visualisation.dev_plot import plot_development_metrics
+
+
 from engine_build.runner.regime_runner import BatchRunner, RegimeBatchResults
-from engine_build.regimes.registry import get_regime_config
 from engine_build.execution.default import EXPERIMENT_DEFAULTS
+
+
+from engine_build.regimes.registry import get_regime_spec
+from engine_build.regimes.compiler import compile_regime
+from engine_build.regimes.spec import RegimeSpec
+from engine_build.regimes.compiled import CompiledRegime
+
 from engine_build.analytics.fingerprint import AggregatedFingerprint
 import numpy as np
 
@@ -19,7 +27,8 @@ import numpy as np
 
 def run_experiment_mode(args) -> None:
     """ main entry point """
-    regime_config = get_regime_config(args.regime)
+    regime_spec : RegimeSpec = get_regime_spec(args.regime)
+    regime_config : CompiledRegime = compile_regime(regime_spec)
     # NOTE: 
         #   -   want to standerdize default beheavior and not let that be controled by main.py
 

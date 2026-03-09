@@ -1,27 +1,37 @@
 
+from .spec import RegimeSpec, EnergySpec, ResourceSpec, LandscapeSpec, PopulationSpec
 
-from engine_build.core.config import SimulationConfig, EnergyConfig, EnergyRatios
 
-## TESTING REGIMES
+
+# NOTE: population config needs work, not biologically, need SimulationDomain
 REGIMES = {
-    "extinction": (1.2, 1.0, 5),
-    "stable": (0.6, 0.8, 10),
-    "saturated": (0.4, 0.6, 6),
+    
+    "stable": RegimeSpec(
+        energy_spec=EnergySpec(beta=0.8, gamma=10),
+        resources_spec=ResourceSpec(regen_fraction=0.1),
+        landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
+        population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)
+    ),
+    "extinction": RegimeSpec(
+        energy_spec=EnergySpec(beta=1.0, gamma=5),
+        resources_spec=ResourceSpec(regen_fraction=0.03),
+        landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
+        population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)  
+    ),
+    "saturated": RegimeSpec(
+        energy_spec=EnergySpec(beta=0.6, gamma=6),
+        resources_spec=ResourceSpec(regen_fraction=0.12),
+        landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
+        population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)  
+    )
 }
 
 
 
 
 
-def make_config(alpha, beta, gamma) -> SimulationConfig:
-    return SimulationConfig(
-        energy_config=EnergyConfig(
-            ratios=EnergyRatios(alpha=alpha, beta=beta, gamma=gamma)
-        )
-    )
-
-
-def get_regime_config(regime : str) -> SimulationConfig:
-    if regime not in REGIMES:
+def get_regime_spec(regime : str) -> RegimeSpec:
+    try:
+        return REGIMES[regime]
+    except KeyError:
         raise ValueError(f"Unknown regime: {regime}")
-    return make_config(*REGIMES[regime])

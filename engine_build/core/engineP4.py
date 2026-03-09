@@ -9,6 +9,10 @@ from .world import World
 
 from .config import SimulationConfig, EnergyParams, DeathBucket, PopulationConfig
 
+from engine_build.regimes.compiled import CompiledRegime
+
+
+
 from dataclasses import asdict
 
 
@@ -53,14 +57,14 @@ from dataclasses import asdict
 
 
 class Engine:
-    def __init__(self, seed_seq : np.random.SeedSequence , config : SimulationConfig ,change_condition=False) -> None:
+    def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime ,change_condition=False) -> None:
 
-        self.config = config
+        self.config : CompiledRegime = config
                 
         self.master_ss = seed_seq
         
-        self.next_agent_id = self.config.population_config.initial_agent_count
-        self.max_age = self.config.population_config.max_age
+        self.next_agent_id = self.config.population_spec.initial_agent_count
+        self.max_age = self.config.population_spec.max_age
 
         # create world
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
