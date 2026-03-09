@@ -20,10 +20,7 @@ import numpy as np
         #   DECLARATIVE EXPERIMENT DEFINITION ONLY
         # 
         #   -   No logic, no control flow, no dependencies, no implementation details.
-        #  
-        #   -   STABLE_REGIME = SimulationConfig(...)
-        #   -   GROWTH_REGIME = SimulationConfig(...)
-        #   -   COLLAPSE_REGIME = SimulationConfig(...)
+
 
 def run_experiment_mode(args) -> None:
     """ main entry point """

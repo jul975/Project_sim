@@ -1,5 +1,6 @@
 
-from .spec import RegimeSpec, EnergySpec, ResourceSpec, LandscapeSpec, PopulationSpec
+from .spec import RegimeSpec, EnergySpec, ResourceSpec, LandscapeSpec, PopulationSpec, ReproductionSpec
+
 
 
 
@@ -7,19 +8,22 @@ from .spec import RegimeSpec, EnergySpec, ResourceSpec, LandscapeSpec, Populatio
 REGIMES = {
     
     "stable": RegimeSpec(
-        energy_spec=EnergySpec(beta=0.8, gamma=10),
+        energy_spec=EnergySpec(beta=0.8, gamma=10, harvest_fraction=0.35),
+        reproduction_spec=ReproductionSpec(probability=0.25, probability_change_condition=0.5),
         resources_spec=ResourceSpec(regen_fraction=0.1),
         landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
         population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)
     ),
     "extinction": RegimeSpec(
-        energy_spec=EnergySpec(beta=1.0, gamma=5),
+        energy_spec=EnergySpec(beta=1.0, gamma=5, harvest_fraction=0.35),
+        reproduction_spec=ReproductionSpec(probability=0.25, probability_change_condition=0.5),
         resources_spec=ResourceSpec(regen_fraction=0.03),
         landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
         population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)  
     ),
     "saturated": RegimeSpec(
-        energy_spec=EnergySpec(beta=0.6, gamma=6),
+        energy_spec=EnergySpec(beta=0.6, gamma=6, harvest_fraction=0.35),
+        reproduction_spec=ReproductionSpec(probability=0.25, probability_change_condition=0.5),
         resources_spec=ResourceSpec(regen_fraction=0.12),
         landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
         population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)  

@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from engine_build.core.engineP4 import Engine
-    from engine_build.core.config import DeathBucket
-    from engine_build.core.config import SimulationConfig
+    from engine_build.core.transitions import DeathBucket
+    from engine_build.regimes.compiled import CompiledRegime
 
 
 """
@@ -106,7 +106,7 @@ class SimulationMetrics:
                     => but keep in mind  
         """
         if self.max_agent_count is None:
-            self.max_agent_count = engine.config.population_config.max_agent_count
+            self.max_agent_count = engine.max_agent_count
         agents = engine.agents.values()
         agent_count = len(agents)
 

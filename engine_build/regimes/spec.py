@@ -108,12 +108,13 @@ class RegimeSpec:
     # landscape = LandscapeRatios
     # population = PopulationConfig
 
-    max_energy: int = 100                 # E_max => anchor
-    max_resource_level: int  = 80        # R_max => anchor
-    world_size: int = 400                 # W => anchor  NOTE: move to simulationDomain later
 
     energy_spec: EnergySpec
     resources_spec: ResourceSpec
     landscape_spec: LandscapeSpec
     reproduction_spec: ReproductionSpec
     population_spec: PopulationSpec
+
+    max_energy: int = 100                 # E_max => anchor
+    max_resource_level: int  = 80        # R_max => anchor
+    world_size: int = 400                 # W => anchor  NOTE: move to simulationDomain later

@@ -5,7 +5,11 @@ import matplotlib.pyplot as plt
 from engine_build.metrics.metrics import SimulationMetrics
 from engine_build.core.engineP4 import Engine
 from engine_build.runner.regime_runner import BatchRunner
-from engine_build.regimes.registry import get_regime_config
+
+from engine_build.regimes.registry import get_regime_spec
+from engine_build.regimes.spec import RegimeSpec
+
+from engine_build.regimes.compiler import compile_regime
 
 
 
@@ -86,7 +90,8 @@ def plot_world_state() -> None:
         2) Current resource levels
         3) Agent spatial density
     """
-    regime_config = get_regime_config("stable")
+    regime_spec = get_regime_spec("stable")
+    regime_config = compile_regime(regime_spec)
 
     runner = BatchRunner(regime_config, n_runs=1, ticks=1000, batch_id=42)
     eng, _, _ = runner.run_single(runner.run_seeds[0], 1000)

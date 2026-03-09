@@ -100,9 +100,9 @@ def serialize_rule_environment(engine) -> bytes:
     int64   world_size
     """
     buf = bytearray()
-    buf.extend(struct.pack("<d", engine.config.reproduction_probability))
-    buf.extend(struct.pack("<d", engine.config.reproduction_probability_change_condition))
-    buf += set_int64(engine.config.resource_regen_rate)
+    buf.extend(struct.pack("<d", engine.reproduction_params.probability))
+    buf.extend(struct.pack("<d", engine.reproduction_params.probability_change_condition))
+    buf += set_int64(engine.resource_params.regen_rate)
     # energy params
     buf += set_int64(engine.energy_params.movement_cost)
     buf += set_int64(engine.energy_params.reproduction_threshold)
@@ -111,8 +111,8 @@ def serialize_rule_environment(engine) -> bytes:
 
 
 
-    buf += set_int64(engine.config.energy_config.max_harvest)
-    buf += set_int64(engine.config.world_size)
+    buf += set_int64(engine.resource_params.max_resource_level)
+    buf += set_int64(engine.world_params.world_width * engine.world_params.world_height)
     return buf
     
 

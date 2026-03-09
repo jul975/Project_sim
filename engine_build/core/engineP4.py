@@ -7,9 +7,9 @@ from .seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
 from .agent import Agent
 from .world import World
 
-from .config import SimulationConfig, EnergyParams, DeathBucket, PopulationConfig
-
+from .transitions import DeathBucket
 from engine_build.regimes.compiled import CompiledRegime
+from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
 
 
@@ -60,29 +60,39 @@ class Engine:
     def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime ,change_condition=False) -> None:
 
         self.config : CompiledRegime = config
-                
+        
+        self.energy_params : EnergyParams = self.config.energy_params  
+        self.reproduction_params : ReproductionParams = self.config.reproduction_params
+        self.resource_params : ResourceParams = self.config.resource_params
+        self.landscape_params : LandscapeParams = self.config.landscape_params
+        self.population_params : PopulationParams = self.config.population_params
+        self.world_params : WorldParams = self.config.world_params
+
+
+
         self.master_ss = seed_seq
         
-        self.next_agent_id = self.config.population_spec.initial_agent_count
-        self.max_age = self.config.population_spec.max_age
+        self.max_agent_count = self.population_params.max_agent_count
+        self.next_agent_id = self.population_params.initial_agent_count
+        self.max_age = self.population_params.max_age
+        
 
         # create world
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
         # create new seed, for world setup
 
         self.world = World( world_seed, self.config ,change_condition)
-        self.energy_params = self._derive_energy_params()
         
-        self.agents : dict[np.int64, Agent] = self.initialize_state(self.config.population_config.initial_agent_count) 
+        self.agents : dict[np.int64, Agent] = self.initialize_state(self.next_agent_id) 
 
 
         
         
     def _assert_invariants(self) -> None:
-        assert len(self.agents) <= self.config.population_config.max_agent_count, "Agent count exceeds max_agent_count"
+        assert len(self.agents) <= self.max_agent_count, "Agent count exceeds max_agent_count"
         for agent_id, agent in self.agents.items():
             assert agent_id == agent.id, "Agent id does not match dict key"
-            assert 0 <= agent.position[0] < self.config.world_width and 0 <= agent.position[1] < self.config.world_height, "Agent position out of bounds"
+            assert 0 <= agent.position[0] < self.world_params.world_width and 0 <= agent.position[1] < self.world_params.world_height, "Agent position out of bounds"
         
         
 
@@ -93,7 +103,7 @@ class Engine:
     
     # NOTE: temp 
     def check_initial_population_spread(self) -> None:
-        density = np.zeros((self.config.world_height, self.config.world_width))
+        density = np.zeros((self.world_params.world_height, self.world_params.world_width))
 
         for agent in self.agents.values():
             x, y = agent.position
@@ -104,27 +114,10 @@ class Engine:
     ## config -> engine -> subsystem delegation
 
 
-    
-    @property
-    def max_resource_level(self) -> np.int64:
-        return self.config.max_resource_level
-    
-    @property
-    def resource_regen_rate(self) -> np.int64:
-        return self.config.resource_regen_rate
 
+  
     
-    ## derive energy config to be passed on to agents
-    def _derive_energy_params(self) -> EnergyParams:
-        """ derives energy parameters from config rations, and max_harvest. """
-        max_h = self.config.energy_config.max_harvest
-        r = self.config.energy_config.ratios
 
-        movement_cost = int(r.alpha * max_h)
-        reproduction_threshold = int(r.gamma * movement_cost)
-        reproduction_cost = int(r.beta * reproduction_threshold)
-
-        return EnergyParams(movement_cost, reproduction_threshold, reproduction_cost)
 
 
 
@@ -137,10 +130,6 @@ class Engine:
     
     def create_new_agent(self, parent_agent : Agent) -> None:
 
-                
-        # parent_agent.agent_seed.spawn(1)[0]
-
-        # child_seed = parent_agent.reproduce()
         
 
         child_seed = self.get_child_seed(parent_agent)
@@ -170,7 +159,6 @@ class Engine:
         return len(self.agents)
 
     def __eq__(self, other) -> bool:
-        # guard suggested by chatgpt, sounded reasonnable.
         if not isinstance(other, Engine):
             return NotImplemented
         
@@ -303,7 +291,7 @@ class Engine:
             # Take sum of all bucket counts to get total death count
         deaths_this_tick = sum(death_bucket.count for death_bucket in pending_death.values())
         effective_population = len(self.agents) - deaths_this_tick 
-        available_capacity = self.config.population_config.max_agent_count - effective_population
+        available_capacity = self.max_agent_count - effective_population
         reproducers_to_commit = reproducing_agents[:available_capacity]
 
         
@@ -362,8 +350,7 @@ class Engine:
             "master_ss" : get_seed_seq_dict(self.master_ss),
             "next_agent_id" : self.next_agent_id,
             "config": asdict(self.config),
-            "energy_params" : asdict(self.energy_params),
-            "max_age" : self.max_age,
+            
 
 
 
@@ -418,12 +405,10 @@ class Engine:
         """ create engine from snapshot. """
         engine_clone = object.__new__(cls)
 
-        engine_clone.config = SimulationConfig.from_dict(snapshot["config"]) 
-        # assert isinstance(engine_clone.config, SimulationConfig), type(engine_clone.config)
-        assert isinstance(engine_clone.config.population_config, PopulationConfig), type(engine_clone.config.population_config)
+        engine_clone.config = CompiledRegime.from_dict(snapshot["config"]) 
+        assert isinstance(engine_clone.config.population_params, PopulationParams), type(engine_clone.config.population_params)
         
         
-        engine_clone.energy_params = engine_clone._derive_energy_params()
         engine_clone.max_age = snapshot["max_age"]
         
 
