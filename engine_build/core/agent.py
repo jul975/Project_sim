@@ -2,13 +2,15 @@
 import numpy as np
 # check logic and eff of type checking statements.
 from typing import TYPE_CHECKING
-from .seed_seq_utils import reconstruct_seed_seq
 
 if TYPE_CHECKING:
     from .engineP4 import Engine
+    from .snapshots import AgentSnapshot
 
 
-from .rng_utils import reconstruct_rng
+
+from .snapshots import _agent_from_snapshot
+
 
 
 """
@@ -101,11 +103,45 @@ class Agent:
 
         # idea is that this would create a 1% chance of reproducing per tick.
         self.p = engine.reproduction_params.probability if not engine.world.change_condition else engine.config.reproduction_params.probability_change_condition
+        self._assert_invariants()
+
+    def _assert_invariants(self) -> None:
+        """ asserts agent invariants. """
+
+        # identity
+        assert isinstance(self.id, int)
+        assert self.id >= 0
+
+        # engine reference
+        assert self.engine is not None
+
+        # position
+        x, y = self.position
+        assert 0 <= x < self.engine.world.world_width
+        assert 0 <= y < self.engine.world.world_height
+
+        # biological state
+        assert self.age >= 0
+        assert self.energy_level >= 0 or not self.alive
+
+        # RNG integrity
+        assert isinstance(self.move_rng, np.random.Generator)
+        assert isinstance(self.repro_rng, np.random.Generator)
+        assert isinstance(self.energy_rng, np.random.Generator)
+
+        # lineage
+                # RNG lineage invariant
+        assert self.agent_spawn_count >= 0
+        if self.agent_spawn_count > 0:
+            assert self.agent_spawn_key[-1] == self.agent_spawn_count - 1
+        
+
 
 
 
 
     def reproduce(self) -> np.random.SeedSequence:
+        """ reproduces agent. """
         # I'm returning the child seed in order to maintain sep of consernce. reproduction should be a method of the engine. (for now)
 
         index = self.agent_spawn_count
@@ -126,48 +162,11 @@ class Agent:
 
 
     @classmethod
-    def from_snapshot(cls, snapshot, engine : "Engine") -> "Agent":
+    def from_snapshot(agent_cls, snapshot : "AgentSnapshot", engine : "Engine") -> "Agent":
         """ create agent from snapshot. """
-        # use reconstruct_rng() from rng_utils.py to reconstruct rngs.
-
-        instance = object.__new__(cls)
-
-        # set agent properties 
-        # named it instance to make clear distinction
-
-        instance.agent_spawn_count = snapshot["agent_spawn_count"]
+        return _agent_from_snapshot(agent_cls, snapshot, engine)
 
 
-        
-        # seed sequence properties
-        agent_seed_dict = snapshot["agent_seed"]
-        instance.agent_entropy = agent_seed_dict["entropy"]
-        instance.agent_spawn_key = agent_seed_dict["spawn_key"]
-        instance.pool_size = agent_seed_dict["pool_size"]
-
-        
-        instance.engine = engine
-        instance.id = snapshot["id"]
-        instance.age = snapshot["age"]
-
-        instance.position = snapshot["position"]
-        instance.alive = snapshot["alive"]
-        instance.energy_level = snapshot["energy_level"]
-
-        # seed reconstruction 
-        instance.agent_seed = reconstruct_seed_seq(snapshot["agent_seed"], instance.agent_spawn_count)
-        
-
-
-
-        instance.move_rng = reconstruct_rng(snapshot["move_rng"])
-        instance.repro_rng = reconstruct_rng(snapshot["repro_rng"])
-        instance.energy_rng = reconstruct_rng(snapshot["energy_rng"])
-
-        instance.p = engine.reproduction_params.probability if not engine.world.change_condition else engine.reproduction_params.probability_change_condition
-
-
-        return instance
 
     def move_agent(self) -> bool:
         # M, if energy <= 0, agent dies of metabolic starvation.

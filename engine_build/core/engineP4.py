@@ -2,7 +2,8 @@ import numpy as np
 import hashlib
 
 from .state_schema import get_state_bytes
-from .seed_seq_utils import get_seed_seq_dict, reconstruct_seed_seq
+
+from .snapshots import engine_to_snapshot, engine_from_snapshot
 
 from .agent import Agent
 from .world import World
@@ -12,6 +13,11 @@ from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
 from dataclasses import asdict
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .snapshots import EngineSnapshot
 
 
 """
@@ -58,19 +64,46 @@ class Engine:
         
         self.world = World( world_seed, self.config ,change_condition)
         
-        self.agents : dict[np.int64, Agent] = self.initialize_state(self.next_agent_id) 
+        self.agents : dict[int, Agent] = self.initialize_state(self.next_agent_id) 
+
+        self._assert_invariants()
 
 
         
         
     def _assert_invariants(self) -> None:
-        """ asserts engine invariants. """
-        assert len(self.agents) <= self.max_agent_count, "Agent count exceeds max_agent_count"
+        """Validate global engine state."""
+
+        # population constraint
+        assert len(self.agents) <= self.max_agent_count
+
+        # ID allocation safety
+        assert self.next_agent_id > max(self.agents, default=-1)
+
+        # agent integrity
         for agent_id, agent in self.agents.items():
-            assert agent_id == agent.id, "Agent id does not match dict key"
-            assert 0 <= agent.position[0] < self.world_params.world_width and 0 <= agent.position[1] < self.world_params.world_height, "Agent position out of bounds"
-        
-        
+
+            # ID consistency
+            assert agent_id == agent.id
+
+            # spatial bounds
+            x, y = agent.position
+            assert 0 <= x < self.world_params.world_width
+            assert 0 <= y < self.world_params.world_height
+
+            # biological constraints
+            assert agent.age >= 0
+            assert agent.age <= self.max_age
+            assert agent.energy_level >= 0 or not agent.alive
+
+        # world compatibility
+        assert self.world.world_width == self.world_params.world_width
+        assert self.world.world_height == self.world_params.world_height
+
+        # id allocation corruption
+        assert all(agent.id < self.next_agent_id for agent in self.agents.values())
+
+
 
     def initialize_state(self, agent_count) -> dict[np.int64, Agent]:
         """ creates initial agent population. """
@@ -78,6 +111,8 @@ class Engine:
 
         return {i : Agent(self, i, agent_seeds[i]) for i in range(agent_count)}
     
+
+
     # NOTE: temp 
     def check_initial_population_spread(self) -> None:
         """ checks initial population spread. => not wired yet, needs to check if it's necessary. """
@@ -292,97 +327,19 @@ class Engine:
     
 
 
-
-
-
-
-    def get_snapshot(self) -> dict:
+    def get_snapshot(self) -> "EngineSnapshot":
         """ returns engine snapshot. """
-        engine_snapshot = {
-            
-            "master_ss" : get_seed_seq_dict(self.master_ss),
-            "next_agent_id" : self.next_agent_id,
-            "config": asdict(self.config),
-            
+        return engine_to_snapshot(self)
 
 
-
-
-            "world" : {
-                "tick" : self.world.tick,
-                "change_condition" : self.world.change_condition,
-                "world_width" : self.world.world_width,
-                "world_height" : self.world.world_height,
-
-
-                "rng_world": self.world.rng_world.bit_generator.state,
-
-                "resources" : self.world.resources,
-                "fertility" : self.world.fertility,
-                "max_harvest" : self.world.max_harvest,
-                "resource_regen_rate" : self.world.resource_regen_rate
-            },
-            "agents" : {agent_id : self.get_agent_snapshot(agent) for agent_id, agent in self.agents.items()}
-        }
-        return engine_snapshot
-        
-        
-
-
-        
-
-    def get_agent_snapshot(self, agent : Agent) -> dict:
-        return {
-            "id" : agent.id, 
-            "agent_spawn_count" : agent.agent_spawn_count,
-            "position" : agent.position,
-            "energy_level" : agent.energy_level,
-            "alive" : agent.alive,
-            "age" : agent.age,
-
-            "agent_seed" : get_seed_seq_dict(agent.agent_seed),
-
-            
-            
-
-            "move_rng" : agent.move_rng.bit_generator.state,
-            "repro_rng" : agent.repro_rng.bit_generator.state,
-            "energy_rng" : agent.energy_rng.bit_generator.state
-        }
     
 
 
     @classmethod
-    def from_snapshot(cls, snapshot : dict) -> "Engine":
-
+    def from_snapshot(cls, snapshot : "EngineSnapshot") -> "Engine":
         """ create engine from snapshot. """
-        engine_clone = object.__new__(cls)
-
-        engine_clone.config = CompiledRegime.from_dict(snapshot["config"]) 
-        assert isinstance(engine_clone.config.population_params, PopulationParams), type(engine_clone.config.population_params)
+        return engine_from_snapshot(cls, snapshot)
         
-        
-        engine_clone.max_age = snapshot["max_age"]
-        
-
-
-        # engine master_ss doesnt need to be reconstructed.
-        engine_clone.master_ss = reconstruct_seed_seq(snapshot["master_ss"], 1)
-
-        # reconstruct world
-        engine_clone.world = World.from_snapshot(snapshot["world"])
-        
-
-        engine_clone.next_agent_id = snapshot["next_agent_id"]
-
-        engine_clone.agents = {agent_id : Agent.from_snapshot(agent_snapshot, engine_clone) for agent_id, agent_snapshot in snapshot["agents"].items()}
-        
-
-
-
-
-        
-        return engine_clone
 
 
 
