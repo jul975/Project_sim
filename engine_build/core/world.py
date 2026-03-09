@@ -1,10 +1,11 @@
 import numpy as np
-from .rng_utils import reconstruct_rng
 from .agent import Agent
 
 from engine_build.regimes.compiled import CompiledRegime
 
 from .transitions import DeathBucket
+
+from .snapshots import WorldSnapshot, _world_from_snapshot
 
 
 
@@ -66,8 +67,44 @@ class World:
 
 
         self.max_harvest = config.energy_params.max_harvest
+
+        self._assert_invariants()
     
- 
+
+    def _assert_invariants(self) -> None:
+        """ asserts world invariants. """
+        """Validate world state consistency."""
+
+        # world dimensions
+        assert self.world_width > 0
+        assert self.world_height > 0
+        assert self.world_size == self.world_width * self.world_height
+
+        # grid shapes
+        assert self.resources.shape == (self.world_height, self.world_width)
+        assert self.fertility.shape == (self.world_height, self.world_width)
+
+        # resource bounds
+        assert (self.resources >= 0).all()
+        assert (self.resources <= self.fertility).all()
+
+        # fertility sanity
+        assert (self.fertility >= 0).all()
+
+        # integer resource model
+        assert issubclass(self.resources.dtype.type, np.integer)
+        assert issubclass(self.fertility.dtype.type, np.integer)
+
+        # tick validity
+        assert self.tick >= 0
+
+        # RNG sanity
+        assert isinstance(self.rng_world, np.random.Generator)
+
+        assert np.isfinite(self.resources).all()
+        assert np.isfinite(self.fertility).all()
+    
+    
 
 
 
@@ -180,24 +217,9 @@ class World:
 
 
     @classmethod
-    def from_snapshot(cls, world_snapshot: dict) -> "World":
-        # config file is not needed for world reconstruction.
-        clone_world = object.__new__(cls)
-        clone_world.tick = world_snapshot["tick"]
-        clone_world.rng_world = reconstruct_rng(world_snapshot["rng_world"])
-        clone_world.change_condition = world_snapshot["change_condition"]
-
-        # these are array!! so need to avoid copy by reference.
-        clone_world.resources = world_snapshot["resources"].copy()
-        clone_world.fertility = world_snapshot["fertility"].copy()
-
-        clone_world.resource_regen_rate = world_snapshot["resource_regen_rate"]
-        clone_world.max_harvest = world_snapshot["max_harvest"]
-        # derive
-        clone_world.world_width = world_snapshot["world_width"]
-        clone_world.world_height = world_snapshot["world_height"]
-        clone_world.world_size = clone_world.world_width * clone_world.world_height
-        return clone_world
+    def from_snapshot(world_cls, world_snapshot: "WorldSnapshot") -> "World":
+        """ create world from snapshot. """
+        return _world_from_snapshot(world_cls, world_snapshot)
     
 
             # NOTE: 
