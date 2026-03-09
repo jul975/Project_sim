@@ -8,7 +8,9 @@ from .snapshots import engine_to_snapshot, engine_from_snapshot
 from .agent import Agent
 from .world import World
 
-from .transitions import DeathBucket
+
+from .step_results import DeathBucket, StepMetrics
+
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
@@ -312,8 +314,8 @@ class Engine:
             self._assert_invariants()
 
 
-        
-        return len(reproducers_to_commit), deaths_this_tick, pending_death, occupancy_metrics
+        results = StepMetrics(len(reproducers_to_commit), deaths_this_tick, pending_death, occupancy_metrics)
+        return results
 
 
 
