@@ -145,7 +145,7 @@ class Engine:
 
 
     def get_agent_count(self) -> np.int64:
-        """ returns agent count. """
+        """ returns current agent count. """
         return len(self.agents)
 
     def __eq__(self, other) -> bool:
@@ -211,7 +211,7 @@ class Engine:
 
 
     @classmethod
-    def from_snapshot(cls, snapshot : "EngineSnapshot") -> "Engine":
+    def from_snapshot(cls : type["Engine"], snapshot : "EngineSnapshot") -> "Engine":
         """ create engine from snapshot. """
         return engine_from_snapshot(cls, snapshot)
         
