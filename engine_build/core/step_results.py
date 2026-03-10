@@ -1,11 +1,4 @@
 
-"""
-NOTE: 
-    - STEP METRICS REPRESENTS OBSERVABILITY FROM OUTSIDE THE ENGINE. 
-    - NO STATE MUTATION LOGIC SHOULD BE PERFORMED IN THIS LAYER.
-
-"""
-
 
 from dataclasses import dataclass, field
 import numpy as np
@@ -21,6 +14,7 @@ class MovementReport:
     age_deaths_count : int = 0
 
 
+
 @dataclass(frozen=True)
 class InteractionReport:
     pending_starvation_death_count : int = 0
@@ -33,14 +27,19 @@ class BiologyReport:
 
 
 @dataclass(frozen=True)
+class WorldView:
+    positions : np.ndarray = field(default_factory=np.ndarray)
+    energies : np.ndarray = field(default_factory=np.ndarray)
+    resources : np.ndarray = field(default_factory=np.ndarray)
+    
+
+
+
+@dataclass(frozen=True)
 class CommitReport:
     births_count : int = 0
     deaths_count : int = 0
 
-@dataclass(frozen=True)
-class PositionalMetrics:
-    positions : np.ndarray = field(default_factory=np.ndarray)
-    energies : np.ndarray = field(default_factory=np.ndarray)
 
 
 @dataclass(frozen=True)
@@ -49,28 +48,7 @@ class StepMetrics:
     movement_report : MovementReport = field(default_factory=MovementReport)
     interaction_report : InteractionReport = field(default_factory=InteractionReport)
     biology_report : BiologyReport = field(default_factory=BiologyReport)
+    commit_report : CommitReport = field(default_factory=CommitReport)
+    world_view : WorldView = field(default_factory=WorldView)
 
 
-
-
-
-
-
-
-
-
-
-##################################
-"""
-occupied_cells = len(context.occupied_positions)
-moved_surviving_agents  = sum(len(v) for v in context.occupied_positions.values())
-mean_occupancy = (moved_surviving_agents  / len(context.occupied_positions)) if context.occupied_positions else 0
-max_occupancy = max(len(v) for v in context.occupied_positions.values()) if context.occupied_positions else 0
-ratio_t = max_occupancy / mean_occupancy if mean_occupancy > 0 else 0
-
-occupancy_metrics : dict[str, np.float64] = {
-    "occupied_cells" : occupied_cells,
-    "mean_occupancy" : mean_occupancy,
-    "max_occupancy" : max_occupancy,
-    "ratio_t" : ratio_t
-}"""

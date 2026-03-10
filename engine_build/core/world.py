@@ -165,15 +165,15 @@ class World:
 
 
 
-
-    def harvest(self, agents : list[Agent], position : tuple[np.int64, np.int64]) -> np.int64:
+# call from transitions
+    def harvest(self, agents : list[Agent], position : tuple[np.int64, np.int64]) -> None:
         """ harvests resources from a given cell, deterministically. """
         
         x, y = position
        
         available_resources = self.resources[y, x]
         if available_resources <= 0:
-            return 0
+            return 
         agents = sorted(agents, key=lambda a: a.id)
 
         n_agents = len(agents)
@@ -190,7 +190,7 @@ class World:
             agent.harvest_resources(agent_harvest)
 
         self.resources[y, x] -= harvest
-        return harvest
+        
 
 
         
@@ -242,43 +242,6 @@ class World:
         """
 
     
-    def resolve_harvest_world(self, occupied_positions : dict[tuple[np.int64, np.int64], list[Agent]]) -> None:
         ###################################################
-        pending_death: dict[str: DeathBucket] = {
-            "post_harvest_starvation" : DeathBucket(),
-            "post_reproduction_death" : DeathBucket()
-            }
-        
-        reproducing_agents: list[Agent] = []
 
-        # transition
-        for position, agents in occupied_positions.items():
-###########################################################
-            harvest = self.harvest(agents, position)
-            if harvest <= 0:
-                for agent in agents:
-                    if agent.energy_level <= 0:
-                        pending_death["post_harvest_starvation"].count += 1
-                        pending_death["post_harvest_starvation"].agents.append(agent.id)
-                        continue
-
-                
-            for agent in agents:
- 
-                # agent obj
-                if agent.can_reproduce():
-                    if agent.does_reproduce():
-                        reproducing_agents.append(agent)
-                        # transition.py 
-                        if agent.energy_level <= 0:
-                            pending_death["post_reproduction_death"].count += 1
-                            pending_death["post_reproduction_death"].agents.append(agent.id)
-                            continue
-
-                agent.age_agent()
-
-        return reproducing_agents, pending_death
-    
-    
-    
 
