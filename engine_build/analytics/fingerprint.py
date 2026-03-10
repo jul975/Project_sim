@@ -16,7 +16,6 @@ class Fingerprint:
     range_population: float
     cap_hit_rate: float
 
-
     # 2) extinction tick
     extinction_tick: Optional[int]
 

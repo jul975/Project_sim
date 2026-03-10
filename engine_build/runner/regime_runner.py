@@ -120,9 +120,6 @@ class BatchRunner:
         for i, seed in enumerate(self.run_seeds):
             _, metrics, _ = self.run_single(seed, self.ticks)
 
-
-
-
             batch_metrics[i] = metrics            
 
             tail_start = self.ticks // 4 # NOTE: tail start is hardcoded for now. simple to get working tests for now, will be configurable later.

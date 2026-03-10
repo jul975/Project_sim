@@ -17,12 +17,9 @@ NOTE:
             - Population history
             - Tick-level logging
 
-It receives state snapshots or event hooks.
-It does not run loops.
-It does not know about regimes.
-
-
-
+    It receives state snapshots or event hooks.
+    It does not run loops.
+    It does not know about regimes.
 
 """
 
@@ -105,6 +102,7 @@ class SimulationMetrics:
                     => should be ok as is, as the recording is done after the tick is completed.
                     => but keep in mind  
         """
+
         if self.max_agent_count is None:
             self.max_agent_count = engine.max_agent_count
         agents = engine.agents.values()
