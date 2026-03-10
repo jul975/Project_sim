@@ -14,6 +14,8 @@ from .step_results import DeathBucket, StepMetrics
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
+from .transitions import TransitionContext, movement_phase, interaction_phase, biology_phase, commit_phase
+
 from dataclasses import asdict
 
 from typing import TYPE_CHECKING
@@ -161,155 +163,26 @@ class Engine:
 
 
 
-    def step(self) -> tuple[np.int64, np.int64, dict[str, DeathBucket]]:
+    def step(self) -> StepMetrics:
         """ restructuring step method in order to evaluate agents for death and birth together. 
             After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
         
-
-        pending_agent_iteration_death: dict[str: [DeathBucket]] = {
-            "old_age" : DeathBucket(),
-            "metabolic_starvation" : DeathBucket()
-            }
         
-        reproducing_agents: list[Agent] = []
+        context = TransitionContext()
 
+        movement_report = movement_phase(self.agents, self.world ,context)
+        interaction_report = interaction_phase(context)
+        biology_report = biology_phase(context)
 
+        commit_phase(context)
 
-        sorted_agents = sorted(self.agents.items())
-
-
-        ''' NOTE: 
-
-                Formal agent transition order: =>    T = Π ∘ B ∘ D ∘ H ∘ M ∘ A
-
-            -   Agent state updated is followed by a state evaluation on engine level
-
-            -   The evaluation does NOT influence determenism as it holds only references to the agents marked 
-                for their respective state AFTER step is implemented, further processing happens after 
-                all states have been updated 
-
-
-            - CAVE: ORDERING OF DEATH AND BIRTH IS IMPORTANT! 
-                    => RIGHT NOW, DEATH OCCURS BEFORE BIRTH. !!!!!!!
-
-        
-        
-                    
-            - CAVE: need to formulate engine stepping logic cleary in order to not introduce hidden sources of non-determinism.
-        '''
-            # M: move agents
-            # H: world.resolve_harvest()
-            # R: world.resolve_reproduction()
-            # G: world.resolve_agent_aging()
-            # Π: commit births/deaths
-
-        occupied_positions : dict[tuple[np.int64, np.int64], list[Agent]] = {}
-
-
-        for agent_id, agent in sorted_agents:
-            # A
-            # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
-            if not agent.alive:
-                pending_agent_iteration_death["old_age"].count += 1
-                pending_agent_iteration_death["old_age"].agents.append(agent_id)
-                continue
-            # M
-            if not agent.move_agent():
-                pending_agent_iteration_death["metabolic_starvation"].count += 1
-                pending_agent_iteration_death["metabolic_starvation"].agents.append(agent_id)
-                continue
-            
-            # move agents to positional dict 
-            # NOTE: 
-                # as agents get added by a sorted itererative process, order is preserved. 
-                # However, this has to accounted for in the future by a check, as it can lead to hidden non-determinism even if stable for now
-            if agent.position in occupied_positions:
-                occupied_positions[agent.position].append(agent)
-            else:
-                occupied_positions[agent.position] = [agent]
-
-        occupied_cells = len(occupied_positions)
-        moved_surviving_agents  = sum(len(v) for v in occupied_positions.values())
-        mean_occupancy = (moved_surviving_agents  / len(occupied_positions)) if occupied_positions else 0
-        max_occupancy = max(len(v) for v in occupied_positions.values()) if occupied_positions else 0
-        ratio_t = max_occupancy / mean_occupancy if mean_occupancy > 0 else 0
-
-        occupancy_metrics : dict[str, np.float64] = {
-            "occupied_cells" : occupied_cells,
-            "mean_occupancy" : mean_occupancy,
-            "max_occupancy" : max_occupancy,
-            "ratio_t" : ratio_t
-        }
-        
-        
-        reproducing_agents , pending_world_death = self.world.resolve_harvest_world(occupied_positions)
-        pending_death : dict[str, DeathBucket] = pending_agent_iteration_death | pending_world_death
-        
-            
-            # agent_step gets called in world.harvest_world
-
-        """NOTE:
-            1) Mutation is localised
-
-                World → resources mutate
-                Agent → energy mutates
-                Engine → population mutates
-
-            2) Commit still happens only at engine level
-
-                Births/deaths are still pending collections, not immediate structural mutations.
-
-            3) Ordering is explicit
-
-                Move → Harvest → Reproduce → Age → Commit
-                So should ensure architectural stability.
+        step_result = StepResult.from_phase_reports(...)
                 
-                """
-            
+        return step_result
         
-            
-            
-
-
         
-
-        # agents state updates
-            
-        # capacity calculations
-        # NOTE: 
-            # Take sum of all bucket counts to get total death count
-        deaths_this_tick = sum(death_bucket.count for death_bucket in pending_death.values())
-        effective_population = len(self.agents) - deaths_this_tick 
-        available_capacity = self.max_agent_count - effective_population
-        reproducers_to_commit = reproducing_agents[:available_capacity]
-
         
-       
-       
-       
-        # commit to population changes
-        # NOTE: Keep an eye on this step!! 
-            # CAVE: current system logic regarding age incrementation, 
-            # currently agents live through ticks, the "delta t" their transitioning over is defined by the end of the last step. 
-            # as agent.alive gets evaluated at the beginning of the step, they die at the beginning of the tick.
-            # => agents die at the beginning of the tick, but their death is only committed at the end of the tick. 
-
-        # D
-        for death_bucket in pending_death.values():
-            for agent_id in death_bucket.agents:
-                assert agent_id in self.agents
-                del self.agents[agent_id]
-                
-
-        # B
-        for parent_agent in reproducers_to_commit:
-            self.create_new_agent(parent_agent)
-
-
-        # world state update 
-        self.world.regrow_resources()
-        self.world.tick += 1
-
+        
         if __debug__:
             self._assert_invariants()
 

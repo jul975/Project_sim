@@ -243,7 +243,7 @@ class World:
 
     
     def resolve_harvest_world(self, occupied_positions : dict[tuple[np.int64, np.int64], list[Agent]]) -> None:
-
+        ###################################################
         pending_death: dict[str: DeathBucket] = {
             "post_harvest_starvation" : DeathBucket(),
             "post_reproduction_death" : DeathBucket()
@@ -251,8 +251,9 @@ class World:
         
         reproducing_agents: list[Agent] = []
 
+        # transition
         for position, agents in occupied_positions.items():
-
+###########################################################
             harvest = self.harvest(agents, position)
             if harvest <= 0:
                 for agent in agents:
@@ -261,11 +262,14 @@ class World:
                         pending_death["post_harvest_starvation"].agents.append(agent.id)
                         continue
 
-                # R
+                
             for agent in agents:
+ 
+                # agent obj
                 if agent.can_reproduce():
                     if agent.does_reproduce():
                         reproducing_agents.append(agent)
+                        # transition.py 
                         if agent.energy_level <= 0:
                             pending_death["post_reproduction_death"].count += 1
                             pending_death["post_reproduction_death"].agents.append(agent.id)
