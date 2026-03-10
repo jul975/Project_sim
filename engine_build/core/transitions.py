@@ -1,8 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import dataclass , field
 from typing import TYPE_CHECKING
 
-from .step_results import DeathBucket, MovementReport, InteractionReport, BiologyReport
+from .step_results import MovementReport, InteractionReport, BiologyReport
 from .world import World
+
+from typing import List
 
 if TYPE_CHECKING:
     from .agent import Agent
@@ -106,37 +108,28 @@ TransitionContext
 #     increment tick
 
 
-# NOTE: is deachtbucket relevant here? I think not but keep it for now
+@dataclass
+class DeathBucket:
+    """ DeathBucket: holds agent ids container for a given death cause. """
+    agents_ids: List[int] = field(default_factory=list)
+    @property
+    def count(self) -> int:
+        return len(self.agents_ids)
+
+
+
+
 @dataclass
 class TransitionContext:
-    occupied_positions : dict[tuple[int, int], list["Agent"]] 
-    pending_agent_iteration_death: dict[str: DeathBucket]
-    reproducing_agents : list["Agent"] 
+    occupied_positions : dict[tuple[int, int], list["Agent"]] = field(default_factory=dict)
+    post_harvest_alive : list["Agent"] = field(default_factory=list)
+    pending_deaths_by_cause: dict[str, DeathBucket] = field(default_factory=dict)
+    reproducing_agents : list["Agent"] = field(default_factory=list)
     # energy_deltas : dict[int, int] 
 
 
+
 ###############################################################################################
-
-
-"""
-        context = TransitionContext()
-
-        movement_report = movement_phase(context)
-        interaction_report = interaction_phase(context)
-        biology_report = biology_phase(context)
-
-        commit(context)
-
-        step_result = StepResult.from_phase_reports(...)
-                
-        return step_result
-        
-        
-        
-        """
-
-
-
 
         # M: move agents
         # H: world.resolve_harvest()
@@ -144,15 +137,12 @@ class TransitionContext:
         # G: world.resolve_agent_aging()
         # Π: commit births/deaths
 
-
-
-
-
-
 ##############################################################################################
 
 
-def movement_phase(agents : dict[int, Agent], world : World , context : TransitionContext) -> MovementReport:
+def movement_phase(agents : list[int, Agent] , context : TransitionContext) -> MovementReport:
+    """ movement_phase(agents, world, context):
+    """
 
     
     age_deaths = DeathBucket()
@@ -164,13 +154,11 @@ def movement_phase(agents : dict[int, Agent], world : World , context : Transiti
         # A
         # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
         if not agent.alive:
-            age_deaths.count += 1
-            age_deaths.agents.append(agent_id)
+            age_deaths.agents_ids.append(agent_id)
             continue
         # M
         if not agent.move_agent():
-            metabolic_deaths.count += 1
-            metabolic_deaths.agents.append(agent_id)
+            metabolic_deaths.agents_ids.append(agent_id)
             continue
 
         if agent.position in context.occupied_positions:
@@ -178,25 +166,45 @@ def movement_phase(agents : dict[int, Agent], world : World , context : Transiti
         else:
             context.occupied_positions[agent.position] = [agent]
 
-    return MovementReport(metabolic_deaths, age_deaths)
+
+    context.pending_deaths_by_cause["age_deaths"] = age_deaths
+    context.pending_deaths_by_cause["metabolic_deaths"] = metabolic_deaths
+
+    return MovementReport(
+        metabolic_deaths_count = metabolic_deaths.count,
+        age_deaths_count = age_deaths.count
+        )
 
 ###########################################################
-def interaction_phase(context : TransitionContext) -> InteractionReport:
+def interaction_phase(context : TransitionContext, world : World) -> InteractionReport:
     """ 
     interaction_phase(context):
+    """
+    pending_starvation_death = DeathBucket()
 
-    for position, agents in occupied_positions:
+    occupied_positions = context.occupied_positions
 
-        harvest = world.harvest(...)
 
-        evaluate starvation
-
-        evaluate reproduction
-
-        evaluate aging"""
+    # H
+    for position, local_agents in occupied_positions.items():
+        world.harvest(local_agents, position)
+        
+        
+        for agent in local_agents:
+            if agent.energy_level <= 0:
+                
+                pending_starvation_death.agents_ids.append(agent.id)
+                continue
+            
+            context.post_harvest_alive.append(agent)
+        
+    context.pending_deaths_by_cause["post_harvest_starvation"] = pending_starvation_death
+        
+    return InteractionReport(
+        reproducing_agents_count = len(context.reproducing_agents),
+        pending_starvation_death_count = pending_starvation_death.count)
     
-        reproducing_agents , pending_world_death = self.world.resolve_harvest_world(occupied_positions)
-        pending_death : dict[str, DeathBucket] = pending_agent_iteration_death | pending_world_death
+
         
             
 
@@ -207,19 +215,38 @@ def interaction_phase(context : TransitionContext) -> InteractionReport:
 
 ###########################################################################        
 def biology_phase(context : TransitionContext) -> BiologyReport:
+
+    post_reproduction_death = DeathBucket()
+
+    alive_agents = context.post_harvest_alive
+
+    for agent in alive_agents:
+        if agent.can_reproduce():
+            if agent.does_reproduce():
+                context.reproducing_agents.append(agent)
+     
+                if agent.energy_level <= 0:
+                    post_reproduction_death.agents_ids.append(agent.id)
+                continue
+
+        agent.age_agent()
+        context.pending_deaths_by_cause["post_reproduction_death"] = post_reproduction_death
+    
+    return BiologyReport(
+        post_reproduction_death_count = post_reproduction_death.count,
+        reproducing_agents_count = len(context.reproducing_agents) )
+        
+        
+    ########################### NOTE: BELOW THIS line is not yet implemented, will be part of the metrics pipline  !! 
+        
+        
+        
         # agents state updates
             
         # capacity calculations
         # NOTE: 
             # Take sum of all bucket counts to get total death count
-        deaths_this_tick = sum(death_bucket.count for death_bucket in pending_death.values())
-        effective_population = len(self.agents) - deaths_this_tick 
-        available_capacity = self.max_agent_count - effective_population
-        reproducers_to_commit = reproducing_agents[:available_capacity]
 
-        
-       
-       
        
         # commit to population changes
         # NOTE: Keep an eye on this step!! 
@@ -231,21 +258,6 @@ def biology_phase(context : TransitionContext) -> BiologyReport:
         # D
 
 ########################################################################
-def commit_phase(context : TransitionContext) -> None:
-        for death_bucket in pending_death.values():
-            for agent_id in death_bucket.agents:
-                assert agent_id in self.agents
-                del self.agents[agent_id]
-                
-
-        # B
-        for parent_agent in reproducers_to_commit:
-            self.create_new_agent(parent_agent)
-
-
-        # world state update 
-        self.world.regrow_resources()
-        self.world.tick += 1
 
 
 
@@ -276,29 +288,22 @@ def commit_phase(context : TransitionContext) -> None:
 
 
 
+    """NOTE:
+        1) Mutation is localised
 
+            World → resources mutate
+            Agent → energy mutates
+            Engine → population mutates
 
+        2) Commit still happens only at engine level
 
+            Births/deaths are still pending collections, not immediate structural mutations.
 
+        3) Ordering is explicit
 
-
-
-        """NOTE:
-            1) Mutation is localised
-
-                World → resources mutate
-                Agent → energy mutates
-                Engine → population mutates
-
-            2) Commit still happens only at engine level
-
-                Births/deaths are still pending collections, not immediate structural mutations.
-
-            3) Ordering is explicit
-
-                Move → Harvest → Reproduce → Age → Commit
-                So should ensure architectural stability.
-                
-                """
+            Move → Harvest → Reproduce → Age → Commit
+            So should ensure architectural stability.
             
+            """
         
+    

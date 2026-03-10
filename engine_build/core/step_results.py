@@ -8,28 +8,47 @@ NOTE:
 
 
 from dataclasses import dataclass, field
-from typing import List
 import numpy as np
 
 
-@dataclass
-class DeathBucket:
-    count: int = 0
-    agents: List[np.int64] = field(default_factory=list)
 
-@dataclass(frozen=True)
-class StepMetrics:
-    births : int
-    deaths : int
-    pending_death : dict[str, DeathBucket] = field(default_factory=dict)
-    occupancy_metrics : dict[str, np.float64] = field(default_factory=dict)
+
 
 # NOTE: not holding agent references, only ids.
 @dataclass(frozen=True)
 class MovementReport:
-    metabolic_deaths : DeathBucket
-    age_deaths : DeathBucket
+    metabolic_deaths_count : int = 0
+    age_deaths_count : int = 0
 
+
+@dataclass(frozen=True)
+class InteractionReport:
+    pending_starvation_death_count : int = 0
+
+
+@dataclass(frozen=True)
+class BiologyReport:
+    reproducing_agents_count : int = 0
+    post_reproduction_death_count : int = 0
+
+
+@dataclass(frozen=True)
+class CommitReport:
+    births_count : int = 0
+    deaths_count : int = 0
+
+@dataclass(frozen=True)
+class PositionalMetrics:
+    positions : np.ndarray = field(default_factory=np.ndarray)
+    energies : np.ndarray = field(default_factory=np.ndarray)
+
+
+@dataclass(frozen=True)
+class StepMetrics:
+    tick : int = 0
+    movement_report : MovementReport = field(default_factory=MovementReport)
+    interaction_report : InteractionReport = field(default_factory=InteractionReport)
+    biology_report : BiologyReport = field(default_factory=BiologyReport)
 
 
 
