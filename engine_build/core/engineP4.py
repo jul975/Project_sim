@@ -9,14 +9,13 @@ from .agent import Agent
 from .world import World
 
 
-from .step_results import DeathBucket, StepMetrics
+from .step_results import CommitReport, StepMetrics, WorldView
 
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
-from .transitions import TransitionContext, movement_phase, interaction_phase, biology_phase, commit_phase
+from .transitions import TransitionContext, movement_phase, interaction_phase, biology_phase
 
-from dataclasses import asdict
 
 from typing import TYPE_CHECKING
 
@@ -24,27 +23,6 @@ if TYPE_CHECKING:
     from .snapshots import EngineSnapshot
 
 
-"""
-    NOTE: 
-            Engine invariants:
-                                1) Spatial invariant
-                                                    0 ≤ position < world_size
-
-                                                    Because toroidal normalization guarantees this.
-
-                                2) Identity invariant
-                                                    agent.id matches dict key
-
-                                                    Useful later when deletion/reordering occurs.
-
-                                3) Population invariant
-                                                    len(agents) ≤ max_agent_count
-
-                                                    Prevents overflow bugs.
-
-                                4) Energy invariant (optional)
-                                                    energy_level ≥ 0  OR  agent.alive == False
-"""
 
 class Engine:
     def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime ,change_condition=False) -> None:
@@ -154,13 +132,6 @@ class Engine:
             return NotImplemented
         
         return self.get_state_hash() == other.get_state_hash()
-        """        pending_death: dict[str: [Agent]] = {
-            "old_age" : DeathBucket(),
-            "metabolic_starvation" : DeathBucket(),
-            "post_harvest_starvation" : DeathBucket(),
-            "post_reproduction_death" : DeathBucket()
-            }"""
-
 
 
     def step(self) -> StepMetrics:
@@ -170,32 +141,98 @@ class Engine:
         
         context = TransitionContext()
 
-        movement_report = movement_phase(self.agents, self.world ,context)
-        interaction_report = interaction_phase(context)
+        movement_report = movement_phase(self.agents, context)
+
+        interaction_report = interaction_phase(context, self.world)
+
         biology_report = biology_phase(context)
 
-        commit_phase(context)
+        commit_report = self.commit_phase(context)
 
-        step_result = StepResult.from_phase_reports(...)
+        world_view = self.build_world_view()
+
+        step_metrics = StepMetrics(
+            tick = self.world.tick,
+            movement_report = movement_report,
+            interaction_report = interaction_report,
+            biology_report = biology_report,
+            commit_report = commit_report,
+            world_view = world_view
+        )
+
+        ## end of current tick, go to the next tick
+        self.world.tick += 1
+        return step_metrics
                 
-        return step_result
         
         
+
+
+
+
+    def commit_phase(self, context : TransitionContext) -> CommitReport:
+        """ commits pending births and deaths to the engine. """
+        pending_deaths_by_cause = context.pending_deaths_by_cause
+        reproducing_agents = context.reproducing_agents
+
+
+        deaths_this_tick = sum(death_bucket.count for death_bucket in pending_deaths_by_cause.values())
+        effective_population = len(self.agents) - deaths_this_tick 
+        available_capacity = self.max_agent_count - effective_population
+        reproducers_to_commit = reproducing_agents[:available_capacity]
+
+        # D
+        for death_bucket in pending_deaths_by_cause.values():
+            for agent_id in death_bucket.agents_ids:
+                assert agent_id in self.agents
+                del self.agents[agent_id]
+                
+        # B
+        for parent_agent in reproducers_to_commit:
+            self.create_new_agent(parent_agent)
+
+        # world state update 
+        self.world.regrow_resources()
         
+
+        # NOTE: temp solution for positional metrics.
         
         if __debug__:
             self._assert_invariants()
 
+        return CommitReport(
+            births_count = len(reproducers_to_commit),
+            deaths_count = deaths_this_tick,
+        )
 
-        results = StepMetrics(len(reproducers_to_commit), deaths_this_tick, pending_death, occupancy_metrics)
-        return results
 
 
+    def build_world_view(self) -> WorldView:
+        """ builds world view. """
 
+        sorted_agents = sorted(self.agents.values(), key=lambda agent: agent.id)
+        positions = np.fromiter(
+            (coord for agent in sorted_agents for coord in agent.position),
+            dtype=np.int32,
+            count=len(sorted_agents) * 2
+        ).reshape(len(sorted_agents), 2)
 
+        energies = np.fromiter(
+            (agent.energy_level for agent in sorted_agents),
+            dtype=np.int16,
+            count=len(sorted_agents)
+        )
+
+        resources = self.world.resources.copy()
+
+        return WorldView(
+            positions=positions,
+            energies=energies,
+            resources=resources
+        )
     
 
-    
+
     def get_state_hash(self) -> str:
         """ returns state hash. """
         return hashlib.sha256(get_state_bytes(self)).hexdigest()
@@ -206,20 +243,11 @@ class Engine:
         """ returns engine snapshot. """
         return engine_to_snapshot(self)
 
-
-    
-
-
     @classmethod
     def from_snapshot(cls : type["Engine"], snapshot : "EngineSnapshot") -> "Engine":
         """ create engine from snapshot. """
         return engine_from_snapshot(cls, snapshot)
         
-
-
-
-
-
 
 
 if __name__ == "__main__":
