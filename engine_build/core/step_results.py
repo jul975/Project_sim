@@ -43,7 +43,7 @@ class CommitReport:
 
 
 @dataclass(frozen=True)
-class StepMetrics:
+class StepReport:
     tick : int = 0
     movement_report : MovementReport = field(default_factory=MovementReport)
     interaction_report : InteractionReport = field(default_factory=InteractionReport)

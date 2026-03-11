@@ -9,7 +9,7 @@ from .agent import Agent
 from .world import World
 
 
-from .step_results import CommitReport, StepMetrics, WorldView
+from .step_results import CommitReport, StepReport, WorldView
 
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
@@ -151,7 +151,7 @@ class Engine:
 
         world_view = self.build_world_view()
 
-        step_metrics = StepMetrics(
+        step_report = StepReport(
             tick = self.world.tick,
             movement_report = movement_report,
             interaction_report = interaction_report,
@@ -162,7 +162,7 @@ class Engine:
 
         ## end of current tick, go to the next tick
         self.world.tick += 1
-        return step_metrics
+        return step_report
                 
         
         

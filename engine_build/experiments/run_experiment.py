@@ -68,9 +68,7 @@ max_occupancy/mean_occupancy
 
 
 def summarize_results(results : BatchRunResults, ticks : np.int64, n_runs : np.int64, regime : str):
-    final_pops = [
-        m.population[-1] for m in results.batch_metrics.values()
-    ]
+    final_pops = np.array([m.population[-1] for m in results.batch_metrics.values()])
 
     mean_final = np.mean(final_pops)
     std_final = np.std(final_pops)
