@@ -1,10 +1,6 @@
-
-
-
-from engine_build.analytics.fingerprint import compute_fingerprint, get_aggregate_fingerprints, AggregatedFingerprint, Fingerprint
 from engine_build.core.engineP4 import Engine
 from engine_build.execution.default import DEFAULT_MASTER_SEED
-from engine_build.core.step_results import StepMetrics
+from engine_build.core.step_results import StepReport
 
 
 from engine_build.regimes.compiled import CompiledRegime
@@ -109,13 +105,12 @@ class Runner:
 
         world_frames = WorldFrames( capture_every=10 if ticks > 100 else 1)
 
-        for tick in range(ticks):
+        for _ in range(ticks):
             
-            step_metrics : StepMetrics = eng.step()
-            metrics.record(eng, step_metrics)
+            step_report : StepReport = eng.step()
+            metrics.record(eng, step_report)
 
-            if tick % world_frames.capture_every == 0:
-                world_frames.capture(eng)
+            
 
         return RunArtifacts(eng, metrics, world_frames, seed, ticks)
     
@@ -124,8 +119,8 @@ class Runner:
 #############################################################
     def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> RunArtifacts:
         for _ in range(ticks):
-            step_metrics : StepMetrics = eng.step()
-            metrics.record(eng, step_metrics)
+            step_report : StepReport = eng.step()
+            metrics.record(eng, step_report)
         return RunArtifacts(eng, metrics, None, eng.master_ss, ticks)
 
 
@@ -146,14 +141,3 @@ class Runner:
 if __name__ == "__main__":
     pass
 
-
-
-"""
-
-            tail_start = ticks // 4 # NOTE: tail start is hardcoded for now. simple to get working tests for now, will be configurable later.
-
-            fingerprint = compute_fingerprint(run_results.metrics, tail_start)
-            fingerprints_dict[i] = fingerprint
-            
-        
-        aggregate_fingerprint : AggregatedFingerprint = get_aggregate_fingerprints(list(fingerprints_dict.values()))"""

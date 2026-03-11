@@ -14,6 +14,7 @@ from engine_build.runner.regime_runner import BatchRunResults
 
 from engine_build.regimes.compiled import CompiledRegime
 
+from engine_build.analytics.fingerprint import compute_fingerprint, get_aggregate_fingerprints
 
 
 from engine_build.analytics.fingerprint import AggregatedFingerprint, Fingerprint
@@ -34,6 +35,8 @@ class BatchAnalysis:
 def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = None) -> BatchAnalysis:
     """ analyze a batch of runs. """
     fingerprints_dict = {}
+    # NOTE TEMP TAIL START
+    tail_start =  0
     for i, run_results in batch_results.runs.items():
         fingerprints_dict[i] = compute_fingerprint(run_results.metrics, tail_start)
 
@@ -42,7 +45,7 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
     return BatchAnalysis(
         aggregate_fingerprint=aggregate_fingerprint,
         fingerprints_dict=fingerprints_dict,
-        batch_metrics=batch_results.batch_metrics,
+        batch_metrics=batch_results.runs,
         regime_label=regime_label
     )
     
