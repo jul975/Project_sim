@@ -37,6 +37,8 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
     fingerprints_dict = {}
     # NOTE TEMP TAIL START
     tail_start =  0
+
+    
     for i, run_results in batch_results.runs.items():
         fingerprints_dict[i] = compute_fingerprint(run_results.metrics, tail_start)
 
