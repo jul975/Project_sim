@@ -2,7 +2,7 @@ from engine_build.visualisation.plot_run import plot_metrics
 from engine_build.visualisation.dev_plot import plot_development_metrics
 
 
-from engine_build.runner.regime_runner import BatchRunner, RegimeBatchResults
+from engine_build.runner.regime_runner import Runner, BatchRunResults
 from engine_build.execution.default import EXPERIMENT_DEFAULTS
 
 
@@ -33,15 +33,14 @@ def run_experiment_mode(args ) -> None:
     ticks = args.ticks if args.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
     n_runs = args.runs if args.runs is not None else EXPERIMENT_DEFAULTS["runs"]
     
-    runner = BatchRunner(
+    runner = Runner(
         regime_config = regime_config,
-        ticks = ticks,
         n_runs = n_runs,
         batch_id = args.seed
         
     )
 
-    results : RegimeBatchResults = runner.run_regime_batch()
+    results : BatchRunResults = runner.run_regime_batch()
     summarize_results(results, ticks, n_runs, args.regime)
 
     if args.plot:
@@ -68,7 +67,7 @@ max_occupancy/mean_occupancy
 
 
 
-def summarize_results(results : RegimeBatchResults, ticks : np.int64, n_runs : np.int64, regime : str):
+def summarize_results(results : BatchRunResults, ticks : np.int64, n_runs : np.int64, regime : str):
     final_pops = [
         m.population[-1] for m in results.batch_metrics.values()
     ]

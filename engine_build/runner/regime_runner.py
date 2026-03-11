@@ -68,14 +68,6 @@ class BatchRunResults:
     batch_id : int | None = None
     regime_config : CompiledRegime | None = None
 
-# derived experiment interpretation 
-@dataclass
-class BatchAnalysis:
-    aggregate_fingerprint : AggregatedFingerprint
-    fingerprints_dict : Dict[np.int64, Fingerprint]
-    batch_metrics : Dict[np.int64, SimulationMetrics]
-    regime_label : str | None = None
-    summary_stats : Dict[str, float] | None = None
 
 
 def generate_run_sequences(master_seed: int, n_runs: int) -> list[np.random.SeedSequence]:

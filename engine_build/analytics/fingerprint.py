@@ -4,6 +4,16 @@ from engine_build.metrics.metrics import SimulationMetrics
 from dataclasses import dataclass
 from typing import Optional, Dict
 
+"""
+Fingerprint
+
+AggregatedFingerprint
+
+compute_fingerprint
+
+aggregate_fingerprints
+
+"""
 
 @dataclass(frozen=True)
 class Fingerprint:
