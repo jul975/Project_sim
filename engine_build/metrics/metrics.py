@@ -87,6 +87,8 @@ class SimulationMetrics:
         self.occupancy_metrics: list[dict[str, float]] = []
 
     def record(self, eng: Engine, step_report: StepReport) -> None:
+        """ records metrics for a given engine state and step report. """
+
         if self.max_agent_count is None:
             self.max_agent_count = int(eng.max_agent_count)
 
@@ -103,7 +105,7 @@ class SimulationMetrics:
 
         age_deaths = int(step_report.movement_report.age_deaths_count)
         metabolic_deaths = int(step_report.movement_report.metabolic_deaths_count)
-        post_harvest_starvation = int(step_report.interaction_report.pending_starvation_death_count)
+        post_harvest_starvation = int(step_report.interaction_report.post_harvest_starvation_count)
         post_reproduction_death = int(step_report.biology_report.post_reproduction_death_count)
 
         self.death_causes["age_deaths"].append(age_deaths)
