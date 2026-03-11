@@ -1,11 +1,3 @@
-import numpy as np
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from engine_build.core.engineP4 import Engine
-    from engine_build.core.transitions import DeathBucket
-    from engine_build.regimes.compiled import CompiledRegime
 
 
 """
@@ -68,68 +60,68 @@ NOTE:
 
 
 
+import numpy as np
+
+from engine_build.core.engineP4 import Engine
+from engine_build.core.step_results import StepMetrics
 
 
 class SimulationMetrics:
     def __init__(self) -> None:
+        self.max_agent_count: int | None = None
 
+        self.population: list[int] = []
+        self.mean_energy: list[float] = []
+        self.births: list[int] = []
+        self.deaths: list[int] = []
 
-        # lightweight first metrics
-        # max count needed upstream, will setup on first record. 
-        self.max_agent_count : np.int64 | None = None
-        self.population : list[np.int64] = []
-        self.mean_energy : list[np.float64] = []
-        self.births : list[np.float64] = []
-        self.deaths : list[np.float64] = []
-        self.occupancy_metrics : list[dict[str, np.float64]] = []
-        self.death_causes : dict[str, list[np.int64]] = {
-            "old_age" : [],
-            "metabolic_starvation" : [],
-            "post_harvest_starvation" : [],
-            "post_reproduction_death" : []
+        self.death_causes: dict[str, list[int]] = {
+            "age_deaths": [],
+            "metabolic_deaths": [],
+            "post_harvest_starvation": [],
+            "post_reproduction_death": [],
         }
 
-    # NOTE: introduce step container to containerize metrics for each step, not now but soon
-    def record(self, 
-               engine : "Engine", 
-               births_this_tick : np.int64 = 0, 
-               deaths_this_tick : np.int64 = 0, 
-               pending_death : dict[str, 'DeathBucket'] | None = None,
-               occupancy_metrics : dict[str, np.float64] | None = None) -> None:
-        """ records metrics for a given engine state. """
-        """ NOTE: 
-                -   as of now I'm using 4 lists to store the metrics, need to make sure that no ticks are missed. 
-                    => should be ok as is, as the recording is done after the tick is completed.
-                    => but keep in mind  
-        """
+        # optional later
+        # self.resources_mean: list[float] = []
+        # self.occupancy_metrics: list[dict[str, float]] = []
 
+    def record(self, eng: Engine, step_metrics: StepMetrics) -> None:
         if self.max_agent_count is None:
-            self.max_agent_count = engine.max_agent_count
-        agents = engine.agents.values()
-        agent_count = len(agents)
+            self.max_agent_count = int(eng.max_agent_count)
 
-        self.population.append(agent_count)
+        energies = step_metrics.world_view.energies
 
-        if agent_count > 0:
-            # check efficiency, compared to standard python sum / len
-            self.mean_energy.append((sum(agent.energy_level for agent in agents) / agent_count) if agent_count > 0 else 0.0)
-        else:
-            # 
-            self.mean_energy.append(0.0)
-        
-        self.births.append(births_this_tick)
-        self.deaths.append(deaths_this_tick)
+        self.population.append(int(eng.get_agent_count()))
+        self.mean_energy.append(float(np.mean(energies)) if energies.size else 0.0)
 
-        
-        for cause, bucket in pending_death.items():
-            self.death_causes[cause].append(bucket.count)
-        
-        self.occupancy_metrics.append(occupancy_metrics)
-        
+        births = int(step_metrics.commit_report.births_count)
+        deaths = int(step_metrics.commit_report.deaths_count)
 
+        self.births.append(births)
+        self.deaths.append(deaths)
 
+        age_deaths = int(step_metrics.movement_report.age_deaths_count)
+        metabolic_deaths = int(step_metrics.movement_report.metabolic_deaths_count)
+        post_harvest_starvation = int(step_metrics.interaction_report.pending_starvation_death_count)
+        post_reproduction_death = int(step_metrics.biology_report.post_reproduction_death_count)
 
+        self.death_causes["age_deaths"].append(age_deaths)
+        self.death_causes["metabolic_deaths"].append(metabolic_deaths)
+        self.death_causes["post_harvest_starvation"].append(post_harvest_starvation)
+        self.death_causes["post_reproduction_death"].append(post_reproduction_death)
 
+        if __debug__:
+            cause_total = (
+                age_deaths
+                + metabolic_deaths
+                + post_harvest_starvation
+                + post_reproduction_death
+            )
+            assert cause_total == deaths, (
+                f"Death cause mismatch: causes={cause_total}, committed={deaths}"
+            )
+            
 
 if __name__ == "__main__":
     pass
