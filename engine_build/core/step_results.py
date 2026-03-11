@@ -17,7 +17,7 @@ class MovementReport:
 
 @dataclass(frozen=True)
 class InteractionReport:
-    pending_starvation_death_count : int = 0
+    post_harvest_starvation_count : int = 0
 
 
 @dataclass(frozen=True)

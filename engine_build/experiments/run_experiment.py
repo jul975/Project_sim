@@ -6,6 +6,7 @@ from engine_build.runner.regime_runner import BatchRunner, RegimeBatchResults
 from engine_build.execution.default import EXPERIMENT_DEFAULTS
 
 
+
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.spec import RegimeSpec
@@ -22,7 +23,7 @@ import numpy as np
         #   -   No logic, no control flow, no dependencies, no implementation details.
 
 
-def run_experiment_mode(args) -> None:
+def run_experiment_mode(args ) -> None:
     """ main entry point """
     regime_spec : RegimeSpec = get_regime_spec(args.regime)
     regime_config : CompiledRegime = compile_regime(regime_spec)
