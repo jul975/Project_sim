@@ -7,36 +7,18 @@ from engine_build.regimes.compiler import compile_regime
 
 
 @pytest.fixture
-def stable_regime_config():
-    return get_regime_spec("stable")
+def stable_regime():
+    return compile_regime(get_regime_spec("stable"))
 
 
 @pytest.fixture
-def extinction_regime_config():
-    return get_regime_spec("extinction")
+def extinction_regime():
+    return compile_regime(get_regime_spec("extinction"))
 
 
 @pytest.fixture
-def saturated_regime_config():
-    return get_regime_spec("saturated")
-
-
-@pytest.fixture
-def compiled_stable_regime():
-    spec = get_regime_spec("stable")
-    return compile_regime(spec)
-
-
-@pytest.fixture
-def compiled_extinction_regime():
-    spec = get_regime_spec("extinction")
-    return compile_regime(spec)
-
-
-@pytest.fixture
-def compiled_saturated_regime():
-    spec = get_regime_spec("saturated")
-    return compile_regime(spec)
+def saturated_regime():
+    return compile_regime(get_regime_spec("saturated"))
 
 
 @pytest.fixture

@@ -100,8 +100,8 @@ def serialize_rule_environment(engine) -> bytes:
     int64   world_size
     """
     buf = bytearray()
-    buf.extend(struct.pack("<d", engine.reproduction_params.probability))
-    buf.extend(struct.pack("<d", engine.reproduction_params.probability_change_condition))
+    buf.extend(struct.pack("<d", engine.reproduction_probability))
+
     buf += set_int64(engine.resource_params.regen_rate)
     # energy params
     buf += set_int64(engine.energy_params.movement_cost)

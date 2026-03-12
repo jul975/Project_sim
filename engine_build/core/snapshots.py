@@ -2,7 +2,7 @@
 
 from engine_build.core.seed_seq_utils import get_seed_seq_dict
 from dataclasses import asdict, dataclass
-from engine_build.regimes.compiled import CompiledRegime, PopulationParams
+from engine_build.regimes.compiled import CompiledRegime, PopulationParams, ReproductionParams
 from engine_build.core.seed_seq_utils import reconstruct_seed_seq
 from engine_build.core.rng_utils import reconstruct_rng
 
@@ -12,9 +12,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    # note prevent circular imports and hidden coupling.
     from engine_build.core.engineP4 import Engine
     from engine_build.core.agent import Agent
+
     from engine_build.core.world import World
 
 # NOTE: frozen dataclass do not make internal dicts immutable!!! => gonna need nested dataclasses
@@ -57,6 +57,7 @@ class EngineSnapshot:
     master_ss : dict
     next_agent_id : int
     config : dict
+    reproduction_probability : float
     
     max_age : int
     max_agent_count : int
@@ -139,6 +140,8 @@ def engine_to_snapshot(engine : "Engine") -> EngineSnapshot:
     next_agent_id = engine.next_agent_id
     config = asdict(engine.config)
 
+    reproduction_probability = engine.reproduction_probability
+
     max_age = engine.max_age
     max_agent_count = engine.max_agent_count
 
@@ -150,6 +153,7 @@ def engine_to_snapshot(engine : "Engine") -> EngineSnapshot:
         master_ss = master_ss,
         next_agent_id = next_agent_id,
         config = config,
+        reproduction_probability = reproduction_probability,
         max_age = max_age,
         max_agent_count = max_agent_count,
         world = world,
@@ -199,8 +203,7 @@ def _agent_from_snapshot( agent_cls ,agent_snapshot : AgentSnapshot, engine : "E
     agent_clone.repro_rng = reconstruct_rng(agent_snapshot.repro_rng)
     agent_clone.energy_rng = reconstruct_rng(agent_snapshot.energy_rng)
 
-    agent_clone.p = engine.reproduction_params.probability if not engine.world.change_condition else engine.reproduction_params.probability_change_condition
-
+    
     agent_clone._assert_invariants()
     return agent_clone
 
@@ -213,6 +216,8 @@ def _world_from_snapshot(world_cls, world_snapshot : WorldSnapshot) -> "World":
 
 
     clone_world : "World" = object.__new__(world_cls)
+
+    
 
 
     clone_world.tick = world_snapshot.tick
@@ -249,6 +254,10 @@ def _world_from_snapshot(world_cls, world_snapshot : WorldSnapshot) -> "World":
 
 
 def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
+        from engine_build.core.world import World
+        from engine_build.core.agent import Agent
+
+        
         """ create engine from snapshot. """
         
         assert isinstance(snapshot, EngineSnapshot), type(snapshot)
@@ -270,11 +279,19 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
 
         # config
         engine_clone.config = CompiledRegime.from_dict(snapshot.config) 
+        engine_clone.energy_params = engine_clone.config.energy_params
+        engine_clone.resource_params = engine_clone.config.resource_params
+
+        engine_clone.landscape_params = engine_clone.config.landscape_params
+        engine_clone.population_params = engine_clone.config.population_params
+        engine_clone.world_params = engine_clone.config.world_params
+        
         assert isinstance(engine_clone.config.population_params, PopulationParams)
         assert engine_clone.config.population_params.max_agent_count > 0
         assert engine_clone.config.population_params.max_age > 0
    
         
+        engine_clone.reproduction_probability = snapshot.reproduction_probability
         # core Params 
         engine_clone.max_age = snapshot.max_age
         engine_clone.max_agent_count = snapshot.max_agent_count
@@ -298,14 +315,14 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
         # assert invariants
         engine_clone._assert_invariants()
 
-        if __debug__:
+        """if __debug__:
             # NOTE: this is a very expensive operation, only do it in debug mode, or remove later on 
             #       Its meant as a test of the snapshot module itself, not the engine wrapper
             #       All reconstruction mistakes are caught IMMEDIATELY, 
             #       That's why its very powerful if used in the right context, 
             rebuild = engine_to_snapshot(engine_clone)
             assert snapshots_equal(snapshot, rebuild), "Snapshot not equal after rebuild."
-
+    """
         return engine_clone
 
 

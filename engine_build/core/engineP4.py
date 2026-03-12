@@ -34,7 +34,11 @@ class Engine:
         self.config : CompiledRegime = config
         
         self.energy_params : EnergyParams = self.config.energy_params  
-        self.reproduction_params : ReproductionParams = self.config.reproduction_params
+
+
+        self.reproduction_probability : float = self.config.reproduction_params.probability if not change_condition else self.config.reproduction_params.probability_change_condition
+        
+        
         self.resource_params : ResourceParams = self.config.resource_params
         self.landscape_params : LandscapeParams = self.config.landscape_params
         self.population_params : PopulationParams = self.config.population_params

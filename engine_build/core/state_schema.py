@@ -3,6 +3,10 @@
 
 from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key, serialize_rule_environment , set_int64_pair
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .engineP4 import Engine
 
 
 """
@@ -54,6 +58,8 @@ Engine:
   tick
   next_agent_id
   max_age
+  reproduction_probability
+
 
 World:
   
@@ -81,7 +87,7 @@ Agents (sorted by id):
 
 """
 
-def _schema_v2(engine ) -> bytes:
+def _schema_v2(engine : "Engine" ) -> bytes:
     # tick, agent_count, agent: id, position, energy, alive
     buffer = bytearray()
 
@@ -95,13 +101,14 @@ def _schema_v2(engine ) -> bytes:
     buffer += set_int64(len(engine.agents))
     buffer += set_int64(engine.next_agent_id)
     buffer += set_int64(engine.max_age)
+    
 
     # rule environment
     buffer += serialize_rule_environment(engine)
 
     # World
-    buffer += set_int64(engine.config.world_width)
-    buffer += set_int64(engine.config.world_height)
+    buffer += set_int64(engine.world.world_width)
+    buffer += set_int64(engine.world.world_height)
     buffer += set_int64(engine.world.max_harvest)
     buffer += set_int64(engine.world.resource_regen_rate)
 

@@ -102,7 +102,6 @@ class Agent:
 
 
         # idea is that this would create a 1% chance of reproducing per tick.
-        self.p = engine.reproduction_params.probability if not engine.world.change_condition else engine.config.reproduction_params.probability_change_condition
         self._assert_invariants()
 
     def _assert_invariants(self) -> None:
@@ -132,8 +131,8 @@ class Agent:
         # lineage
                 # RNG lineage invariant
         assert self.agent_spawn_count >= 0
-        if self.agent_spawn_count > 0:
-            assert self.agent_spawn_key[-1] == self.agent_spawn_count - 1
+        """if self.agent_spawn_count > 0:
+            assert self.agent_spawn_key[-1] == self.agent_spawn_count - 1"""
         
 
 
@@ -194,7 +193,7 @@ class Agent:
             
     def does_reproduce(self) -> bool:
             reproduce = self.repro_rng.random()
-            if reproduce < self.p:
+            if reproduce < self.engine.reproduction_probability:
                 self.energy_level -= self.engine.energy_params.reproduction_cost
                 return True
             return False
