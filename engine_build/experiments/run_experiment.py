@@ -22,10 +22,14 @@ import numpy as np
 
 def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : int ) -> None:
     """ prints a summary of the results. """
-    final_pops = np.array([m.population[-1] for m in batch_analysis.batch_metrics.values()])
+    final_populations = []
+    for _, run_results in batch_analysis.batch_metrics.items():
+        final_populations.append(run_results.metrics.population[-1])
 
-    mean_final = np.mean(final_pops)
-    std_final = np.std(final_pops)
+    final_populations = np.array(final_populations)
+
+    mean_final = np.mean(final_populations)
+    std_final = np.std(final_populations)
 
     print("============================================================")
     print(f"MODE: EXPERIMENT")
@@ -54,10 +58,10 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
 
     print('')
     print('Occupancy Metrics:')
-    print(f"    mean_occupied_cells: {agg.mean_occupied_cells:.3f}")
+    """print(f"    mean_occupied_cells: {agg.mean_occupied_cells:.3f}")
     print(f"    mean_mean_occupancy: {agg.mean_mean_occupancy:.3f}")
     print(f"    mean_max_occupancy: {agg.mean_max_occupancy:.3f}")
-    print(f"    mean_ratio_t: {agg.mean_ratio_t:.3f}")
+    print(f"    mean_ratio_t: {agg.mean_ratio_t:.3f}")"""
     print("============================================================")         
 
 
@@ -84,10 +88,10 @@ def run_experiment_mode(args) -> None:
         batch_id=args.seed
     )
 
-    batch_results = runner.run_regime_batch(ticks=ticks)
-    batch_analysis = analyze_batch(batch_results, regime_label=args.regime)
+    batch_results : BatchRunResults = runner.run_regime_batch(ticks=ticks)
+    batch_analysis : BatchAnalysis = analyze_batch(batch_results, regime_label=args.regime)
 
-    summarize_analytics(batch_analysis, ticks=ticks, n_runs=n_runs, regime=args.regime)
+    summarize_analytics(batch_analysis, ticks=ticks, n_runs=n_runs)
 
     if args.plot:
         plot_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})

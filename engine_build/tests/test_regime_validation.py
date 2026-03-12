@@ -1,5 +1,5 @@
 
-from engine_build.runner.regime_runner import RegimeBatchResults
+from engine_build.runner.regime_runner import BatchRunResults
 from engine_build.execution.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 import numpy as np
 
@@ -7,7 +7,7 @@ import numpy as np
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 
-from engine_build.runner.regime_runner import BatchRunner
+from engine_build.runner.regime_runner import Runner
 from engine_build.analytics.fingerprint import AggregatedFingerprint
 from dataclasses import fields
 
@@ -25,10 +25,9 @@ def run_validation_mode(args):
     regime_config = compile_regime(regime_spec)
     ticks, n_runs = VALIDATION_DEFAULTS["ticks"], VALIDATION_DEFAULTS["runs"]
 
-    runner = BatchRunner(
+    runner = Runner(
         regime_config=regime_config,
         n_runs=n_runs,
-        ticks=ticks,
         batch_id=DEFAULT_MASTER_SEED
     )
 
@@ -47,14 +46,14 @@ def run_validation_mode(args):
         print("================================================")
         raise
 
-def parse_by_regime(regime : str, results : RegimeBatchResults) -> None:
+def parse_by_regime(regime : str, results : BatchRunResults) -> None:
     if regime not in VALIDATORS:
         raise ValueError(f"Unknown regime: {regime}")
     VALIDATORS[regime](results)
 
 
 
-def validate_stable_regime(result: RegimeBatchResults) -> None:
+def validate_stable_regime(result: BatchRunResults) -> None:
     agg : AggregatedFingerprint = result.aggregate_fingerprint
     # cap = result.batch_metrics[0].max_agent_count
     # NOTE: look into -0 optimized mode run in python where asserts are ignored
@@ -96,7 +95,7 @@ Interpretation:
 
 
 
-def validate_extinction_regime(result: RegimeBatchResults) -> None:
+def validate_extinction_regime(result: BatchRunResults) -> None:
     agg = result.aggregate_fingerprint
     # guarding for empty dict
     cap = next(iter(result.batch_metrics.values())).max_agent_count
@@ -137,7 +136,7 @@ def validate_extinction_regime(result: RegimeBatchResults) -> None:
     
 
 
-def validate_saturated_regime(result: RegimeBatchResults) -> None:
+def validate_saturated_regime(result: BatchRunResults) -> None:
     agg = result.aggregate_fingerprint
     cap = next(iter(result.batch_metrics.values())).max_agent_count
 

@@ -12,13 +12,12 @@ from typing import Dict
 
 from engine_build.runner.regime_runner import BatchRunResults
 
-from engine_build.regimes.compiled import CompiledRegime
 
 from engine_build.analytics.fingerprint import compute_fingerprint, get_aggregate_fingerprints
 
 
 from engine_build.analytics.fingerprint import AggregatedFingerprint, Fingerprint
-from engine_build.metrics.metrics import SimulationMetrics
+from engine_build.runner.regime_runner import RunArtifacts
 import numpy as np
 
 # derived experiment interpretation 
@@ -26,7 +25,7 @@ import numpy as np
 class BatchAnalysis:
     aggregate_fingerprint : AggregatedFingerprint
     fingerprints_dict : Dict[np.int64, Fingerprint]
-    batch_metrics : Dict[np.int64, SimulationMetrics]
+    batch_metrics : Dict[np.int64, RunArtifacts]
     regime_label : str | None = None
     summary_stats : Dict[str, float] | None = None
 

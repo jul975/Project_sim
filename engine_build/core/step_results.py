@@ -17,7 +17,7 @@ class MovementReport:
 
 @dataclass(frozen=True)
 class InteractionReport:
-    post_harvest_starvation_count : int = 0
+    pending_starvation_death_count : int = 0
 
 
 @dataclass(frozen=True)
@@ -37,6 +37,7 @@ class WorldView:
 
 @dataclass(frozen=True)
 class CommitReport:
+    population : int = 0
     births_count : int = 0
     deaths_count : int = 0
 

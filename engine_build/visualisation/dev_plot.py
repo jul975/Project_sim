@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from engine_build.metrics.metrics import SimulationMetrics
-from engine_build.runner.regime_runner import RegimeBatchResults
+from engine_build.runner.regime_runner import BatchRunResults
 
 
-def plot_development_metrics(batch_metrics: RegimeBatchResults, seed: int | None = None) -> None:
+def plot_development_metrics(batch_metrics: BatchRunResults, seed: int | None = None) -> None:
     """
     Development visualization for simulation evaluation.
 

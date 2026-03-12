@@ -1,13 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from engine_build.runner.regime_runner import BatchRunner
+from engine_build.runner.regime_runner import Runner
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 
 def run_fertility_experiment():
     regime_spec = get_regime_spec("stable")
     regime_config = compile_regime(regime_spec)
-    runner = BatchRunner(regime_config , n_runs=1, ticks=1000, batch_id=42)
+    runner = Runner(regime_config , n_runs=1, ticks=1000, batch_id=42)
     eng, _, _ = runner.run_single(runner.run_seeds[0], 100)
     return eng
 

@@ -101,14 +101,14 @@ class Runner:
         eng = Engine(seed, self.regime_config)
         # NOTE: 
 
-        metrics = SimulationMetrics()
+        metrics = SimulationMetrics(eng)
 
         world_frames = WorldFrames( capture_every=10 if ticks > 100 else 1)
 
         for _ in range(ticks):
             
             step_report : StepReport = eng.step()
-            metrics.record(eng, step_report)
+            metrics.record(step_report)
 
             
 
@@ -121,7 +121,7 @@ class Runner:
         for _ in range(ticks):
             step_report : StepReport = eng.step()
             metrics.record(eng, step_report)
-        return RunArtifacts(eng, metrics, None, eng.master_ss, ticks)
+        return RunArtifacts(engine_final=eng, metrics= metrics, world_frames= None, seed= eng.master_ss, ticks= ticks)
 
 
 

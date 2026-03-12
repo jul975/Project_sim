@@ -2,13 +2,13 @@ from dataclasses import dataclass , field
 from typing import TYPE_CHECKING
 
 from .step_results import MovementReport, InteractionReport, BiologyReport
-from .world import World
+
 
 from typing import List
 
 if TYPE_CHECKING:
     from .agent import Agent
-    
+    from .world import World    
 ###############################################################################################
 # Formal agent transition order: =>    T = Π ∘ B ∘ D ∘ H ∘ M ∘ A
 
@@ -44,7 +44,7 @@ class TransitionContext:
 
 
 
-def movement_phase(agents : dict[int, Agent] , context : TransitionContext) -> MovementReport:
+def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext) -> MovementReport:
     """ movement_phase(agents, world, context):
     """
 
@@ -77,7 +77,7 @@ def movement_phase(agents : dict[int, Agent] , context : TransitionContext) -> M
         )
 
 
-def interaction_phase(context : TransitionContext, world : World) -> InteractionReport:
+def interaction_phase(context : TransitionContext, world : "World") -> InteractionReport:
     """ 
     interaction_phase(context):
     """

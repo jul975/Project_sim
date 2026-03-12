@@ -67,8 +67,11 @@ from engine_build.core.step_results import StepReport
 
 
 class SimulationMetrics:
-    def __init__(self) -> None:
-        self.max_agent_count: int | None = None
+    def __init__(self, eng : Engine) -> None:
+        
+        
+        self.max_agent_count : int = eng.max_agent_count
+        self.max_age : int = eng.max_age
 
         self.population: list[int] = []
         self.mean_energy: list[float] = []
@@ -83,18 +86,17 @@ class SimulationMetrics:
         }
 
         # optional later
-        self.resources_mean: list[float] = []
-        self.occupancy_metrics: list[dict[str, float]] = []
+        #self.resources_mean: list[float] = []
+        #self.occupancy_metrics: list[dict[str, float]] = []
 
-    def record(self, eng: Engine, step_report: StepReport) -> None:
+    def record(self, step_report: StepReport) -> None:
         """ records metrics for a given engine state and step report. """
 
-        if self.max_agent_count is None:
-            self.max_agent_count = int(eng.max_agent_count)
+        
 
         energies = step_report.world_view.energies
 
-        self.population.append(int(eng.get_agent_count()))
+        self.population.append(int(step_report.commit_report.population))
         self.mean_energy.append(float(np.mean(energies)) if energies.size else 0.0)
 
         births = int(step_report.commit_report.births_count)
@@ -105,23 +107,23 @@ class SimulationMetrics:
 
         age_deaths = int(step_report.movement_report.age_deaths_count)
         metabolic_deaths = int(step_report.movement_report.metabolic_deaths_count)
-        post_harvest_starvation = int(step_report.interaction_report.post_harvest_starvation_count)
+        post_harvest_starvation = int(step_report.interaction_report.pending_starvation_death_count)
         post_reproduction_death = int(step_report.biology_report.post_reproduction_death_count)
 
         self.death_causes["age_deaths"].append(age_deaths)
         self.death_causes["metabolic_deaths"].append(metabolic_deaths)
         self.death_causes["post_harvest_starvation"].append(post_harvest_starvation)
         self.death_causes["post_reproduction_death"].append(post_reproduction_death)
-
+        """
         resources = step_report.world_view.resources
         self.resources_mean.append(float(np.mean(resources)))
         self.occupancy_metrics.append({
-            "occupied_cells" : float(np.sum(resources > 0)),
-            "mean_occupancy" : float(np.mean(resources)),
-            "max_occupancy" : float(np.max(resources)),
-            "ratio_t" : float(np.max(resources) / np.mean(resources)),
+            "occupied_cells" : len(step_report.world_view.positions),
+            "mean_occupancy" : float(np.mean(step_report.world_view.energies)),
+            "max_occupancy" : float(np.max(step_report.world_view.energies)),
+            "ratio_t" : float(np.max(step_report) / np.mean()),
         })
-
+        """
 
         if __debug__:
             cause_total = (

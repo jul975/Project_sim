@@ -36,13 +36,13 @@ class Fingerprint:
     # 4) mean and proportion of deaths cause
     mean_deaths_cause_tail: Dict[str, float]
     proportion_deaths_cause_tail: Dict[str, float]
-    
+    """
     # 5) occupancy metrics
     mean_occupied_cells: float
     mean_mean_occupancy: float
     mean_max_occupancy: float
     mean_ratio_t: float
-
+    """
 
 @dataclass(frozen=True)
 class AggregatedFingerprint:
@@ -52,10 +52,13 @@ class AggregatedFingerprint:
     cap_hit_rate: float
     birth_death_ratio: float
     mean_time_cv_over_runs: float
+    
+    """ 
     mean_occupied_cells: float
+    
     mean_mean_occupancy: float
     mean_max_occupancy: float
-    mean_ratio_t: float
+    mean_ratio_t: float"""
 
 """
 # Pure transformations
@@ -84,7 +87,7 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
     births_tail = metrics.births[tail_start:]
     deaths_tail = metrics.deaths[tail_start:]
     total_deaths_tail = np.sum(deaths_tail)
-    occupancy_metrics_tail = metrics.occupancy_metrics[tail_start:]
+    #occupancy_metrics_tail = metrics.occupancy_metrics[tail_start:]
 
 
 
@@ -127,13 +130,13 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
             cause: 0.0
             for cause in metrics.death_causes
     }
-        
+    """    
     # 5) occupancy metrics
     mean_occupied_cells = np.mean([m["occupied_cells"] for m in occupancy_metrics_tail])
     mean_mean_occupancy = np.mean([m["mean_occupancy"] for m in occupancy_metrics_tail])
     mean_max_occupancy = np.mean([m["max_occupancy"] for m in occupancy_metrics_tail])
     mean_ratio_t = np.mean([m["ratio_t"] for m in occupancy_metrics_tail])
-    
+    """
 
     # condense later
     return Fingerprint(
@@ -148,12 +151,12 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
         mean_births_per_tick=mean_births_per_tick,
         mean_deaths_cause_tail=mean_deaths_cause_tail,
         proportion_deaths_cause_tail=proportion_deaths_cause_tail,
-        mean_occupied_cells=mean_occupied_cells,
+        
+    )
+"""mean_occupied_cells=mean_occupied_cells,
         mean_mean_occupancy=mean_mean_occupancy,
         mean_max_occupancy=mean_max_occupancy,
-        mean_ratio_t=mean_ratio_t
-    )
-
+        mean_ratio_t=mean_ratio_t"""
 
 def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFingerprint:
     if not fingerprints:
@@ -179,12 +182,12 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
     mean_deaths_per_tick = np.mean([f.mean_deaths_per_tick for f in fingerprints])
     mean_births_per_tick = np.mean([f.mean_births_per_tick for f in fingerprints])
 
-    # 5) occupancy metrics
+    """# 5) occupancy metrics
     mean_occupied_cells = np.mean([f.mean_occupied_cells for f in fingerprints])
     mean_mean_occupancy = np.mean([f.mean_mean_occupancy for f in fingerprints])
     mean_max_occupancy = np.mean([f.mean_max_occupancy for f in fingerprints])
     mean_ratio_t = np.mean([f.mean_ratio_t for f in fingerprints])
-
+    """
     if mean_deaths_per_tick > 0:
         birth_death_ratio = mean_births_per_tick / mean_deaths_per_tick
     else:
@@ -214,15 +217,15 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
 
         mean_time_cv_over_runs = mean_time_cv_over_runs,
 
+    )
+"""
         mean_occupied_cells=mean_occupied_cells,
 
         mean_mean_occupancy=mean_mean_occupancy,
 
         mean_max_occupancy=mean_max_occupancy,
 
-        mean_ratio_t=mean_ratio_t
-    )
-    
+        mean_ratio_t=mean_ratio_t"""    
 
 
 

@@ -134,7 +134,7 @@ class Engine:
         return self.get_state_hash() == other.get_state_hash()
 
 
-    def step(self) -> StepMetrics:
+    def step(self) -> StepReport:
         """ restructuring step method in order to evaluate agents for death and birth together. 
             After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
         
@@ -201,6 +201,7 @@ class Engine:
             self._assert_invariants()
 
         return CommitReport(
+            population = len(self.agents),
             births_count = len(reproducers_to_commit),
             deaths_count = deaths_this_tick,
         )
@@ -211,6 +212,9 @@ class Engine:
         """ builds world view. """
 
         sorted_agents = sorted(self.agents.values(), key=lambda agent: agent.id)
+
+
+
         positions = np.fromiter(
             (coord for agent in sorted_agents for coord in agent.position),
             dtype=np.int32,
