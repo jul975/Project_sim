@@ -32,6 +32,9 @@ class Fingerprint:
     mean_deaths_cause_tail: dict[str, float]
     proportion_deaths_cause_tail: dict[str, float]
 
+    near_cap_rate: float
+    low_population_rate: float
+
 
 @dataclass(frozen=True)
 class AggregatedFingerprint:
@@ -42,6 +45,9 @@ class AggregatedFingerprint:
     cap_hit_rate: float
     birth_death_ratio: float
     mean_time_cv_over_runs: float
+
+    batch_near_cap_rate: float
+    batch_near_low_population_rate: float
 
 
 
@@ -91,6 +97,10 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
             cause: 0.0
             for cause in metrics.death_causes
     }
+        
+    near_cap_rate = float((np.asarray(population_tail) >= 0.9 * metrics.max_agent_count).mean())
+    low_population_rate = float((np.asarray(population_tail) <= 0.1 * metrics.max_agent_count).mean())
+
 
 
     return Fingerprint(
@@ -108,6 +118,9 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
 
         mean_deaths_cause_tail=mean_deaths_cause_tail,
         proportion_deaths_cause_tail=proportion_deaths_cause_tail,
+
+        near_cap_rate=near_cap_rate,
+        low_population_rate=low_population_rate,
         
     )
 
@@ -153,6 +166,9 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
 
     mean_time_cv_over_runs = float(np.mean(cv_per_run))
 
+    batch_near_cap_rate = float(np.mean([f.near_cap_rate for f in fingerprints]))
+    batch_near_low_population_rate = float(np.mean([f.low_population_rate for f in fingerprints]))
+
     return AggregatedFingerprint(
         mean_population_over_runs=mean_pop_over_runs,
 
@@ -165,6 +181,9 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
         birth_death_ratio=birth_death_ratio,
 
         mean_time_cv_over_runs = mean_time_cv_over_runs,
+
+        batch_near_cap_rate=batch_near_cap_rate,
+        batch_near_low_population_rate=batch_near_low_population_rate,
 
     )
 
