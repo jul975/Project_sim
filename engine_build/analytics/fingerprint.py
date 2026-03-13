@@ -2,7 +2,6 @@
 import numpy as np
 from engine_build.metrics.metrics import SimulationMetrics
 from dataclasses import dataclass
-from typing import Optional, Dict
 
 """
 Fingerprint
@@ -17,8 +16,7 @@ aggregate_fingerprints
 
 @dataclass(frozen=True)
 class Fingerprint:
-
-    # 1) population metrics
+    """ Fingerprint of a single run. """
     min_population: int
     max_population: int
     mean_population: float
@@ -26,103 +24,66 @@ class Fingerprint:
     range_population: float
     cap_hit_rate: float
 
-    # 2) extinction tick
-    extinction_tick: Optional[int]
+    extinction_tick: int | None
 
-    # 3) mean deaths and births per tick
-    mean_deaths_per_tick: float
     mean_births_per_tick: float
+    mean_deaths_per_tick: float
 
-    # 4) mean and proportion of deaths cause
-    mean_deaths_cause_tail: Dict[str, float]
-    proportion_deaths_cause_tail: Dict[str, float]
-    """
-    # 5) occupancy metrics
-    mean_occupied_cells: float
-    mean_mean_occupancy: float
-    mean_max_occupancy: float
-    mean_ratio_t: float
-    """
+    mean_deaths_cause_tail: dict[str, float]
+    proportion_deaths_cause_tail: dict[str, float]
+
 
 @dataclass(frozen=True)
 class AggregatedFingerprint:
+    """ Aggregated fingerprint over a batch of runs. """
     mean_population_over_runs: float
     std_mean_population_over_runs: float
     extinction_rate: float
     cap_hit_rate: float
     birth_death_ratio: float
     mean_time_cv_over_runs: float
-    
-    """ 
-    mean_occupied_cells: float
-    
-    mean_mean_occupancy: float
-    mean_max_occupancy: float
-    mean_ratio_t: float"""
 
-"""
-# Pure transformations
-
-    - compute_fingerprint(metrics)
-    - compute_tail_stats(...)
-    - compute_extinction_flags(...)
-    - compute_cap_hit_rate(...)
-
-    No engine.
-    No simulation.
-    Just math on arrays.
-
-
-"""
 
 
 
 
 
 def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fingerprint:
+    """ compute tail-window fingerprint of a single simulation run. """
     if tail_start < 0 or tail_start >= len(metrics.population):
         raise ValueError(f"tail_start {tail_start} out of bounds for metrics of length {len(metrics.population)}")
 
-    population_tail = metrics.population[tail_start:]
-    births_tail = metrics.births[tail_start:]
-    deaths_tail = metrics.deaths[tail_start:]
-    total_deaths_tail = np.sum(deaths_tail)
-    #occupancy_metrics_tail = metrics.occupancy_metrics[tail_start:]
+    population_tail = np.asarray(metrics.population[tail_start:], dtype=float)
+    births_tail = np.asarray(metrics.births[tail_start:], dtype=float)
+    deaths_tail = np.asarray(metrics.deaths[tail_start:], dtype=float)
+    
+    total_deaths_tail = int(np.sum(deaths_tail))
 
 
 
     
-    # 1) population metrics
-    min_tail = min(population_tail)
-    max_tail = max(population_tail)
-    mean_tail = np.mean(population_tail)
-    std_tail = np.std(population_tail)
-    range_tail = max_tail - min_tail
-
-    # NOTE: review, didnt think about mechanism at first, 
-    cap_hit_rate = (
-        np.array(population_tail) == metrics.max_agent_count
-        ).mean()
+    min_tail = int(np.min(population_tail))
+    max_tail = int(np.max(population_tail))
+    mean_tail = float(np.mean(population_tail))
+    std_tail = float(np.std(population_tail))
+    range_tail = float(max_tail - min_tail)
+    cap_hit_rate = float((np.asarray(population_tail) == metrics.max_agent_count).mean())
+    mean_deaths_per_tick = float(np.mean(deaths_tail))
+    mean_births_per_tick = float(np.mean(births_tail))
     
-    # NOTE: review next() => usefull and didnt think about it for a while. => generator so no list construction
-    
-    # 2) extinction tick
     extinction_tick = next((i + tail_start for i, pop in enumerate(population_tail) if pop == 0), None)
     
     
-    # 3) mean deaths and births per tick
-    mean_deaths_per_tick = np.mean(deaths_tail)
-    mean_births_per_tick = np.mean(births_tail)
     
-    # 4) mean and proportion of deaths cause
-    # NOTE: divide by 0 needed to be handled 
+    
+
     mean_deaths_cause_tail = {
-        cause : np.mean(death_causes[tail_start:])
+        cause : float(np.mean(death_causes[tail_start:]))
         for cause, death_causes in metrics.death_causes.items()}
     
     if total_deaths_tail > 0:
         proportion_deaths_cause_tail = {
-            cause: np.sum(death_causes[tail_start:]) / total_deaths_tail
+            cause: float(np.sum(death_causes[tail_start:]) / total_deaths_tail)
             for cause, death_causes in metrics.death_causes.items()
     }
     else:
@@ -130,15 +91,8 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
             cause: 0.0
             for cause in metrics.death_causes
     }
-    """    
-    # 5) occupancy metrics
-    mean_occupied_cells = np.mean([m["occupied_cells"] for m in occupancy_metrics_tail])
-    mean_mean_occupancy = np.mean([m["mean_occupancy"] for m in occupancy_metrics_tail])
-    mean_max_occupancy = np.mean([m["max_occupancy"] for m in occupancy_metrics_tail])
-    mean_ratio_t = np.mean([m["ratio_t"] for m in occupancy_metrics_tail])
-    """
 
-    # condense later
+
     return Fingerprint(
         min_population=min_tail,
         max_population=max_tail,
@@ -146,51 +100,46 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
         std_population=std_tail,
         range_population=range_tail,
         cap_hit_rate=cap_hit_rate,
+
         extinction_tick=extinction_tick,
+
         mean_deaths_per_tick=mean_deaths_per_tick,
         mean_births_per_tick=mean_births_per_tick,
+
         mean_deaths_cause_tail=mean_deaths_cause_tail,
         proportion_deaths_cause_tail=proportion_deaths_cause_tail,
         
     )
-"""mean_occupied_cells=mean_occupied_cells,
-        mean_mean_occupancy=mean_mean_occupancy,
-        mean_max_occupancy=mean_max_occupancy,
-        mean_ratio_t=mean_ratio_t"""
+
 
 def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFingerprint:
+    """Aggregate run-level fingerprints across a batch."""  
     if not fingerprints:
         raise ValueError("No fingerprints to aggregate")
 
 
     # 1) simple mean and std aggregation
-    mean_pop_over_runs = np.mean([f.mean_population for f in fingerprints])
-    std_mean_population_over_runs = np.std([f.mean_population for f in fingerprints])
+    mean_pop_over_runs = float(np.mean([f.mean_population for f in fingerprints]))
+    std_mean_population_over_runs = float(np.std([f.mean_population for f in fingerprints]))
 
 
 
     # 2) extinction rate
     # note, conditional 0, watch out for truncation of mean extinction! 
-    extinction_rate = np.mean([f.extinction_tick is not None for f in fingerprints])
-    # NOTE: think about extinction time and mean extinction tick computes
-
+    extinction_rate = float(np.mean([f.extinction_tick is not None for f in fingerprints]))
     # 3) cap hit rate
     # note, cap_hit_rate can not be None, so no need to handle it. 
-    cap_hit_rate = np.mean([f.cap_hit_rate for f in fingerprints])
+    cap_hit_rate = float(np.mean([f.cap_hit_rate for f in fingerprints]))
 
     # 4) mean deaths and births per tick
-    mean_deaths_per_tick = np.mean([f.mean_deaths_per_tick for f in fingerprints])
-    mean_births_per_tick = np.mean([f.mean_births_per_tick for f in fingerprints])
+    mean_deaths_per_tick = float(np.mean([f.mean_deaths_per_tick for f in fingerprints]))
+    mean_births_per_tick = float(np.mean([f.mean_births_per_tick for f in fingerprints]))
 
-    """# 5) occupancy metrics
-    mean_occupied_cells = np.mean([f.mean_occupied_cells for f in fingerprints])
-    mean_mean_occupancy = np.mean([f.mean_mean_occupancy for f in fingerprints])
-    mean_max_occupancy = np.mean([f.mean_max_occupancy for f in fingerprints])
-    mean_ratio_t = np.mean([f.mean_ratio_t for f in fingerprints])
-    """
+
     if mean_deaths_per_tick > 0:
-        birth_death_ratio = mean_births_per_tick / mean_deaths_per_tick
+        birth_death_ratio = float(mean_births_per_tick / mean_deaths_per_tick)
     else:
+        # NOTE: No deaths in the tail window => ratio is treated as infinite.
         birth_death_ratio = np.inf
 
     cv_per_run = []
@@ -202,7 +151,7 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
 
 
 
-    mean_time_cv_over_runs = np.mean(cv_per_run)
+    mean_time_cv_over_runs = float(np.mean(cv_per_run))
 
     return AggregatedFingerprint(
         mean_population_over_runs=mean_pop_over_runs,
@@ -218,15 +167,6 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
         mean_time_cv_over_runs = mean_time_cv_over_runs,
 
     )
-"""
-        mean_occupied_cells=mean_occupied_cells,
-
-        mean_mean_occupancy=mean_mean_occupancy,
-
-        mean_max_occupancy=mean_max_occupancy,
-
-        mean_ratio_t=mean_ratio_t"""    
-
 
 
 if __name__ == "__main__":

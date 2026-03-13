@@ -3,7 +3,6 @@
 
 from engine_build.experiments.run_experiment import run_experiment_mode
 
-from engine_build.tests.test_regime_validation import run_validation_mode, validate_all_regimes
 
 from engine_build.experiments.fertility_dist_plot import run_and_plot_population_dynamics
 import argparse
@@ -70,13 +69,7 @@ def main():
      
     args = parse_args()
 
-    if args.mode == "validation":
-        if args.regime == "all":
-            validate_all_regimes(args)
-        else:
-            run_validation_mode(args)
-            
-    elif args.fertility:
+    if args.fertility:
         run_and_plot_population_dynamics()
 
     elif args.mode == "experiment":

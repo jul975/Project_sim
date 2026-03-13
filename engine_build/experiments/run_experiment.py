@@ -10,6 +10,7 @@ from engine_build.execution.default import EXPERIMENT_DEFAULTS
 
 
 
+
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 
@@ -30,39 +31,28 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
 
     mean_final = np.mean(final_populations)
     std_final = np.std(final_populations)
+    agg : AggregatedFingerprint = batch_analysis.aggregate_fingerprint
 
     print("============================================================")
-    print(f"MODE: EXPERIMENT")
+    print("MODE: EXPERIMENT")
     print(f"REGIME: {batch_analysis.regime_label}")
     print(f"RUNS: {n_runs}")
     print(f"TICKS: {ticks}")
+    print(f"TAIL_START: {batch_analysis.tail_start}")
     print("")
-    print("Final Population:")
-    print(f"    mean: {mean_final:.2f}")
-    print(f"    std : {std_final:.2f}")
-    print(f"    cv : {( std_final / mean_final * 100 ):.2f} %")
-    print(f"    ** cv = std/mean")
-    print(f"        -   cv = 0.05 → strict equilibrium")
-    print(f"        -   cv = 0.1 → moderate tolerance")
-    print(f"        -   cv = 0.2 → loose tolerance")
+    print("End-State Summary:")
+    print(f"    final_population_mean : {mean_final:.2f}")
+    print(f"    final_population_std  : {std_final:.2f}")
+    print(f"    final_population_cv   : {std_final / mean_final:.4f}" if mean_final > 0 else "    final_population_cv   : nan")
     print("")
-    print("Aggregate Fingerprint:")
-    agg : AggregatedFingerprint = batch_analysis.aggregate_fingerprint
-
-    print('Population Metrics:')
-    print(f"    mean_population : {agg.mean_population_over_runs:.3f}")
-    print(f"    std_population  : {agg.std_mean_population_over_runs:.3f}")
-    print(f"    extinction_rate : {agg.extinction_rate:.3f}")
-    print(f"    cap_hit_rate    : {agg.cap_hit_rate:.3f}")
-    print(f"    birth_death_ratio: {agg.birth_death_ratio:.3f}")
-
-    print('')
-    print('Occupancy Metrics:')
-    """print(f"    mean_occupied_cells: {agg.mean_occupied_cells:.3f}")
-    print(f"    mean_mean_occupancy: {agg.mean_mean_occupancy:.3f}")
-    print(f"    mean_max_occupancy: {agg.mean_max_occupancy:.3f}")
-    print(f"    mean_ratio_t: {agg.mean_ratio_t:.3f}")"""
-    print("============================================================")         
+    print("Tail-Window Regime Summary:")
+    print(f"    mean_population_over_runs     : {agg.mean_population_over_runs:.3f}")
+    print(f"    std_mean_population_over_runs : {agg.std_mean_population_over_runs:.3f}")
+    print(f"    extinction_rate               : {agg.extinction_rate:.3f}")
+    print(f"    cap_hit_rate                  : {agg.cap_hit_rate:.3f}")
+    print(f"    birth_death_ratio             : {agg.birth_death_ratio:.3f}")
+    print(f"    mean_time_cv_over_runs        : {agg.mean_time_cv_over_runs:.3f}")
+    print("============================================================")
 
 
 if __name__ == "__main__":
@@ -111,5 +101,35 @@ Spatial Concentration ratio:
 max_occupancy/mean_occupancy
 """
 
+
+
+
+"""
+============================================================
+MODE: EXPERIMENT
+REGIME: stable
+RUNS: 10
+TICKS: 1000
+TAIL_START: 750
+
+End-State Summary:
+    final_population_mean : 114.50
+    final_population_std  : 7.50
+    final_population_cv   : 0.0655
+
+Tail-Window Regime Summary:
+    mean_population_over_runs     : 117.972
+    std_mean_population_over_runs : 1.842
+    extinction_rate               : 0.000
+    cap_hit_rate                  : 0.000
+    birth_death_ratio             : 0.999
+    mean_time_cv_over_runs        : ...
+
+============================================================
+
+
+
+
+"""
 
 

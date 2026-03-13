@@ -3,21 +3,15 @@
 """
 NOTE: 
         Observation only
-
-            - MetricsCollector
-            - Death counters
-            - Population history
-            - Tick-level logging
-
-    It receives state snapshots or event hooks.
-    It does not run loops.
-    It does not know about regimes.
+    It receives step reports (later maybe or event hooks.)
+    It does NOT run loops.
+    It does NOT know about regimes.
 
 """
 
 
 """ 
-    NOTE: right now, clear separation between engine sate and mesurements.
+    NOTE: right now, clear separation between engine sate and metrics.
 
             S(t) | M(t) 
 
@@ -25,54 +19,26 @@ NOTE:
 
 """ TEST METRICS SETUP: V0.1
 
-        -   Head (tick 0 -> n)
-
-        -   Tail (tick n denoting start tail-window)
-
-        
-        For tail window, collect: 
-        Population metrics:
-        -   min, max, mean population
-        -   std/range population
-        -   cap_hit_rate
-
-        -   extinction_tick : None | tick_n
-        -   mean deaths/tick
-        -   mean births/tick
-
-        -   mean age ?
-        -   mean reproduction rate ?
-        -   mean harvest rate ?
-        -   mean movement rate ?
-
-        -   mean(deaths_cause_tail)
-        -   proportion: deaths_cause_tail_sum / total_deaths_tail_sum
-
-        
-        World metrics:
-        1. total resources
-        2. mean resources
-        3. depletion fraction vs fertility
-
-
+    - max_agent_count
+    - population
+    - mean_energy
+    - births
+    - deaths
+    - death_causes
 
 """
 
 
 
 import numpy as np
-
-from engine_build.core.engineP4 import Engine
 from engine_build.core.step_results import StepReport
 
 
 class SimulationMetrics:
-    def __init__(self, eng : Engine) -> None:
+    def __init__(self, max_agent_count : int ) -> None:
+        """Stores canonical per-tick observed signals for one simulation run."""
         
-        
-        self.max_agent_count : int = eng.max_agent_count
-        self.max_age : int = eng.max_age
-
+        self.max_agent_count : int = max_agent_count
         self.population: list[int] = []
         self.mean_energy: list[float] = []
         self.births: list[int] = []
@@ -85,26 +51,30 @@ class SimulationMetrics:
             "post_reproduction_death": [],
         }
 
-        # optional later
-        #self.resources_mean: list[float] = []
-        #self.occupancy_metrics: list[dict[str, float]] = []
+
 
     def record(self, step_report: StepReport) -> None:
-        """ records metrics for a given engine state and step report. """
+        """Stores per-tick observed signals for one simulation run."""
 
         
-
-        energies = step_report.world_view.energies
-
+        # population
         self.population.append(int(step_report.commit_report.population))
-        self.mean_energy.append(float(np.mean(energies)) if energies.size else 0.0)
 
+        # energies
+        energies = step_report.world_view.energies
+        mean_energy = float(np.mean(energies)) if energies.size else 0.0 
+        self.mean_energy.append(mean_energy)
+
+
+        # births and deaths
         births = int(step_report.commit_report.births_count)
         deaths = int(step_report.commit_report.deaths_count)
 
         self.births.append(births)
         self.deaths.append(deaths)
 
+
+        # death causes
         age_deaths = int(step_report.movement_report.age_deaths_count)
         metabolic_deaths = int(step_report.movement_report.metabolic_deaths_count)
         post_harvest_starvation = int(step_report.interaction_report.pending_starvation_death_count)
@@ -114,16 +84,7 @@ class SimulationMetrics:
         self.death_causes["metabolic_deaths"].append(metabolic_deaths)
         self.death_causes["post_harvest_starvation"].append(post_harvest_starvation)
         self.death_causes["post_reproduction_death"].append(post_reproduction_death)
-        """
-        resources = step_report.world_view.resources
-        self.resources_mean.append(float(np.mean(resources)))
-        self.occupancy_metrics.append({
-            "occupied_cells" : len(step_report.world_view.positions),
-            "mean_occupancy" : float(np.mean(step_report.world_view.energies)),
-            "max_occupancy" : float(np.max(step_report.world_view.energies)),
-            "ratio_t" : float(np.max(step_report) / np.mean()),
-        })
-        """
+
 
         if __debug__:
             cause_total = (

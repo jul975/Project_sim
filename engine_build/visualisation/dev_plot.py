@@ -1,48 +1,59 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from engine_build.metrics.metrics import SimulationMetrics
 from engine_build.runner.regime_runner import BatchRunResults
 
 
-def plot_development_metrics(batch_metrics: BatchRunResults, seed: int | None = None) -> None:
+def plot_development_metrics(batch_results: BatchRunResults, seed: int | None = None) -> None:
     """
-    Development visualization for simulation evaluation.
+    Quick development plots for batch run inspection.
 
     Produces:
     1) Population ensemble trajectory
-    2) Birth vs Death dynamics
-    3) Death cause composition
+    2) Mean births vs deaths per tick
+    3) Mean energy trajectory
+    4) Mean death-cause totals per run
     """
 
-    if not batch_metrics:
-        raise ValueError("No batch metrics provided.")
+    if not batch_results.runs:
+        raise ValueError("No runs found in batch results.")
+
+    run_artifacts = list(batch_results.runs.values())
+
+    metrics_list = [ra.metrics for ra in run_artifacts if ra.metrics is not None]
+    if not metrics_list:
+        raise ValueError("No metrics found in batch results.")
 
     # --------------------------------------------------
-    # Stack population time-series
+    # Stack time-series
     # --------------------------------------------------
-    populations = np.array([m.population for m in batch_metrics.batch_metrics.values()])
+    populations = np.array([m.population for m in metrics_list], dtype=float)
+    births = np.array([m.births for m in metrics_list], dtype=float)
+    deaths = np.array([m.deaths for m in metrics_list], dtype=float)
+    mean_energy = np.array([m.mean_energy for m in metrics_list], dtype=float)
 
     n_runs, n_ticks = populations.shape
     ticks = np.arange(n_ticks)
 
+    # --------------------------------------------------
+    # FIGURE 1 — Population ensemble
+    # --------------------------------------------------
     mean_pop = populations.mean(axis=0)
     std_pop = populations.std(axis=0)
 
-    upper = mean_pop + std_pop
-    lower = mean_pop - std_pop
+    plt.figure(figsize=(10, 6))
 
-    # ==================================================
-    # FIGURE 1 — Population Ensemble
-    # ==================================================
-
-    plt.figure(figsize=(10,6))
-
-    for m in batch_metrics.batch_metrics.values():
+    for m in metrics_list:
         plt.plot(ticks, m.population, alpha=0.15)
 
-    plt.plot(ticks, mean_pop, linewidth=2, label="Mean")
-    plt.fill_between(ticks, lower, upper, alpha=0.25, label="±1 STD")
+    plt.plot(ticks, mean_pop, linewidth=2, label="Mean population")
+    plt.fill_between(
+        ticks,
+        mean_pop - std_pop,
+        mean_pop + std_pop,
+        alpha=0.25,
+        label="±1 STD",
+    )
 
     title = f"Population Dynamics | runs={n_runs} ticks={n_ticks}"
     if seed is not None:
@@ -51,57 +62,65 @@ def plot_development_metrics(batch_metrics: BatchRunResults, seed: int | None = 
     plt.title(title)
     plt.xlabel("Tick")
     plt.ylabel("Population")
-
     plt.legend()
     plt.tight_layout()
     plt.show()
 
-    # ==================================================
-    # FIGURE 2 — Birth vs Death Dynamics
-    # ==================================================
+    # --------------------------------------------------
+    # FIGURE 2 — Mean births vs deaths
+    # --------------------------------------------------
+    plt.figure(figsize=(10, 6))
+    plt.plot(ticks, births.mean(axis=0), label="Mean births / tick")
+    plt.plot(ticks, deaths.mean(axis=0), label="Mean deaths / tick")
 
-    births = np.array([m.births for m in batch_metrics.batch_metrics.values()])
-    deaths = np.array([m.deaths for m in batch_metrics.batch_metrics.values()])
-
-    mean_births = births.mean(axis=0)
-    mean_deaths = deaths.mean(axis=0)
-
-    plt.figure(figsize=(10,6))
-
-    plt.plot(ticks, mean_births, label="Births / tick")
-    plt.plot(ticks, mean_deaths, label="Deaths / tick")
-
-    plt.title("Mean Birth / Death Dynamics")
+    plt.title("Birth / Death Dynamics")
     plt.xlabel("Tick")
     plt.ylabel("Events")
-
     plt.legend()
     plt.tight_layout()
     plt.show()
 
-    # ==================================================
-    # FIGURE 3 — Death Cause Composition
-    # ==================================================
+    # --------------------------------------------------
+    # FIGURE 3 — Mean energy trajectory
+    # --------------------------------------------------
+    energy_mean = mean_energy.mean(axis=0)
+    energy_std = mean_energy.std(axis=0)
 
-    cause_totals = {}
+    plt.figure(figsize=(10, 6))
+    plt.plot(ticks, energy_mean, linewidth=2, label="Mean energy")
+    plt.fill_between(
+        ticks,
+        energy_mean - energy_std,
+        energy_mean + energy_std,
+        alpha=0.25,
+        label="±1 STD",
+    )
 
-    for m in batch_metrics.batch_metrics.values():
+    plt.title("Mean Energy Trajectory")
+    plt.xlabel("Tick")
+    plt.ylabel("Energy")
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    # --------------------------------------------------
+    # FIGURE 4 — Mean death-cause totals per run
+    # --------------------------------------------------
+    cause_totals: dict[str, list[float]] = {}
+
+    for m in metrics_list:
         for cause, values in m.death_causes.items():
-            cause_totals.setdefault(cause, []).append(np.sum(values))
+            cause_totals.setdefault(cause, []).append(float(np.sum(values)))
 
-    labels = []
-    values = []
+    labels = list(cause_totals.keys())
+    values = [float(np.mean(v)) for v in cause_totals.values()]
 
-    for cause, v in cause_totals.items():
-        labels.append(cause)
-        values.append(np.mean(v))
-
-    plt.figure(figsize=(8,6))
+    plt.figure(figsize=(8, 6))
     plt.bar(labels, values)
 
     plt.title("Mean Death Causes (per run)")
     plt.ylabel("Deaths")
-
+    plt.xticks(rotation=15)
     plt.tight_layout()
     plt.show()
 

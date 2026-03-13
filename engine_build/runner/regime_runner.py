@@ -9,7 +9,6 @@ from engine_build.metrics.metrics import SimulationMetrics
 import numpy as np
 from dataclasses import dataclass
 from typing import Dict
-from engine_build.metrics.world_frames import WorldFrames
 
 
 """
@@ -53,9 +52,7 @@ CAVE:
 class RunArtifacts:
     engine_final : Engine | None = None
     metrics : SimulationMetrics | None = None
-    world_frames : WorldFrames | None = None
     seed : np.random.SeedSequence | None = None
-    ticks : np.int64 | None = None
 
 # raw batch results
 @dataclass
@@ -63,6 +60,7 @@ class BatchRunResults:
     runs : Dict[np.int64, RunArtifacts]
     batch_id : int | None = None
     regime_config : CompiledRegime | None = None
+    ticks : np.int64 | None = None
 
 
 
@@ -83,7 +81,8 @@ class Runner:
             
             batch_id : int| None = None
             ) -> None:
-        """ set up batch run with master seed == batch_id. 
+        """ 
+            set up batch run with batch_id == batch_seed. 
             will set up run seeds internally at initialization.
          """
         
@@ -99,20 +98,19 @@ class Runner:
         """ runs a single simulation for a given seed and ticks. """
     
         eng = Engine(seed, self.regime_config)
-        # NOTE: 
+        metrics = SimulationMetrics(eng.max_agent_count)
 
-        metrics = SimulationMetrics(eng)
-
-        world_frames = WorldFrames( capture_every=10 if ticks > 100 else 1)
 
         for _ in range(ticks):
-            
             step_report : StepReport = eng.step()
-            metrics.record(step_report)
+            metrics.record(step_report = step_report)
 
             
 
-        return RunArtifacts(eng, metrics, world_frames, seed, ticks)
+        return RunArtifacts(engine_final=eng, 
+                            metrics= metrics, 
+                            seed= seed
+                            )
     
 
 
@@ -120,8 +118,12 @@ class Runner:
     def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> RunArtifacts:
         for _ in range(ticks):
             step_report : StepReport = eng.step()
-            metrics.record(eng, step_report)
-        return RunArtifacts(engine_final=eng, metrics= metrics, world_frames= None, seed= eng.master_ss, ticks= ticks)
+            metrics.record(step_report = step_report)
+
+        return RunArtifacts(engine_final=eng, 
+                            metrics= metrics, 
+                            seed= eng.master_ss
+                            )
 
 
 
@@ -129,7 +131,7 @@ class Runner:
     def run_regime_batch(self, ticks : np.int64) -> BatchRunResults:
         """ only return aggregates and results."""
 
-        batch_data: BatchRunResults = BatchRunResults({}, self.batch_id, self.regime_config)
+        batch_data: BatchRunResults = BatchRunResults({}, self.batch_id, self.regime_config, ticks)
 
         for i, seed in enumerate(self.run_seeds):
             run_results : RunArtifacts = self.run_single(seed, ticks)
