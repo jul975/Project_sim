@@ -1,12 +1,13 @@
 import pytest
 
-from engine_build.tests.helpers import advance_engine
+from tests.helpers import advance_engine, run_single
 from engine_build.core.engineP4 import Engine
 
 
 @pytest.mark.dev
 @pytest.mark.validate
 def test_same_seed_determinism(make_engine, stable_regime, seed_ref, ticks_mid):
+    """ test that same seed determinism holds. """
     eng1 : Engine = make_engine(seed_ref, stable_regime)
     eng2 : Engine = make_engine(seed_ref, stable_regime)
 
