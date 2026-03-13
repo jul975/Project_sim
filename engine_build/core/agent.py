@@ -129,11 +129,12 @@ class Agent:
         assert isinstance(self.energy_rng, np.random.Generator)
 
         # lineage
-                # RNG lineage invariant
+        # RNG lineage invariant
         assert self.agent_spawn_count >= 0
-        """if self.agent_spawn_count > 0:
-            assert self.agent_spawn_key[-1] == self.agent_spawn_count - 1"""
-        
+
+        assert self.agent_seed.entropy == self.agent_entropy
+        assert tuple(self.agent_seed.spawn_key) == tuple(self.agent_spawn_key)
+        assert self.agent_seed.pool_size == self.pool_size
 
 
 

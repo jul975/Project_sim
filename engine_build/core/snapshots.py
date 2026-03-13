@@ -102,6 +102,7 @@ def _get_agent_snapshot(agent : "Agent") -> AgentSnapshot:
         alive = agent.alive,
 
         age = agent.age,
+        
 
         agent_seed = get_seed_seq_dict(agent.agent_seed),
 
@@ -163,50 +164,37 @@ def engine_to_snapshot(engine : "Engine") -> EngineSnapshot:
 
 
 
-def _agent_from_snapshot( agent_cls ,agent_snapshot : AgentSnapshot, engine : "Engine") -> "Agent":
-    """ create agent from snapshot. """
+def _agent_from_snapshot(agent_cls, agent_snapshot: AgentSnapshot, engine: "Engine") -> "Agent":
+    agent_clone: "Agent" = object.__new__(agent_cls)
 
-    # use reconstruct_rng() from rng_utils.py to reconstruct rngs.
-
-    agent_clone : "Agent" = object.__new__(agent_cls)
-
-    # set agent properties 
-    # named it instance to make clear distinction
-
-    agent_clone.agent_spawn_count = agent_snapshot.agent_spawn_count
-
-
-    
-    # seed sequence properties
-    agent_seed_dict = agent_snapshot.agent_seed
-    agent_clone.agent_entropy = agent_seed_dict["entropy"]
-    agent_clone.agent_spawn_key = agent_seed_dict["spawn_key"]
-    agent_clone.pool_size = agent_seed_dict["pool_size"]
-
-    
     agent_clone.engine = engine
     agent_clone.id = agent_snapshot.id
     agent_clone.age = agent_snapshot.age
-
     agent_clone.position = agent_snapshot.position
     agent_clone.alive = agent_snapshot.alive
     agent_clone.energy_level = agent_snapshot.energy_level
 
-    # seed reconstruction 
-    agent_clone.agent_seed = reconstruct_seed_seq(agent_seed_dict, agent_clone.agent_spawn_count)
+    # restore future child cursor
+    agent_clone.agent_spawn_count = agent_snapshot.agent_spawn_count
+
+    # restore exact agent identity seed
+    agent_clone.agent_seed = reconstruct_seed_seq(agent_snapshot.agent_seed)
+
+    # cache seed identity fields from the reconstructed seed
+    agent_clone.agent_entropy = agent_clone.agent_seed.entropy
+    agent_clone.agent_spawn_key = tuple(agent_clone.agent_seed.spawn_key)
+    agent_clone.pool_size = agent_clone.agent_seed.pool_size
 
     assert isinstance(agent_snapshot.move_rng, dict)
     assert isinstance(agent_snapshot.repro_rng, dict)
     assert isinstance(agent_snapshot.energy_rng, dict)
-    
+
     agent_clone.move_rng = reconstruct_rng(agent_snapshot.move_rng)
     agent_clone.repro_rng = reconstruct_rng(agent_snapshot.repro_rng)
     agent_clone.energy_rng = reconstruct_rng(agent_snapshot.energy_rng)
 
-    
     agent_clone._assert_invariants()
     return agent_clone
-
     
 
 def _world_from_snapshot(world_cls, world_snapshot : WorldSnapshot) -> "World":
@@ -299,7 +287,7 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
         
 
         # rng 
-        engine_clone.master_ss = reconstruct_seed_seq(snapshot.master_ss, 1)
+        engine_clone.master_ss = reconstruct_seed_seq(snapshot.master_ss)
 
         # reconstruct world
         engine_clone.world = _world_from_snapshot(World, snapshot.world)
@@ -315,14 +303,14 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
         # assert invariants
         engine_clone._assert_invariants()
 
-        """if __debug__:
+        if __debug__:
             # NOTE: this is a very expensive operation, only do it in debug mode, or remove later on 
             #       Its meant as a test of the snapshot module itself, not the engine wrapper
             #       All reconstruction mistakes are caught IMMEDIATELY, 
             #       That's why its very powerful if used in the right context, 
             rebuild = engine_to_snapshot(engine_clone)
             assert snapshots_equal(snapshot, rebuild), "Snapshot not equal after rebuild."
-    """
+    
         return engine_clone
 
 

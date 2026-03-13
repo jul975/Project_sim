@@ -27,14 +27,13 @@ def get_seed_seq_dict(seed_seq : np.random.SeedSequence) -> dict:
         
     }
 
-def reconstruct_seed_seq(seed_seq_dict : dict, spawn_count : np.int64) -> np.random.SeedSequence:
-    ''' manual n_children_spawned reconstruction, no native support found rn? 
-        need to be cleared up. '''
+def reconstruct_seed_seq(seed_seq_dict : dict) -> np.random.SeedSequence:
+    ''' manual seed sequence reconstruction. '''
     
     ss = np.random.SeedSequence(
                                 entropy=seed_seq_dict["entropy"],
 
-                                spawn_key=tuple(seed_seq_dict["spawn_key"]) + (spawn_count,),
+                                spawn_key=tuple(seed_seq_dict["spawn_key"]),
 
                                 pool_size=seed_seq_dict["pool_size"]
     )
