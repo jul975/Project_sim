@@ -1,12 +1,15 @@
 import pytest
 
-from engine_build.tests.helpers import advance_engine
+from tests.helpers import advance_engine
 
+from engine_build.regimes.compiled import CompiledRegime
+
+from engine_build.core.engineP4 import Engine
 
 @pytest.mark.dev
 @pytest.mark.invariant
-def test_spatial_invariants(make_engine, stable_regime, seed_ref, ticks_mid):
-    eng = make_engine(seed_ref, stable_regime)
+def test_spatial_invariants(make_engine, stable_regime, seed_ref, ticks_mid) -> None:
+    eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_mid)
 
     for agent in eng.agents.values():
@@ -17,8 +20,8 @@ def test_spatial_invariants(make_engine, stable_regime, seed_ref, ticks_mid):
 
 @pytest.mark.dev
 @pytest.mark.invariant
-def test_resource_bounds(make_engine, stable_regime, seed_ref, ticks_mid):
-    eng = make_engine(seed_ref, stable_regime)
+def test_resource_bounds(make_engine, stable_regime, seed_ref, ticks_mid) -> None:
+    eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_mid)
 
     assert (eng.world.resources >= 0).all()
@@ -27,8 +30,8 @@ def test_resource_bounds(make_engine, stable_regime, seed_ref, ticks_mid):
 
 @pytest.mark.dev
 @pytest.mark.invariant
-def test_identity_monotonicity(make_engine, stable_regime, seed_ref, ticks_mid):
-    eng = make_engine(seed_ref, stable_regime)
+def test_identity_monotonicity(make_engine, stable_regime : CompiledRegime, seed_ref : int, ticks_mid : int) -> None:
+    eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_mid)
 
     ids = sorted(eng.agents.keys())
