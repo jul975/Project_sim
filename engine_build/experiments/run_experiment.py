@@ -14,6 +14,7 @@ from engine_build.execution.default import EXPERIMENT_DEFAULTS
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 
+from engine_build.analytics.regime_summery import summarise_regime, classify_regime, RegimeSummary, RegimeClass
 
 from engine_build.analytics.fingerprint import AggregatedFingerprint
 import numpy as np
@@ -21,7 +22,7 @@ import numpy as np
 
 
 
-def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : int ) -> None:
+def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : int, regime_class : RegimeClass, summary : RegimeSummary ) -> None:
     """ prints a summary of the results. """
     final_populations = []
     for _, run_results in batch_analysis.batch_metrics.items():
@@ -35,7 +36,7 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
 
     print("============================================================")
     print("MODE: EXPERIMENT")
-    print(f"REGIME: {batch_analysis.regime_label}")
+    print(f"REGIME: {regime_class.value}")
     print(f"RUNS: {n_runs}")
     print(f"TICKS: {ticks}")
     print(f"TAIL_START: {batch_analysis.tail_start}")
@@ -44,6 +45,7 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
     print(f"    final_population_mean : {mean_final:.2f}")
     print(f"    final_population_std  : {std_final:.2f}")
     print(f"    final_population_cv   : {std_final / mean_final:.4f}" if mean_final > 0 else "    final_population_cv   : nan")
+
     print("")
     print("Tail-Window Regime Summary:")
     print(f"    mean_population_over_runs     : {agg.mean_population_over_runs:.3f}")
@@ -52,6 +54,9 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
     print(f"    cap_hit_rate                  : {agg.cap_hit_rate:.3f}")
     print(f"    birth_death_ratio             : {agg.birth_death_ratio:.3f}")
     print(f"    mean_time_cv_over_runs        : {agg.mean_time_cv_over_runs:.3f}")
+    print("\n")
+    print(f"    batch_near_cap_rate           : {agg.batch_near_cap_rate:.3f}")
+    print(f"    batch_low_population_rate     : {agg.batch_near_low_population_rate:.3f}")
     print("============================================================")
 
 
@@ -81,7 +86,10 @@ def run_experiment_mode(args) -> None:
     batch_results : BatchRunResults = runner.run_regime_batch(ticks=ticks)
     batch_analysis : BatchAnalysis = analyze_batch(batch_results, regime_label=args.regime)
 
-    summarize_analytics(batch_analysis, ticks=ticks, n_runs=n_runs)
+    summary : RegimeSummary = summarise_regime(batch_analysis)
+    regime_class : RegimeClass = classify_regime(summary)
+
+    summarize_analytics(batch_analysis, ticks=ticks, n_runs=n_runs, regime_class=regime_class, summary=summary)
 
     if args.plot:
         plot_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})
