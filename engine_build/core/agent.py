@@ -12,6 +12,9 @@ if TYPE_CHECKING:
 from .snapshots import _agent_from_snapshot
 
 
+import time
+
+
 
 """
 GENERAL NOTES:
@@ -66,52 +69,46 @@ class Agent:
                         id: np.int64
                 agent_seed: np.random.SeedSequence
         """
-        self.engine= engine
-        self.id = id
-        self.agent_seed = agent_seed
+        self._init_identify(engine, id, agent_seed)
+        self._init_lineage()
+        self._init_rngs()
+        self._init_state(position=position)
 
 
+    def _init_identify(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence) -> None:
+        """ initializes agent identity. """
+        self.id : np.int64 = id
+        self.engine : "Engine" = engine
+        self.agent_seed : np.random.SeedSequence = agent_seed
+        self.agent_spawn_count : np.int64 = 0
+        self.age : np.int64 = 0
+        self.agent_entropy : np.int64 = self.agent_seed.entropy
+        self.agent_spawn_key : tuple[np.int64, ...] = self.agent_seed.spawn_key
+        self.pool_size : np.int64 = self.agent_seed.pool_size
 
-        # external spawn_count logic 
-        self.agent_spawn_count = 0
 
-        self.age = 0
-
-
-        
-        self.agent_entropy = self.agent_seed.entropy
-        self.agent_spawn_key = self.agent_seed.spawn_key
-        self.pool_size = self.agent_seed.pool_size
-
-
+    def _init_lineage(self) -> None:
+        """ initializes agent lineage. """
         self.move_ss, self.repro_ss, self.energy_ss = self.agent_seed.spawn(3)
 
-
-        # create rngs for movement and reproduction.
-
-
+    def _init_rngs(self) -> None:
+        """ initializes agent rngs. """
         self.move_rng = np.random.default_rng(self.move_ss)
         self.repro_rng = np.random.default_rng(self.repro_ss)
         self.energy_rng = np.random.default_rng(self.energy_ss)
+        
 
+    def _init_state(self, position : tuple[np.int64, np.int64] | None = None) -> None:
+        """ initializes agent state. """
         if position is None:
-            self.position : tuple[np.int64, np.int64] = tuple(self.move_rng.integers(0, engine.world_params.world_width, size=2) )
+            self.position = tuple(self.move_rng.integers(0, self.engine.world_params.world_width, size=2) )
         else:
             self.position = position
-# NOTE: 
-    
-        # CAVE: upper bound exclusive but range is [0, world_width - 1] and [0, world_height - 1]) => ok
-        # not rng consumption
-        
         self.alive : bool = True
-
-        
-        self.energy_level = self.energy_rng.integers(engine.energy_params.energy_init_range[0], engine.energy_params.energy_init_range[1])
+        self.energy_level = self.energy_rng.integers(self.engine.energy_params.energy_init_range[0], self.engine.energy_params.energy_init_range[1])
 
 
 
-        # idea is that this would create a 1% chance of reproducing per tick.
-        # self._assert_invariants()
 
     def _assert_invariants(self) -> None:
         """ asserts agent invariants. """
