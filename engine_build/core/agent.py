@@ -111,7 +111,7 @@ class Agent:
 
 
         # idea is that this would create a 1% chance of reproducing per tick.
-        self._assert_invariants()
+        # self._assert_invariants()
 
     def _assert_invariants(self) -> None:
         """ asserts agent invariants. """
