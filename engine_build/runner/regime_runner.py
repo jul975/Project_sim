@@ -46,6 +46,27 @@ CAVE:
 """
 
 
+@dataclass
+class PhaseProfile:
+    movement: float = 0.0
+    interaction: float = 0.0
+    biology: float = 0.0
+    commit: float = 0.0
+
+    commit_setup: float = 0.0
+    commit_deaths: float = 0.0
+    commit_births: float = 0.0
+    commit_resource_regrowth: float = 0.0
+
+    seed_creation: float = 0.0
+    agent_creation: float = 0.0
+    dict_insertion: float = 0.0
+
+
+
+
+
+
  
 # raw one run results
 @dataclass
@@ -53,6 +74,7 @@ class RunArtifacts:
     engine_final : Engine | None = None
     metrics : SimulationMetrics | None = None
     seed : np.random.SeedSequence | None = None
+    phase_profile : PhaseProfile | None = None
 
 # raw batch results
 @dataclass
@@ -62,6 +84,7 @@ class BatchRunResults:
     regime_config : CompiledRegime | None = None
     ticks : np.int64 | None = None
     batch_duration : float | None = None
+    
 
 
 
@@ -101,16 +124,35 @@ class Runner:
         eng = Engine(seed, self.regime_config)
         metrics = SimulationMetrics(eng.max_agent_count)
 
+        phase_profile = PhaseProfile()
+
 
         for _ in range(ticks):
             step_report : StepReport = eng.step()
             metrics.record(step_report = step_report)
 
+            if step_report.step_profile is not None:
+                phase_profile.movement += step_report.step_profile.movement
+                phase_profile.interaction += step_report.step_profile.interaction
+                phase_profile.biology += step_report.step_profile.biology
+                phase_profile.commit += step_report.step_profile.commit
+
+                phase_profile.commit_setup += step_report.commit_report.commit_profile.setup
+                phase_profile.commit_deaths += step_report.commit_report.commit_profile.deaths
+                phase_profile.commit_births += step_report.commit_report.commit_profile.births
+                phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
+
+                phase_profile.seed_creation += step_report.commit_report.agent_creation_profiles.seed_creation
+                phase_profile.agent_creation += step_report.commit_report.agent_creation_profiles.agent_creation
+                phase_profile.dict_insertion += step_report.commit_report.agent_creation_profiles.dict_insertion
+                
+
             
 
         return RunArtifacts(engine_final=eng, 
                             metrics= metrics, 
-                            seed= seed
+                            seed= seed,
+                            phase_profile= phase_profile
                             )
     
 
@@ -118,13 +160,15 @@ class Runner:
 #############################################################
     def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> RunArtifacts:
         """ continues a run for a given engine and metrics. """
+        phase_profile = PhaseProfile()
         for _ in range(ticks):
             step_report : StepReport = eng.step()
             metrics.record(step_report = step_report)
 
         return RunArtifacts(engine_final=eng, 
                             metrics= metrics, 
-                            seed= eng.master_ss
+                            seed= eng.master_ss,
+                            phase_profile= phase_profile
                             )
 
 

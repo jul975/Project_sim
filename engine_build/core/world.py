@@ -200,10 +200,8 @@ class World:
 
     def regrow_resources(self) -> None:
         """ regrows resources according to fertility. """
-        self.resources = np.minimum(
-            self.resources + self.resource_regen_rate,
-            self.fertility
-            )
+        np.add(self.resources, self.resource_regen_rate, out=self.resources)
+        np.minimum(self.resources, self.fertility, out=self.resources)
         # evaluate and return as array of bools
         assert (self.resources >= 0).all()
         assert (self.resources <= self.fertility).all()

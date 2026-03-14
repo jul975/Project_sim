@@ -59,7 +59,7 @@ moves = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
 class Agent:
     ''' agents should be a subclass in order to acces span new agent functionality cleanly. '''
-    def __init__(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence) -> None:
+    def __init__(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence, position : tuple[np.int64, np.int64] | None = None) -> None:
         
         """ engine: Engine
         
@@ -69,6 +69,8 @@ class Agent:
         self.engine= engine
         self.id = id
         self.agent_seed = agent_seed
+
+
 
         # external spawn_count logic 
         self.agent_spawn_count = 0
@@ -92,11 +94,15 @@ class Agent:
         self.repro_rng = np.random.default_rng(self.repro_ss)
         self.energy_rng = np.random.default_rng(self.energy_ss)
 
+        if position is None:
+            self.position : tuple[np.int64, np.int64] = tuple(self.move_rng.integers(0, engine.world_params.world_width, size=2) )
+        else:
+            self.position = position
 # NOTE: 
     
         # CAVE: upper bound exclusive but range is [0, world_width - 1] and [0, world_height - 1]) => ok
         # not rng consumption
-        self.position : tuple[np.int64, np.int64] = tuple(self.move_rng.integers(0, engine.world_params.world_width, size=2) )
+        
         self.alive : bool = True
 
         

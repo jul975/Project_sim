@@ -9,15 +9,18 @@ from .agent import Agent
 from .world import World
 
 
-from .step_results import CommitReport, StepReport, WorldView
+
+from .step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile, AgentCreationProfile
 
 from engine_build.regimes.compiled import CompiledRegime
-from engine_build.regimes.compiled import EnergyParams, ReproductionParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
+from engine_build.regimes.compiled import EnergyParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
 from .transitions import TransitionContext, movement_phase, interaction_phase, biology_phase
 
 
 from typing import TYPE_CHECKING
+
+import time 
 
 if TYPE_CHECKING:
     from .snapshots import EngineSnapshot
@@ -112,16 +115,28 @@ class Engine:
     
 
     
-    def create_new_agent(self, parent_agent : Agent) -> None:
+    def create_new_agent(self, parent_agent : Agent) -> AgentCreationProfile:
         """ creates new agent from parent_agent. """
         
-
+        creation_time0 = time.perf_counter()
         child_seed = self.get_child_seed(parent_agent)
         
-        self.agents[self.next_agent_id] = Agent( self , self.next_agent_id , child_seed)
-        self.agents[self.next_agent_id].position = parent_agent.position
-        self.next_agent_id += 1
+        creation_time1 = time.perf_counter()
 
+        child_new = Agent( self , self.next_agent_id , child_seed, parent_agent.position)
+
+        creation_time2 = time.perf_counter()
+        self.agents[self.next_agent_id] = child_new
+        self.next_agent_id += 1
+        creation_time3 = time.perf_counter()
+
+        return AgentCreationProfile(
+            seed_creation = creation_time1 - creation_time0,
+            agent_creation = creation_time2 - creation_time1,
+            dict_insertion = creation_time3 - creation_time2
+        )
+        
+        
 
     def get_child_seed(self, parent_agent : Agent) -> np.random.SeedSequence:
         """ gets child seed from parent_agent. """
@@ -147,18 +162,35 @@ class Engine:
         
         context = TransitionContext()
 
+
+        t0 = time.perf_counter()
         movement_report = movement_phase(self.agents, context)
+        t1 = time.perf_counter()
 
+
+        
         interaction_report = interaction_phase(context, self.world)
+        t2 = time.perf_counter()
 
+        
         biology_report = biology_phase(context)
+        t3 = time.perf_counter()
+
 
         commit_report = self.commit_phase(context)
+        t4 = time.perf_counter()
 
         if self.collect_world_view:
             world_view = self.build_world_view()
         else:
             world_view = None
+
+        step_profile = StepProfile(
+            movement = t1 - t0,
+            interaction = t2 - t1,
+            biology = t3 - t2,
+            commit = t4 - t3
+        )   
 
         step_report = StepReport(
             tick = self.world.tick,
@@ -166,7 +198,8 @@ class Engine:
             interaction_report = interaction_report,
             biology_report = biology_report,
             commit_report = commit_report,
-            world_view = world_view
+            world_view = world_view,
+            step_profile = step_profile
         )
 
         ## end of current tick, go to the next tick
@@ -181,6 +214,11 @@ class Engine:
 
     def commit_phase(self, context : TransitionContext) -> CommitReport:
         """ commits pending births and deaths to the engine. """
+
+        commit_agent_creation_profiles : AgentCreationProfile = AgentCreationProfile()
+
+
+        c_time0 = time.perf_counter()
         pending_deaths_by_cause = context.pending_deaths_by_cause
         reproducing_agents = context.reproducing_agents
 
@@ -189,19 +227,37 @@ class Engine:
         effective_population = len(self.agents) - deaths_this_tick 
         available_capacity = self.max_agent_count - effective_population
         reproducers_to_commit = reproducing_agents[:available_capacity]
+        c_time1 = time.perf_counter()
 
         # D
         for death_bucket in pending_deaths_by_cause.values():
             for agent_id in death_bucket.agents_ids:
                 assert agent_id in self.agents
                 del self.agents[agent_id]
-                
+        c_time2 = time.perf_counter()
         # B
         for parent_agent in reproducers_to_commit:
-            self.create_new_agent(parent_agent)
+
+            agent_creation_profile = self.create_new_agent(parent_agent)
+            commit_agent_creation_profiles.seed_creation += agent_creation_profile.seed_creation
+            commit_agent_creation_profiles.agent_creation += agent_creation_profile.agent_creation
+            commit_agent_creation_profiles.dict_insertion += agent_creation_profile.dict_insertion
+            
+            
+
+        c_time3 = time.perf_counter()
 
         # world state update 
         self.world.regrow_resources()
+
+        c_time4 = time.perf_counter()
+
+        commit_profile = CommitProfile(
+            setup = c_time1 - c_time0,
+            deaths = c_time2 - c_time1,
+            births = c_time3 - c_time2,
+            resource_regrowth = c_time4 - c_time3
+        )
         
 
         # NOTE: temp solution for positional metrics.
@@ -213,6 +269,9 @@ class Engine:
             population = len(self.agents),
             births_count = len(reproducers_to_commit),
             deaths_count = deaths_this_tick,
+            commit_profile = commit_profile,
+            agent_creation_profiles = commit_agent_creation_profiles
+
         )
 
 

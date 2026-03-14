@@ -23,6 +23,29 @@ import numpy as np
 
 
 
+@dataclass
+class BatchPhaseProfile:
+    movement: float = 0.0
+    interaction: float = 0.0
+    biology: float = 0.0
+    commit: float = 0.0
+
+    commit_setup: float = 0.0
+    commit_deaths: float = 0.0
+    commit_births: float = 0.0
+    commit_resource_regrowth: float = 0.0
+
+    movement_ratio: float = 0.0
+    interaction_ratio: float = 0.0
+    biology_ratio: float = 0.0
+    commit_ratio: float = 0.0
+
+    agent_creation_seed: float = 0.0
+    agent_creation_agent: float = 0.0
+    agent_creation_dict_insertion: float = 0.0
+
+
+
 
 
 # derived experiment interpretation 
@@ -37,6 +60,9 @@ class BatchAnalysis:
     batch_id : int | None = None
     tail_start : np.int64 | None = None
     batch_duration : float | None = None
+
+    batch_phase_profile : BatchPhaseProfile | None = None
+
 
 
 
@@ -57,6 +83,40 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
     aggregate_fingerprint = get_aggregate_fingerprints(list(fingerprints_dict.values()))
     batch_duration = batch_results.batch_duration
 
+    batch_phase_profile = BatchPhaseProfile()
+    for run_results in batch_results.runs.values():
+        if run_results.phase_profile is None:
+            raise ValueError(f"run_results.phase_profile is None for run {i}")
+        batch_phase_profile.movement += run_results.phase_profile.movement
+        batch_phase_profile.interaction += run_results.phase_profile.interaction
+        batch_phase_profile.biology += run_results.phase_profile.biology
+        batch_phase_profile.commit += run_results.phase_profile.commit
+
+        batch_phase_profile.commit_setup += run_results.phase_profile.commit_setup
+        batch_phase_profile.commit_deaths += run_results.phase_profile.commit_deaths
+        batch_phase_profile.commit_births += run_results.phase_profile.commit_births
+        batch_phase_profile.commit_resource_regrowth += run_results.phase_profile.commit_resource_regrowth
+
+        batch_phase_profile.agent_creation_seed += run_results.phase_profile.seed_creation
+        batch_phase_profile.agent_creation_agent += run_results.phase_profile.agent_creation
+        batch_phase_profile.agent_creation_dict_insertion += run_results.phase_profile.dict_insertion
+
+
+
+
+
+    batch_phase_profile.movement_ratio = batch_phase_profile.movement / batch_duration
+    batch_phase_profile.interaction_ratio = batch_phase_profile.interaction / batch_duration
+    batch_phase_profile.biology_ratio = batch_phase_profile.biology / batch_duration
+    batch_phase_profile.commit_ratio = batch_phase_profile.commit / batch_duration
+    
+
+
+
+    
+
+
+
     return BatchAnalysis(
         aggregate_fingerprint=aggregate_fingerprint,
         fingerprints_dict=fingerprints_dict,
@@ -65,6 +125,7 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
         ticks=batch_results.ticks,
         batch_id=batch_results.batch_id,
         tail_start=tail_start,
-        batch_duration=batch_duration
+        batch_duration=batch_duration,
+        batch_phase_profile=batch_phase_profile
     )
     

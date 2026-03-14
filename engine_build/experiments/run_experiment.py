@@ -59,6 +59,35 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
     print("\n")
     print(f"    batch_near_cap_rate           : {agg.batch_near_cap_rate:.3f}")
     print(f"    batch_low_population_rate     : {agg.batch_near_low_population_rate:.3f}")
+    print("")
+
+    print("Batch Phase Profile:")
+    print(f"    movement                      : {batch_analysis.batch_phase_profile.movement:.3f}")
+    print(f"    interaction                   : {batch_analysis.batch_phase_profile.interaction:.3f}")
+    print(f"    biology                       : {batch_analysis.batch_phase_profile.biology:.3f}")
+    print(f"    commit                        : {batch_analysis.batch_phase_profile.commit:.3f}")
+    print("")
+    print("Batch Phase Profile Ratios:")
+    print(f"    movement                      : {batch_analysis.batch_phase_profile.movement_ratio:.3f}")
+    print(f"    interaction                   : {batch_analysis.batch_phase_profile.interaction_ratio:.3f}")
+    print(f"    biology                       : {batch_analysis.batch_phase_profile.biology_ratio:.3f}")
+    print(f"    commit                        : {batch_analysis.batch_phase_profile.commit_ratio:.3f}")
+    print("")
+
+    print("Batch Commit Profile:")
+    print(f"    total                         : {batch_analysis.batch_phase_profile.commit:.3f}")
+    print(f"    setup                         : {batch_analysis.batch_phase_profile.commit_setup:.3f}")
+    print(f"    deaths                        : {batch_analysis.batch_phase_profile.commit_deaths:.3f}")
+    print(f"    births                        : {batch_analysis.batch_phase_profile.commit_births:.3f}")
+    print(f"    resource_regrowth             : {batch_analysis.batch_phase_profile.commit_resource_regrowth:.3f}")
+    print("")
+
+    print("Batch Commit Agent Creation Profile:")
+    print(f"    total                         : {batch_analysis.batch_phase_profile.commit_births:.3f}")    
+    print(f"    seed_creation                 : {batch_analysis.batch_phase_profile.agent_creation_seed:.3f}")
+    print(f"    agent_creation                : {batch_analysis.batch_phase_profile.agent_creation_agent:.3f}")
+    print(f"    dict_insertion                : {batch_analysis.batch_phase_profile.agent_creation_dict_insertion:.3f}")
+
     print("============================================================")
 
 

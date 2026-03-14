@@ -285,7 +285,6 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
         engine_clone.max_agent_count = snapshot.max_agent_count
         engine_clone.next_agent_id = snapshot.next_agent_id
         
-
         # rng 
         engine_clone.master_ss = reconstruct_seed_seq(snapshot.master_ss)
 
@@ -299,6 +298,10 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
             for agent_id, agent_snapshot in snapshot.agents.items()
             }
         
+        
+        # NOTE: TEMP
+        engine_clone.collect_world_view = False
+
 
         # assert invariants
         engine_clone._assert_invariants()
