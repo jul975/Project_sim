@@ -10,7 +10,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Dict
 
-
+import time
 """
     'the runner should own orchestration and lifecycle, not interpretation.'
 CAVE:
@@ -61,6 +61,7 @@ class BatchRunResults:
     batch_id : int | None = None
     regime_config : CompiledRegime | None = None
     ticks : np.int64 | None = None
+    batch_duration : float | None = None
 
 
 
@@ -116,6 +117,7 @@ class Runner:
 
 #############################################################
     def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> RunArtifacts:
+        """ continues a run for a given engine and metrics. """
         for _ in range(ticks):
             step_report : StepReport = eng.step()
             metrics.record(step_report = step_report)
@@ -131,11 +133,28 @@ class Runner:
     def run_regime_batch(self, ticks : np.int64) -> BatchRunResults:
         """ only return aggregates and results."""
 
+        batch_start_time = time.perf_counter()
+
         batch_data: BatchRunResults = BatchRunResults({}, self.batch_id, self.regime_config, ticks)
 
         for i, seed in enumerate(self.run_seeds):
+            run_start_time = time.perf_counter()
+
             run_results : RunArtifacts = self.run_single(seed, ticks)
-            batch_data.runs[i] = run_results    
+            batch_data.runs[i] = run_results   
+
+            run_end_time = time.perf_counter()
+
+            print(
+            f"Run {i+1}/{self.n_runs} finished "
+            f"in {run_end_time - run_start_time:.2f}s "
+            f"| final_pop={run_results.metrics.population[-1]}"
+            )
+
+        batch_end_time = time.perf_counter()
+        batch_duration = batch_end_time - batch_start_time
+        print(f"Batch finished in {batch_duration:.2f}s")
+        batch_data.batch_duration = batch_duration
         return batch_data
 
 

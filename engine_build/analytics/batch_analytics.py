@@ -36,6 +36,7 @@ class BatchAnalysis:
     ticks : np.int64 | None = None
     batch_id : int | None = None
     tail_start : np.int64 | None = None
+    batch_duration : float | None = None
 
 
 
@@ -54,6 +55,7 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
         fingerprints_dict[i] = compute_fingerprint(run_results.metrics, tail_start)
 
     aggregate_fingerprint = get_aggregate_fingerprints(list(fingerprints_dict.values()))
+    batch_duration = batch_results.batch_duration
 
     return BatchAnalysis(
         aggregate_fingerprint=aggregate_fingerprint,
@@ -63,6 +65,6 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
         ticks=batch_results.ticks,
         batch_id=batch_results.batch_id,
         tail_start=tail_start,
-
+        batch_duration=batch_duration
     )
     

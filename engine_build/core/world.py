@@ -174,6 +174,7 @@ class World:
         available_resources = self.resources[y, x]
         if available_resources <= 0:
             return 
+        # NOTE: potentially remove after next testing round sort agents by id
         agents = sorted(agents, key=lambda a: a.id)
 
         n_agents = len(agents)

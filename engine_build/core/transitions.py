@@ -52,9 +52,8 @@ def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext) ->
     age_deaths = DeathBucket()
     metabolic_deaths = DeathBucket()
 
-    sorted_agents = sorted(agents.items())
 
-    for agent_id,  agent in sorted_agents:
+    for agent_id,  agent in agents.items():
         # A
         # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
         if not agent.alive:

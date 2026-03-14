@@ -22,6 +22,7 @@ import numpy as np
 
 
 
+
 def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : int, regime_class : RegimeClass, summary : RegimeSummary ) -> None:
     """ prints a summary of the results. """
     final_populations = []
@@ -38,6 +39,7 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
     print("MODE: EXPERIMENT")
     print(f"REGIME: {regime_class.value}")
     print(f"RUNS: {n_runs}")
+    print(f"BATCH_DURATION: {batch_analysis.batch_duration:.2f}s")
     print(f"TICKS: {ticks}")
     print(f"TAIL_START: {batch_analysis.tail_start}")
     print("")

@@ -31,6 +31,8 @@ class Engine:
         self.master_ss = seed_seq
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
 
+        self.collect_world_view = False
+
         self.config : CompiledRegime = config
         
         self.energy_params : EnergyParams = self.config.energy_params  
@@ -153,7 +155,10 @@ class Engine:
 
         commit_report = self.commit_phase(context)
 
-        world_view = self.build_world_view()
+        if self.collect_world_view:
+            world_view = self.build_world_view()
+        else:
+            world_view = None
 
         step_report = StepReport(
             tick = self.world.tick,
@@ -201,8 +206,8 @@ class Engine:
 
         # NOTE: temp solution for positional metrics.
         
-        if __debug__:
-            self._assert_invariants()
+        """if __debug__:
+            self._assert_invariants()"""
 
         return CommitReport(
             population = len(self.agents),

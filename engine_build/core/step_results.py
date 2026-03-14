@@ -50,6 +50,6 @@ class StepReport:
     interaction_report : InteractionReport = field(default_factory=InteractionReport)
     biology_report : BiologyReport = field(default_factory=BiologyReport)
     commit_report : CommitReport = field(default_factory=CommitReport)
-    world_view : WorldView = field(default_factory=WorldView)
+    world_view : WorldView | None = None
 
 

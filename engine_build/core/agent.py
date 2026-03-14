@@ -52,6 +52,9 @@ SeedSequence is used here only as entropy mixer,
 not as authoritative lineage tracker.
 """
 
+# relocated temp for now bc of performance reasons.
+moves = ((-1, 0), (1, 0), (0, -1), (0, 1))
+
 
 
 class Agent:
@@ -171,7 +174,6 @@ class Agent:
     def move_agent(self) -> bool:
         # M, if energy <= 0, agent dies of metabolic starvation.
         self.energy_level -= self.engine.energy_params.movement_cost     
-        moves = np.array([(-1, 0), (1, 0), (0, -1), (0, 1)])
         dx, dy = moves[self.move_rng.integers(0, 4)]
         
         x, y = self.position

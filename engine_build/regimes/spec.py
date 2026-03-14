@@ -40,9 +40,9 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class EnergySpec:
-    beta: float
-    gamma: float
-    harvest_fraction: float
+    beta: float # REPRODUCTIVE DEPLETION => reproduction_cost / reproduction_threshold
+    gamma: float # ENERGY MATURITY SCALE => reproduction_threshold / movement_cost
+    harvest_fraction: float # H_MAX / R_MAX
 
     alpha: float = 0.6 # METABOLIC PRESSURE => movement_cost / max_harvest => temp hardcoded, clearly sustainable movement and meaningful metabolic pressure
 

@@ -61,9 +61,10 @@ class SimulationMetrics:
         self.population.append(int(step_report.commit_report.population))
 
         # energies
-        energies = step_report.world_view.energies
-        mean_energy = float(np.mean(energies)) if energies.size else 0.0 
-        self.mean_energy.append(mean_energy)
+        if step_report.world_view is not None:    
+            energies = step_report.world_view.energies
+            mean_energy = float(np.mean(energies)) if energies.size else 0.0 
+            self.mean_energy.append(mean_energy)
 
 
         # births and deaths

@@ -19,7 +19,7 @@ from engine_build.experiments.fertility_dist_plot import run_and_plot_population
 def add_common_experiment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--regime",
-        choices=["extinction", "stable", "saturated"],
+        choices=["fragile", "abundant", "stable", "test_stable"],
         default="stable",
         help="Select ecological regime type",
     )
