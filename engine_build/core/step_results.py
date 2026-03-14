@@ -4,13 +4,12 @@ from dataclasses import dataclass, field
 import numpy as np
 
 
-@dataclass
+
+@dataclass(frozen=True)
 class AgentCreationProfile:
     seed_creation : float = 0.0
     agent_creation : float = 0.0
     dict_insertion : float = 0.0
-
-
 
 @dataclass(frozen=True)
 class CommitProfile:
@@ -19,6 +18,7 @@ class CommitProfile:
     deaths : float = 0.0
     births : float = 0.0
     resource_regrowth : float = 0.0
+
 
 # temp
 @dataclass(frozen=True)

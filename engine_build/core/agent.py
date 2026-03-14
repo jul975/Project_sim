@@ -11,6 +11,8 @@ if TYPE_CHECKING:
 
 from .snapshots import _agent_from_snapshot
 
+from engine_build.dev.perf import PerfSink, NullPerfSink, measure_block
+
 
 import time
 
@@ -62,20 +64,45 @@ moves = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
 class Agent:
     ''' agents should be a subclass in order to acces span new agent functionality cleanly. '''
-    def __init__(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence, position : tuple[np.int64, np.int64] | None = None) -> None:
+    def __init__(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence, position : tuple[np.int64, np.int64] | None = None, perf : PerfSink | None = None) -> None:
         
         """ engine: Engine
         
                         id: np.int64
                 agent_seed: np.random.SeedSequence
         """
-        self._init_identify(engine, id, agent_seed)
-        self._init_lineage()
-        self._init_rngs()
-        self._init_state(position=position)
+        if perf is None:        
+            self._init_identity(engine, id, agent_seed)
+            self._init_lineage()
+            self._init_rngs()
+            self._init_state(position=position)
+        else:
+            t0 = time.perf_counter()
 
+            measure_block(
+                perf,
+                "agent.__init__.total",
+                lambda: self._init_identity(engine, id, agent_seed),
+            )
+            measure_block(
+                perf,
+                "agent.__init__.lineage",
+                lambda: self._init_lineage(),
+            )
+            measure_block(
+                perf,
+                "agent.__init__.rngs",
+                lambda: self._init_rngs(),
+            )
+            measure_block(
+                perf,
+                "agent.__init__.state",
+                lambda: self._init_state(position=position),
+            )
+            perf.add_time("agent.__init__.total", time.perf_counter() - t0)
 
-    def _init_identify(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence) -> None:
+            
+    def _init_identity(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence) -> None:
         """ initializes agent identity. """
         self.id : np.int64 = id
         self.engine : "Engine" = engine
@@ -206,11 +233,6 @@ class Agent:
          
 
     def age_agent(self) -> None:
-        
-        
-
-        
-
         # reproduction logic
         # NOTE: 
         #       -   gonna change >= to > but need to change in documentation first.
@@ -219,8 +241,6 @@ class Agent:
             self.alive = False
         
 
-
-        
 
             
 
