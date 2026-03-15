@@ -14,63 +14,72 @@ Deterministic behavior is defined by:
 - Ratio-based energy control: runtime energy costs are derived from dimensionless ratios.
 
 ## 1. Configuration Model
-Source: `engine_build/core/config.py`
+Source: `engine_build/regimes/spec.py` and `engine_build/regimes/compiled.py`
 
 ```text
-SimulationConfig
-+- population_config: PopulationConfig
-+- world_size: int
-+- energy_init_range: tuple[int, int]
-+- reproduction_probability: float
-+- reproduction_probability_change_condition: float
-+- resource_regen_rate: int
-+- energy_config: EnergyConfig
-+- max_resource_level: int
+RegimeSpec (human-authored)
+├─ EnergySpec(beta, gamma, harvest_fraction)
+├─ ReproductionSpec(probability, probability_change_condition)
+├─ ResourceSpec(regen_fraction)
+├─ LandscapeSpec(correlation, contrast, floor)
+└─ PopulationSpec(max_agent_count, initial_agent_count, max_age)
 
-PopulationConfig
-+- max_agent_count: int
-+- initial_agent_count: int
-+- max_age: int
-
-EnergyConfig
-+- max_harvest: int
-+- ratios: EnergyRatios(alpha, beta, gamma)
+CompiledRegime (runtime, computed)
+├─ EnergyParams(movement_cost, reproduction_threshold, reproduction_cost, max_harvest, max_energy)
+├─ ReproductionParams(probability, probability_change_condition)
+├─ ResourceParams(max_resource_level, regen_rate)
+├─ LandscapeParams(correlation, contrast, floor)
+├─ PopulationParams(max_agent_count, initial_agent_count, max_age)
+└─ WorldParams(world_width, world_height)
 ```
 
 ## 2. Current Defaults
-### 2.1 `SimulationConfig`
+### 2.1 World Parameters (2D Grid)
 | Field | Default | Description |
 |---|---:|---|
-| `world_size` | `200` | Number of cells in the 1D toroidal world |
-| `energy_init_range` | `(30, 60)` | Initial energy sampling range (high-exclusive) |
-| `reproduction_probability` | `0.25` | Reproduction probability (`change_condition=False`) |
-| `reproduction_probability_change_condition` | `0.50` | Reproduction probability (`change_condition=True`) |
-| `resource_regen_rate` | `2` | Resources regenerated per tick |
-| `max_resource_level` | `80` | Fertility initialization upper bound (`0..79`) |
+| `world_width` | `20` | Number of cells in X dimension |
+| `world_height` | `20` | Number of cells in Y dimension |
+| `world_size` | `400` | Total cells (width × height) |
 
-### 2.2 `PopulationConfig`
+Agents move on a 2D toroidal grid with wrapping boundaries:
+```text
+(x + dx) mod world_width
+(y + dy) mod world_height
+```
+
+### 2.2 `PopulationSpec`
 | Field | Default | Description |
 |---|---:|---|
 | `initial_agent_count` | `10` | Initial population size |
 | `max_agent_count` | `1000` | Hard population cap |
-| `max_age` | `200` | Age threshold for old-age death marking |
+| `max_age` | `100` | Age threshold for old-age death marking |
 
-### 2.3 `EnergyConfig` / `EnergyRatios`
+### 2.3 `EnergySpec` and Derived `EnergyParams`
 | Field | Default | Description |
 |---|---:|---|
-| `max_harvest` | `5` | Max harvestable resources per tick |
-| `alpha` | `0.6` | Metabolic pressure |
-| `beta` | `0.8` | Reproductive depletion |
-| `gamma` | `10.0` | Energy maturity scale |
+| `beta` | `0.8` | Reproductive cost multiplier |
+| `gamma` | `10` | Energy maturity scale factor |
+| `harvest_fraction` | `0.35` | Fraction of fertility harvestable per tick |
+| *derived:* `movement_cost` | varies | int(beta × max_harvest) |
+| *derived:* `reproduction_threshold` | varies | int(gamma × movement_cost) |
+| *derived:* `reproduction_cost` | varies | int(beta × reproduction_threshold) |
+
+### 2.4 Resource and Landscape Parameters
+| Field | Default | Description |
+|---|---:|---|
+| `regen_fraction` | `0.1` | Fraction of fertility regenerated per tick |
+| `correlation` | `0.055` | Landscape correlation radius (as fraction of world_width) |
+| `contrast` | `1.0` | Fertility contrast multiplier |
+| `floor` | `0.0` | Minimum fertility level |
 
 ## 3. Derived Runtime Energy Parameters
-At engine initialization, `EnergyParams` are computed as:
+At engine compilation, landscape is generated and energy parameters computed as:
 
 $$
 \begin{aligned}
-\text{movement\_cost} &= \text{int}(\alpha \cdot \text{max\_harvest}) \\
-\text{reproduction\_threshold} &= \text{int}(\gamma \cdot \text{movement\_cost}) \\
-\text{reproduction\_cost} &= \text{int}(\beta \cdot \text{reproduction\_threshold})
+\text{movement\_cost} &= \text{int}(\text{beta} \cdot \text{max\_harvest}) \\
+\text{reproduction\_threshold} &= \text{int}(\text{gamma} \cdot \text{movement\_cost}) \\
+\text{reproduction\_cost} &= \text{int}(\text{beta} \cdot \text{reproduction\_threshold})
 \end{aligned}
 $$
 

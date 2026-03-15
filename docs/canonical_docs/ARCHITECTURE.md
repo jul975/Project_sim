@@ -24,6 +24,7 @@ Engine
 ```
 
 ## 3. Core Subsystems
+
 ### 3.1 Engine (`core/engineP4.py`)
 Responsibilities:
 - owns `master_ss` (root RNG seed sequence)
@@ -34,45 +35,64 @@ Responsibilities:
 - exposes snapshot/restore and canonical hash
 
 Structural invariants enforced in debug mode:
-- `0 <= agent.position < world_size`
+- `0 <= agent.position[0] < world_width` and `0 <= agent.position[1] < world_height` (2D bounds)
 - `agent.id == dict key`
 - `len(agents) <= max_agent_count`
 
 ### 3.2 World (`core/world.py`)
 Responsibilities:
-- stores fertility and current resources
+- stores 2D fertility and resource fields (2D numpy arrays)
 - applies harvest constraints
 - regrows resources each tick
-- wraps positions on a 1D toroidal topology
+- wraps positions on a 2D toroidal topology (height × width grid)
 - owns `rng_world`
+- generates spatially-correlated fertility landscapes
 
-Resource update:
+Resource fields:
+- `fertility[y, x]` — maximum sustainable resource level (static, generated at init)
+- `resources[y, x]` — current resources (updated each tick)
+- `world_width`, `world_height` — grid dimensions
+- `world_size` — total cells (width × height)
+
+Resource update per cell:
 ```text
-harvest = min(resources[position], max_harvest)
-resources = min(resources + resource_regen_rate, fertility)
+harvest = min(resources[y, x], max_harvest)
+resources[y, x] = min(resources[y, x] + resource_regen_rate, fertility[y, x])
+```
+
+Toroidal wrapping (2D):
+```text
+(x + dx) mod world_width
+(y + dy) mod world_height
 ```
 
 ### 3.3 Agent (`core/agent.py`)
 Agent state:
-- `id`, `position`, `energy_level`, `alive`, `age`
+- `id`, `position` (now `(x, y)` tuple), `energy_level`, `alive`, `age`
 - seed lineage metadata (`entropy`, `spawn_key`, `pool_size`)
 - deterministic local spawn counter (`agent_spawn_count`)
 
-Per-agent RNG streams:
-- `move_rng`
-- `repro_rng`
-- `energy_rng` (initial energy only)
+Agent initialization (newly refactored into phases):
+- `_init_identity()` — ID, entropy, lineage setup
+- `_init_lineage()` — RNG seed sequence restoration/creation
+- `_init_rngs()` — spawn domain-specific RandomGenerators
+- `_init_state()` — energy, position, and lifecycle initialization
 
-Lifecycle actions per evaluation:
-- movement cost and movement
-- harvest
+Per-agent RNG streams:
+- `move_rng` — movement direction and distance
+- `repro_rng` — reproduction draw and child survival
+- `energy_rng` — initial energy randomization
+
+Lifecycle actions per tick:
+- movement cost and directional movement (4-neighbor in 2D grid)
+- harvest from current cell
 - reproduction eligibility and stochastic reproduction draw
 - age progression and max-age death marking
 
 ### 3.4 Configuration and Energy Model (`core/config.py`)
 Config is immutable (`dataclass(frozen=True)`) and includes:
 - population config (`initial_agent_count`, `max_agent_count`, `max_age`)
-- world parameters (`world_size`, `max_resource_level`, `resource_regen_rate`)
+- world parameters (`world_width`, `world_height`, `max_resource_level`, `resource_regen_rate`)
 - reproduction probabilities (`normal` and `change_condition`)
 - energy configuration
 
@@ -83,7 +103,57 @@ reproduction_threshold = int(gamma * movement_cost)
 reproduction_cost = int(beta * reproduction_threshold)
 ```
 
+### 3.5 Agent Creation and Factory Pattern (`core/agent_factory.py`)
+
+Agent creation is decoupled from engine orchestration via factory functions:
+
+**Initial Population:**
+```python
+create_initial_agent(engine, agent_id, agent_seed, perf=None)
+```
+- Called during engine initialization
+- Creates agents at random positions in 2D world
+- Spawns child RNG lineage from master agent seed
+
+**Newborn Agents:**
+```python
+create_newborn_agent(engine, agent_id, child_seed, position, perf=None)
+```
+- Called during reproduction commit
+- Places newborn at parent's current position
+- Inherits energy and age from parent (in future, traits)
+
+Both paths support optional performance measurement via `PerfSink` for profiling initialization bottlenecks.
+
+### 3.6 Performance Profiling Infrastructure (`dev/perf.py`)
+
+Framework for measuring execution time without embedding timing logic into core algorithms:
+
+**PerfSink Interface:**
+```python
+class PerfSink:
+    def add_time(self, key: str, dt: float) -> None: ...
+```
+
+**Measurement Utility:**
+```python
+measure_block(perf: PerfSink, key: str, fn) -> result
+```
+- Times function execution
+- Records to PerfSink with hierarchical keys (e.g., `"agent.__init__.rngs"`)
+- Returns original result (transparent to logic)
+
+**Bottleneck Identification:**
+Agent initialization identified as critical path:
+- `agent.__init__.identity` — seed/ID setup
+- `agent.__init__.lineage` — RNG lineage restoration
+- `agent.__init__.rngs` — RandomGenerator spawning
+- `agent.__init__.state` — energy/position/age initialization
+
+Performance metrics integrated into batch analytics for regression testing (Stage III+).
+
 ## 4. Tick Execution Model
+
 Authoritative step behavior is implemented in `Engine.step()`.
 
 ```text

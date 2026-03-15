@@ -6,10 +6,11 @@ $$S_{t+1} = T(S_t)$$
 
 ## Project Status
 
-**Current Stage:** Stage II (beta v0.2) — Controlled Ecological Dynamics  
+**Current Stage:** Pre-Stage III (beta v0.2.1) — Post-Refactoring, Foundation Ready  
+**Recent Work:** 2D world implementation, energy system decoupling, performance profiling infrastructure  
 **Target Version:** v0.3 (Stage III) — Explicit Interaction and Spatial Competition
 
-See [ROADMAP](docs/Project_Status/ROADMAP.md) for strategic goals, staged milestones, and version targets.
+See [ROADMAP](docs/Project_Status/ROADMAP.md) for strategic goals and [CURRENT_STATE](docs/Project_Status/CURRENT_STATE.md) for detailed refactoring notes.
 
 ## Overview
 
@@ -34,20 +35,23 @@ The project is structured around a clear execution pipeline:
 4. **Build robust analytics stack** — Reproducible research-grade experimentation workflow
 5. **Release with verification gates** — All releases pass determinism, invariants, and validation suites
 
-## Current Capabilities (Stage II)
+## Current Capabilities (Pre-Stage III)
 
 ### Deterministic simulation core
 
 - hierarchical RNG setup based on `SeedSequence`
-- canonical state hashing
-- snapshot -> restore -> continuation equivalence
+- canonical state hashing verified across 2D refactoring
+- snapshot → restore → continuation equivalence maintained
 - isolated stochastic domains for world, movement, reproduction, and energy initialization
+- performance profiling framework for bottleneck identification
 
-### Ecological model
+### Ecological model with 2D spatial structure
 
-- wrapped 2D world compiled from regime anchors
-- fertility/resource fields with bounded regeneration
+- **2D toroidal world** with configurable width × height grid (newly completed)
+- 2D fertility and resource fields with spatially-correlated generation
+- agent positions as `(x, y)` coordinates enabling neighborhood queries
 - energy-gated movement, harvesting, reproduction, and death pathways
+- decoupled energy initialization supporting future trait heterogeneity
 - four regime presets: `stable`, `test_stable`, `fragile`, `abundant`
 
 ### Experiment and analysis workflow
@@ -188,17 +192,19 @@ See [engine_build/regimes/registry.py](engine_build/regimes/registry.py) for reg
 
 ## Roadmap & Next Steps
 
-The project follows a staged development plan with clear exit criteria and validation gates. See [ROADMAP.md](docs/Project_Status/ROADMAP.md) for complete details.
+The project follows a staged development plan with clear exit criteria and validation gates. See [ROADMAP.md](docs/Project_Status/ROADMAP.md) and [CURRENT_STATE.md](docs/Project_Status/CURRENT_STATE.md) for complete details.
 
-**Current Stage:** Stage II (beta v0.2) — stabilizing baseline quality
+**Current Stage:** Pre-Stage III (beta v0.2.1) — 2D refactoring complete, spatial interactions ready to implement
 
 **Near-term priorities:**
-1. Freeze and maintain Stage II baseline (tests + docs + release hygiene)
-2. Implement Stage III interaction model with minimal deterministic surface area
-3. Extend validation analytics to cover new interaction-specific invariants
+1. Complete regime validation test refactoring (align with current regime names)
+2. Define validation thresholds for fragile/abundant regimes via empirical runs
+3. Optimize agent initialization performance (reduce batch runtime)
+4. Extend metrics for 2D spatial patterns (clustering, occupancy)
+5. Design Stage III spatial interaction mechanics before implementation
 
 **Version targets:**
-- **v0.3** (Stage III) — Explicit Interaction and Spatial Competition
+- **v0.3** (Stage III) — Explicit Interaction and Spatial Competition (2D-ready foundation)
 - **v0.4–v0.6** (Stage IV) — Trait Variation and Selection  
 - **v1.0** (Stage V) — Research Platform maturity
 
@@ -206,6 +212,7 @@ All releases require:
 - Passing determinism, invariant, and regime validation suites
 - Updated baseline artifacts and documentation
 - Clear change notes when baseline hashes update
+- Determinism verification across all refactoring changes
 
 ## Repository Guide
 
@@ -219,15 +226,18 @@ All releases require:
 - `engine_build/visualisation/`: experiment and development plotting helpers
 - `tests/`: deterministic, snapshot, invariant, RNG-isolation, and regime validation suites
 
-## Refactor Notes
+## Recent Refactoring Notes (March 8-15, 2026)
 
-Recent changes reflected in this README:
+Major systems restructuring completed to prepare for Stage III spatial interactions:
 
-- validation has been moved into a dedicated pytest suite under `tests/`
-- batch execution is now centered on `Runner` instead of ad hoc experiment loops
-- regime handling is split into declarative specs plus a compiler step
-- metrics collection and analytics/fingerprinting are separated from the engine core
-- top-level experiment runs now expose plotting and fertility exploration flags through `engine_build.main`
+- **2D world topology:** Transitioned from 1D wrapped array to 2D height×width grid with proper toroidal semantics
+- **Energy system decoupling:** Agent initialization broken into four independent phases (`_init_identity`, `_init_lineage`, `_init_rngs`, `_init_state`) enabling modular customization and performance profiling
+- **Agent factory pattern:** Extracted agent creation into dedicated module with separate code paths for initial vs. newborn agents
+- **Performance infrastructure:** Added `PerfSink` framework for bottleneck measurement; agent initialization identified as critical path
+- **State schema updates:** Snapshots and serialization refactored to handle 2D positions; determinism verified throughout
+- **Metrics pipeline refinement:** Restructured for performance data integration while maintaining fingerprint analysis capabilities
+
+**Determinism Impact:** All changes verified to maintain bit-exact reproducibility with fixed seeds. State hashes unchanged (refactoring is transparent to validation).
 
 ## Documentation
 
@@ -244,16 +254,22 @@ For deeper design notes and model background, see:
 
 ## Current Status & Quality Gates
 
-**Stage II (beta v0.2) Status:**
-- ✅ Deterministic execution and replay
-- ✅ Snapshot/restore continuation equivalence  
+**Pre-Stage III (beta v0.2.1) Status — Post-Refactoring:**
+- ✅ 2D world model implementation completed and verified
+- ✅ Energy system decoupled into modular initialization phases
+- ✅ Agent factory pattern extracted for cleaner creation paths
+- ✅ Performance profiling framework integrated (PerfSink)
+- ✅ Deterministic execution verified across refactoring changes  
+- ✅ Snapshot/restore continuation equivalence maintained through topology transition
 - ✅ Isolated RNG domains (world, movement, reproduction, energy)
-- ✅ Canonical state hashing and validation
-- ✅ Comprehensive pytest-based validation suite
-- ✅ Batch orchestration and metrics collection
+- ✅ Canonical state hashing verified unchanged (determinism preserved)
+- ✅ Comprehensive pytest-based validation suite (extended for 2D features)
+- ✅ Batch orchestration with metrics collection
+- 🔄 Regime validation tests refactoring (code cleanup in progress)
+- 🔄 Performance optimization of agent initialization (bottleneck identified, optimization roadmap ready)
 
 **Quality Gates (Required for All Releases):**
-- Deterministic behavior required for all simulation logic changes
+- Deterministic behavior required across all simulation logic refactoring
 - No unordered state transitions in core pipeline
 - All new features must define invariants and validation checks
 - Documentation must track actual code behavior, not intended behavior
