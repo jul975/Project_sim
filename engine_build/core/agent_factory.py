@@ -6,9 +6,12 @@ from .agent import Agent
 from engine_build.dev.perf import PerfSink, NullPerfSink, measure_block
 
 
+""" NOTE: need to review this concept. 
+        -   Agent creation should be a method of the engine, as it is the one responsible for the logic.
+            => need to change this.
+"""
 
-
-def create_initial_agent(engine, agent_id, agent_seed, perf: PerfSink | None = None) -> Agent:
+def create_initial_agent(engine, agent_id, agent_seed, perf: PerfSink | None = None) -> None:
     perf = perf or NullPerfSink()
     return measure_block(
         perf,

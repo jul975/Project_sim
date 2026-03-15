@@ -125,10 +125,10 @@ class Engine:
     
     def create_new_agent(self, parent_agent : Agent, perf_sink : PerfSink | None = None) -> None:
         """ creates new agent from parent_agent. """
-        
+        # gen child seed
         child_seed = self.get_child_seed(parent_agent)
         
-
+        # create child temp split, for review
         child_new = create_newborn_agent( self , self.next_agent_id , child_seed, parent_agent.position, perf_sink)
 
         self.agents[self.next_agent_id] = child_new

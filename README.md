@@ -1,25 +1,40 @@
 # Ecosystem Emergent Behavior Simulator
 
-A deterministic multi-agent ecology simulator for running reproducible experiments on a wrapped 2D resource landscape.
+A deterministic multi-agent ecology simulator for running reproducible experiments on a wrapped 2D resource landscape. The project evolves from a foundational deterministic kernel toward a research-grade experimentation platform with explicit interactions, trait heterogeneity, and advanced analytics.
 
 $$S_{t+1} = T(S_t)$$
 
+## Project Status
+
+**Current Stage:** Stage II (beta v0.2) — Controlled Ecological Dynamics  
+**Target Version:** v0.3 (Stage III) — Explicit Interaction and Spatial Competition
+
+See [ROADMAP](docs/Project_Status/ROADMAP.md) for strategic goals, staged milestones, and version targets.
+
 ## Overview
 
-The project has recently been refactored around a clearer execution pipeline:
+The project is structured around a clear execution pipeline:
 
-`regime spec -> regime compiler -> runner -> engine -> metrics -> batch analytics`
+`regime spec → regime compiler → runner → engine → metrics → batch analytics`
 
-That split is now visible in the package layout:
+**Package Layout:**
 
-- `engine_build/regimes/` defines human-authored regime presets and compiles them into concrete runtime parameters.
-- `engine_build/runner/` owns batch orchestration and seed spawning.
-- `engine_build/core/` owns the deterministic simulation state and tick transitions.
-- `engine_build/metrics/` records per-tick signals without embedding analysis logic into the engine.
-- `engine_build/analytics/` derives tail-window fingerprints and batch summaries.
-- `tests/` contains the current validation workflow in pytest.
+- `engine_build/regimes/` — Human-authored regime presets and compilation to runtime parameters
+- `engine_build/runner/` — Batch orchestration and seed spawning
+- `engine_build/core/` — Deterministic simulation state and tick transitions
+- `engine_build/metrics/` — Per-tick observability without embedding analysis logic
+- `engine_build/analytics/` — Tail-window fingerprints and batch summaries
+- `tests/` — Validation workflow (pytest-based)
 
-## Current Capabilities
+## Strategic Goals
+
+1. **Preserve deterministic reproducibility** — Non-negotiable system invariant for all simulation logic
+2. **Increase ecological realism** — Move toward explicit interactions and spatial structure
+3. **Introduce trait heterogeneity** — Enable selection dynamics and adaptive evolution
+4. **Build robust analytics stack** — Reproducible research-grade experimentation workflow
+5. **Release with verification gates** — All releases pass determinism, invariants, and validation suites
+
+## Current Capabilities (Stage II)
 
 ### Deterministic simulation core
 
@@ -33,7 +48,7 @@ That split is now visible in the package layout:
 - wrapped 2D world compiled from regime anchors
 - fertility/resource fields with bounded regeneration
 - energy-gated movement, harvesting, reproduction, and death pathways
-- built-in regime presets: `stable`, `extinction`, `saturated`
+- four regime presets: `stable`, `test_stable`, `fragile`, `abundant`
 
 ### Experiment and analysis workflow
 
@@ -44,11 +59,11 @@ That split is now visible in the package layout:
 
 ### Validation coverage
 
-- deterministic replay checks
-- snapshot round-trip and restored-RNG checks
-- structural invariants
-- RNG isolation tests
-- regime-level validation tests for `stable`, `extinction`, and `saturated`
+- **deterministic replay:** verify identical seed produces identical state sequences
+- **snapshot round-trip:** save state, restore, check equivalence
+- **RNG isolation:** verify separate RNG domains don't cross-contaminate
+- **structural invariants:** position bounds, agent ID consistency, population caps
+- **regime-level tests:** behavioral validation for `stable`, `fragile`, and `abundant` regimes
 
 ## Quickstart
 
@@ -82,107 +97,115 @@ python -m pip install -r requirements.txt
 
 ## Running Experiments
 
-Default experiment:
+Run a default experiment:
 
 ```bash
-python -m engine_build.main --mode experiment --regime stable
+python -m engine_build.main experiment --regime stable
 ```
 
-Custom batch run:
+Custom batch run with specific seed, run count, and tick count:
 
 ```bash
-python -m engine_build.main --mode experiment --regime stable --seed 42 --runs 10 --ticks 1000
+python -m engine_build.main experiment --regime stable --seed 42 --runs 10 --ticks 1000
 ```
 
-Current experiment defaults live in `engine_build/execution/default.py` and are set to `10` runs over `1000` ticks.
+Available regimes: `stable`, `test_stable`, `fragile`, `abundant`
 
-Plot the population ensemble:
+Experiment defaults (when no arguments specified) are set in [engine_build/execution/default.py](engine_build/execution/default.py) and default to `10` runs over `1000` ticks.
+
+**With plotting:**
 
 ```bash
-python -m engine_build.main --mode experiment --regime stable --runs 10 --ticks 1000 --plot
+python -m engine_build.main experiment --regime stable --runs 10 --ticks 1000 --plot
 ```
 
-Open the more verbose development plots:
+**With verbose development plots:**
 
 ```bash
-python -m engine_build.main --mode experiment --regime stable --runs 10 --ticks 1000 --plot_dev
+python -m engine_build.main experiment --regime stable --runs 10 --ticks 1000 --plot-dev
 ```
 
-Run the fertility exploration workflow:
+**Fertility exploration workflow:**
 
 ```bash
-python -m engine_build.main --mode experiment --fertility
+python -m engine_build.main fertility --seed 42
 ```
 
-The experiment CLI prints a batch summary that includes:
-
+**Experiment CLI Output** includes batch summaries with:
 - final population mean and standard deviation
 - extinction rate
 - capacity-hit rate
 - birth/death ratio
-- time-series coefficient of variation over the tail window
+- time-series coefficient of variation over tail window
 
-## Running Validation
+## Validation
 
-The validation path now lives in `tests/` and is driven through pytest.
+All validation workflows are pytest-based and live in [tests/](tests/).
 
-Run the full suite:
+**Run the full test suite:**
 
 ```bash
 python -m pytest
 ```
 
-Run only the fast core checks:
+**Run by marker:**
 
 ```bash
-python -m pytest -m dev
+python -m pytest -m dev        # fast checks
+python -m pytest -m validate   # broader validation
+python -m pytest -m slow       # full suite including slow tests
 ```
 
-Run the broader validation set:
+**Run specific domains:**
 
 ```bash
-python -m pytest -m validate
+python -m pytest tests/test_determinism.py      # deterministic execution
+python -m pytest tests/test_snapshots.py         # snapshot/restore
+python -m pytest tests/test_rng_isolation.py     # RNG domain separation
+python -m pytest tests/test_invariants.py        # structural consistency
+python -m pytest tests/test_regime_validation.py # regime-specific behavior
 ```
 
-Run selected validation domains:
-
-```bash
-python -m pytest tests/test_determinism.py
-python -m pytest tests/test_snapshots.py
-python -m pytest tests/test_rng_isolation.py
-python -m pytest tests/test_regime_validation.py
-```
-
-Available markers in `pytest.ini`:
-
-- `dev`
-- `validate`
-- `full`
-- `slow`
-- `rng`
-- `invariant`
-- `snapshot`
-- `regime`
+**Available pytest markers** (see [pytest.ini](pytest.ini)):
+- `dev` — unit checks
+- `validate` — validation suite
+- `slow` — long-running tests
+- `rng` — RNG-specific tests
+- `invariant` — structural invariant checks
+- `snapshot` — snapshot/restore tests
+- `regime` — regime-specific behavior
 
 ## Built-In Regimes
 
-- `stable`: bounded population dynamics with low extinction pressure
-- `extinction`: collapse-dominant dynamics driven by tighter energetic/resource constraints
-- `saturated`: near-capacity occupancy with low extinction and frequent cap pressure
+The system includes four canonical ecological regimes, configurable via energy, reproduction, and resource parameters:
 
-## Example Regimes
+- **`stable`** — Bounded population dynamics with sustainable growth and low extinction pressure. Standard baseline for general experiments.
+- **`fragile`** — Tight energy constraints with reduced resource regeneration. Population more vulnerable to collapse.
+- **`abundant`** — High resource availability and reduced energy requirements. Population can grow toward capacity constraints.
+- **`test_stable`** — Variant of `stable` with tighter initial energy budgets, useful for rapid validation checks.
 
-### Stable
+See [engine_build/regimes/registry.py](engine_build/regimes/registry.py) for regime parameter details.
 
-![Stable Regime](docs/images/regime_stable.png)
+## Roadmap & Next Steps
 
-### Extinction
+The project follows a staged development plan with clear exit criteria and validation gates. See [ROADMAP.md](docs/Project_Status/ROADMAP.md) for complete details.
 
-![Extinction Regime](docs/images/regime_extinction.png)
+**Current Stage:** Stage II (beta v0.2) — stabilizing baseline quality
 
-### Saturated
+**Near-term priorities:**
+1. Freeze and maintain Stage II baseline (tests + docs + release hygiene)
+2. Implement Stage III interaction model with minimal deterministic surface area
+3. Extend validation analytics to cover new interaction-specific invariants
 
-![Saturated Regime](docs/images/regime_saturated.png)
+**Version targets:**
+- **v0.3** (Stage III) — Explicit Interaction and Spatial Competition
+- **v0.4–v0.6** (Stage IV) — Trait Variation and Selection  
+- **v1.0** (Stage V) — Research Platform maturity
+
+All releases require:
+- Passing determinism, invariant, and regime validation suites
+- Updated baseline artifacts and documentation
+- Clear change notes when baseline hashes update
 
 ## Repository Guide
 
@@ -219,20 +242,28 @@ For deeper design notes and model background, see:
 - [Experiments](docs/canonical_docs/EXPERIMENTS.md)
 - [Agent Notes](docs/canonical_docs/Agent.md)
 
-## Current Status
+## Current Status & Quality Gates
 
-The current codebase is focused on:
+**Stage II (beta v0.2) Status:**
+- ✅ Deterministic execution and replay
+- ✅ Snapshot/restore continuation equivalence  
+- ✅ Isolated RNG domains (world, movement, reproduction, energy)
+- ✅ Canonical state hashing and validation
+- ✅ Comprehensive pytest-based validation suite
+- ✅ Batch orchestration and metrics collection
 
-- stabilizing the experiment/analytics pipeline
-- preserving deterministic replay and snapshot guarantees
-- expanding pytest-based validation coverage around regimes and invariants
+**Quality Gates (Required for All Releases):**
+- Deterministic behavior required for all simulation logic changes
+- No unordered state transitions in core pipeline
+- All new features must define invariants and validation checks
+- Documentation must track actual code behavior, not intended behavior
+- Release tags require passing validation suites and baseline artifacts
 
-## Design Principles
-
-- determinism over convenience
-- explicit entropy over hidden randomness
-- invariants before features
-- reproducibility before optimization
+**Code Organization Principles:**
+- Determinism over convenience
+- Explicit entropy over hidden randomness
+- Invariants before new features
+- Reproducibility constraints are non-negotiable
 
 ## Author
 

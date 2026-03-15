@@ -4,21 +4,34 @@
 This document defines the experiment-level validation system used to verify regime behavior.
 
 It covers:
-1. regime validation
+1. regime validation approach
 2. metric definitions
 3. regime classification logic
 
 Source of truth:
-- `engine_build/test/validation.py`
+- `tests/test_regime_validation.py`
 - `engine_build/analytics/fingerprint.py`
+- `engine_build/analytics/regime_summery.py`
 
-## 1. Regime Validation
+## Current Status (Stage II)
+
+**Actively Validated Regimes:**
+- `stable` — Standard baseline for bounded population dynamics
+
+**Regimes Under Evaluation:**
+- `fragile` — Testing collapse dynamics and population stress responses
+- `abundant` — Testing growth capacity and saturation effects
+
+**Legacy Validation Tests:** Pending refactor to align with current regime set.
+
+## 1. Regime Validation Framework
+
 Validation evaluates batch-run aggregate fingerprints against regime-specific thresholds.
 
 Execution path:
-- `run_validation_mode(args)`
-- config loaded from `get_regime_config(args.regime)`
-- run defaults from `VALIDATION_DEFAULTS`
+- `python -m engine_build.main validate --suite regime`
+- config loaded from `engine_build/regimes/registry.get_regime_spec(regime)`
+- run defaults from `engine_build/execution/default.VALIDATION_DEFAULTS`
 
 Current validation defaults:
 - `ticks = 300`
@@ -72,15 +85,21 @@ $$
 using each run's tail-window population series.
 
 ## 3. Regime Classification Logic
-Validation is rule-based via `VALIDATORS`:
 
-- `"extinction" -> validate_extinction_regime`
-- `"stable" -> validate_stable_regime`
-- `"saturated" -> validate_saturated_regime`
+The system uses post-hoc classification via `engine_build/analytics/regime_summery.py`:
 
-A run is classified as a valid regime only if **all** regime-specific constraints pass.
+```python
+def classify_regime(summary: RegimeSummary) -> RegimeClass:
+    # Returns one of: COLLAPSE, FRAGILE, STABLE, ABUNDANT, SATURATED, UNCLASSIFIED
+```
 
-### Stable regime rules
+This provides automatic behavioral classification independent of preset names.
+
+### Stable Regime (Active Validation)
+
+Test: `tests/test_regime_validation.py::test_stable_regime_validation`
+
+Rules:
 - `mean_population_over_runs > 0`
 - `extinction_rate < 0.1`
 - `cap_hit_rate < 0.2`
@@ -89,40 +108,23 @@ A run is classified as a valid regime only if **all** regime-specific constraint
 
 Interpretation: bounded non-zero population with moderate stability and near birth/death balance.
 
-### Extinction regime rules
-Let `cap = next(iter(result.batch_metrics.values())).max_agent_count`.
+### Fragile Regime (Emerging)
 
-- `extinction_rate >= 0.8`
-- `mean_population_over_runs <= 0.1 * cap`
-- every run must have `extinction_tick is not None`
-- `cap_hit_rate <= 0.1`
-- `birth_death_ratio < 1`
+Target behavior:
+- Higher extinction rate (triggered by tighter energy/resource constraints)
+- Lower mean population
+- Higher variability
 
-Interpretation: collapse-dominant dynamics with sustained death pressure.
+### Abundant Regime (Emerging)
 
-### Saturated regime rules
-Let `cap = next(iter(result.batch_metrics.values())).max_agent_count`.
-
-- `cap_hit_rate >= 0.8`
-- `mean_population_over_runs >= 0.8 * cap`
-- `mean_time_cv_over_runs <= 0.2`
-- `extinction_rate <= 0.05`
-- `abs(birth_death_ratio - 1.0) <= 0.1`
-
-Interpretation: high-cap occupancy with low extinction and near turnover equilibrium.
-
-## Regime Output Examples
-These plots illustrate typical outputs for the three validated regimes.
-
-### Stable Regime
-![Stable Regime](../images/regime_stable.png)
-
-### Extinction Regime
-![Extinction Regime](../images/regime_extinction.png)
-
-### Saturated Regime
-![Saturated Regime](../images/regime_saturated.png)
+Target behavior:
+- Near-capacity occupancy
+- Low extinction rate
+- Growth-toward-limit dynamics
 
 ## Notes
-- Thresholds are hard-coded in `engine_build/test/validation.py`.
-- Any threshold or metric logic change should update this document in the same change set.
+
+- Regime validation thresholds are hard-coded in `tests/test_regime_validation.py`
+- Any threshold or metric logic change should update this document in the same changeset
+- Legacy validation tests for "extinction" and "saturated" regimes are pending refactor to align with current regime preset names
+- Post-hoc classification via `classify_regime()` provides continuous behavioral taxonomy independent of preset brittleness
