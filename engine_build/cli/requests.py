@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 
-RegimeName = Literal["extinction", "stable", "saturated"]
+RegimeName = Literal["stable", "test_stable", "fragile", "abundant"]
 ValidationSuite = Literal["all", "determinism", "regime", "invariants"]
 
 

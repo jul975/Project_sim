@@ -79,13 +79,16 @@ $$
 ## 4. Regime Presets
 Source: `engine_build/regimes/registry.py`
 
-| Regime | alpha | beta | gamma |
-|---|---:|---:|---:|
-| `extinction` | `1.2` | `1.0` | `5` |
-| `stable` | `0.6` | `0.8` | `10` |
-| `saturated` | `0.4` | `0.6` | `6` |
+| Regime | Description | Use Case |
+|---|---|---|
+| `stable` | Bounded population, low extinction pressure | Default baseline for experiments |
+| `test_stable` | Tighter energy budget variant of stable | Rapid validation checks |
+| `fragile` | Tight energy constraints, high collapse risk | Testing robustness under stress |
+| `abundant` | High resources, relaxed energy requirements | Testing growth capacity dynamics |
 
-`get_regime_config(regime)` applies these ratio values on top of base defaults.
+Each regime is defined via `RegimeSpec` with configurable energy, reproduction, resource, landscape, and population parameters.
+
+Reference: Energy parameters (beta, gamma, harvest_fraction) determine agent energy dynamics. Resource parameters (regen_fraction) control regeneration rates. See [engine_build/regimes/compiler.py](../../engine_build/regimes/compiler.py) for compilation logic.
 
 ## 5. Execution-Level Controls
 These are runtime controls for batch execution (not fields of `SimulationConfig`).
@@ -96,12 +99,11 @@ Source: `engine_build/execution/default.py`
 - `VALIDATION_DEFAULTS = {"ticks": 300, "runs": 2}`
 
 CLI-level overrides in `engine_build/main.py`:
-- `--mode {experiment,validation}`
-- `--regime {extinction,stable,saturated,all}`
-- `--seed`
-- `--runs`
-- `--ticks`
-- `--plot`
+- `experiment {regime}` — Run regime experiments
+- `validate {--suite}` — Run validation suites
+- `fertility {--seed}` — Run fertility exploration
+- Regime choices: `stable`, `test_stable`, `fragile`, `abundant`
+- `--seed`, `--runs`, `--ticks` — Override defaults
 
 ## 6. Determinism Constraints
 For reproducible runs:
