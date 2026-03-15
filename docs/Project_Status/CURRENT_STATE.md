@@ -1,29 +1,42 @@
 # Current Project State (March 2026)
 
 ## Overview
-The Ecosystem Emergent Behavior Simulator is in **pre-Stage III** development following a major systems refactoring that transitioned the world model from 1D to 2D topology and decoupled energy initialization from agent core logic. The codebase now provides a solid foundation for explicit spatial interactions while maintaining deterministic reproducibility across all changes.
+The Ecosystem Emergent Behavior Simulator is in **active pre-Stage III development** with rapid iteration and continuous refactoring. Recent work (100+ commits in ~4 weeks) transitioned the world model from 1D to 2D topology and decoupled energy initialization from agent core logic. The codebase provides a determinism-preserving foundation for explicit spatial interactions, suitable for experimental work but subject to ongoing architectural improvements.
 
 **Last Updated:** March 15, 2026  
-**Current Version:** beta v0.2.1 (post-refactor)  
+**Current Version:** beta v0.2.1 (post-refactor, actively developed)  
+**Commit Velocity:** 100+ commits in ~4 weeks (rapid iteration phase)  
 **Next Target:** v0.3 (Stage III - Explicit Interaction and Spatial Competition)
+
+## Development Approach
+
+This project employs **continuous refactoring with determinism-preserving principles**:
+- Frequent commits capture experimental and stabilization work
+- Major architectural changes (1D→2D, energy decoupling) delivered incrementally
+- Deterministic reproducibility maintained as non-negotiable constraint throughout
+- High commit frequency reflects active problem-solving and optimization, not instability
+- All changes validated against determinism suites before merge
+
+**Timeline Expectations:** Given the active development pace and ongoing optimization work, delivery timelines for Stage III and beyond should be considered provisional and subject to adjustment as discoveries emerge.
 
 ## Project Status
 
-### ✅ Completed & Stable
+### ✅ Recently Completed & Determinism-Verified
 
 **Major Systems Refactoring (Pre-Stage III, March 8-15, 2026)**
 
-This week's work transitioned the core engine architecture to support 2D spatial models while maintaining deterministic reproducibility and adding performance observability.
+This week's work transitioned the core engine architecture to support 2D spatial models while maintaining deterministic reproducibility. These changes are now in daily use but remain subject to optimization refinement.
 
-- **2D World Model Implementation**
+- **2D World Model Implementation** (completed, active optimization)
   - Replaced 1D wrapped topology with 2D (height × width) grid system
   - Fertility and resource fields refactored to 2D numpy arrays
   - Agent positions now `(x, y)` tuples enabling neighborhood-based queries
   - Toroidal boundary wrapping updated for 2D semantics
   - Deterministic state serialization verified across topology transition
   - All position-based invariants re-validated for 2D space
+  - **Note:** Performance still being optimized; 15-20min batch runs currently, <5min target
 
-- **Decoupled Energy System Architecture**
+- **Decoupled Energy System Architecture** (completed, usage patterns emerging)
   - Agent initialization restructured into four phases:
     - `_init_identity()` — agent ID and lineage setup
     - `_init_lineage()` — RNG seed sequence management
@@ -32,54 +45,55 @@ This week's work transitioned the core engine architecture to support 2D spatial
   - Each phase independently measurable for performance profiling
   - Energy parameters now separately configurable from agent identity
   - Prepares foundation for heterogeneous agent traits (Stage IV)
+  - **In-progress:** Agent creation identified as bottleneck; optimization underway
 
-- **Agent Factory Pattern**
+- **Agent Factory Pattern** (completed, integrated into workflows)
   - Extracted agent creation into `agent_factory.py` module
   - Dual code paths optimized for initial population vs. newborn reproduction
   - Cleaner separation between engine orchestration and agent construction
   - Performance measurement integrated at factory level
 
-- **Performance Profiling Framework**
+- **Performance Profiling Framework** (completed, actively generating insights)
   - Implemented `PerfSink` abstraction in `dev/perf.py`
   - `measure_block()` utility enables fine-grained bottleneck tracking
-  - Agent initialization identified as primary performance constraint
+  - Agent initialization identified as primary performance constraint (~70% of batch time)
   - Framework supports iterative optimization without breaking determinism
   - Metrics pipeline enhanced to capture performance data per batch
 
-- **State Serialization & Snapshots Updated**
+- **State Serialization & Snapshots Updated** (completed, fully validated)
   - Schema refactored to handle 2D agent positions
   - State hash verified unchanged (determinism preserved)
   - Snapshot/restore round-trip tested post-refactoring
   - All structural invariants re-validated with new topology
 
-**Preserved Capabilities (Pre-Refactor, Now Extended)**
+**Pre-Refactor Capabilities (Preserved & Extended)**
 
-- **Deterministic simulation core**
+- **Deterministic simulation core** (stable, post-refactoring verified)
   - Reproducible state trajectories with fixed seeds (verified post-refactoring)
   - Canonical state hashing via SHA256 remains gold standard
   - Snapshot/restore continuation equivalence maintained
   - Isolated RNG streams (world, movement, reproduction, energy)
 
-- **Ecological model dynamics**
+- **Ecological model dynamics** (stable, now 2D)
   - 2D toroidal world with fertility/resource fields (newly implemented)
   - Energy-gated movement, reproduction, harvesting, and death pathways
   - Bounded resource regeneration with configurable rates
   - Population capacity enforcement with 2D occupancy checks
 
-- **Batch execution infrastructure**
+- **Batch execution infrastructure** (stable, extended for 2D)
   - Multi-run orchestration via `Runner` class
   - Automatic seed sequence generation from master seed
   - Per-tick metrics collection via `SimulationMetrics`
   - Tail-window fingerprint analysis and regime classification
 
-- **Validation framework**
+- **Validation framework** (stable, extended for 2D)
   - Determinism checks verified post-refactoring
   - Snapshot round-trip equivalence tested
   - Structural invariants extended for 2D topology (position bounds, neighbors, caps)
   - RNG isolation tests passing
   - Stable regime behavioral validation
 
-- **CLI interface**
+- **CLI interface** (stable, unchanged)
   - Experiment execution: `python -m engine_build.main experiment`
   - Validation runners: `python -m engine_build.main validate`
   - Batch execution with configurable seed/runs/ticks

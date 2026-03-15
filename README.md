@@ -6,11 +6,14 @@ $$S_{t+1} = T(S_t)$$
 
 ## Project Status
 
-**Current Stage:** Pre-Stage III (beta v0.2.1) — Post-Refactoring, Foundation Ready  
+**Current Stage:** Pre-Stage III (beta v0.2.1) — Actively Developed  
+**Development Velocity:** 100+ commits in ~4 weeks (rapid iteration & optimization phase)  
 **Recent Work:** 2D world implementation, energy system decoupling, performance profiling infrastructure  
-**Target Version:** v0.3 (Stage III) — Explicit Interaction and Spatial Competition
+**Target Version:** v0.3 (Stage III) — Explicit Interaction and Spatial Competition  
 
-See [ROADMAP](docs/Project_Status/ROADMAP.md) for strategic goals and [CURRENT_STATE](docs/Project_Status/CURRENT_STATE.md) for detailed refactoring notes.
+**Note:** This project is under active development with frequent refactoring. High commit frequency indicates iterative problem-solving and optimization, not instability. All changes maintain deterministic reproducibility as a non-negotiable constraint.
+
+See [ROADMAP](docs/Project_Status/ROADMAP.md) for strategic goals and [CURRENT_STATE](docs/Project_Status/CURRENT_STATE.md) for detailed development status.
 
 ## Overview
 
@@ -194,25 +197,29 @@ See [engine_build/regimes/registry.py](engine_build/regimes/registry.py) for reg
 
 The project follows a staged development plan with clear exit criteria and validation gates. See [ROADMAP.md](docs/Project_Status/ROADMAP.md) and [CURRENT_STATE.md](docs/Project_Status/CURRENT_STATE.md) for complete details.
 
-**Current Stage:** Pre-Stage III (beta v0.2.1) — 2D refactoring complete, spatial interactions ready to implement
+**Current Stage:** Pre-Stage III (beta v0.2.1) — 2D refactoring complete, performance optimization in progress
 
-**Near-term priorities:**
+**Near-term priorities** (subject to iteration based on discoveries):
 1. Complete regime validation test refactoring (align with current regime names)
 2. Define validation thresholds for fragile/abundant regimes via empirical runs
-3. Optimize agent initialization performance (reduce batch runtime)
+3. Optimize agent initialization performance (reduce batch runtime from ~15-20min to <5min)
 4. Extend metrics for 2D spatial patterns (clustering, occupancy)
 5. Design Stage III spatial interaction mechanics before implementation
 
-**Version targets:**
-- **v0.3** (Stage III) — Explicit Interaction and Spatial Competition (2D-ready foundation)
+**Provisional version targets** (timelines may shift during active optimization):
+- **v0.3** (Stage III) — Explicit Interaction and Spatial Competition (foundation complete, feature development pending)
 - **v0.4–v0.6** (Stage IV) — Trait Variation and Selection  
 - **v1.0** (Stage V) — Research Platform maturity
+
+**Development Approach:** Given the active optimization and rapid iteration pace (100+ commits/4 weeks), version timelines are estimates subject to adjustment as performance work and design iterations emerge.
 
 All releases require:
 - Passing determinism, invariant, and regime validation suites
 - Updated baseline artifacts and documentation
 - Clear change notes when baseline hashes update
 - Determinism verification across all refactoring changes
+
+## Repository Guide
 
 ## Repository Guide
 
@@ -254,19 +261,26 @@ For deeper design notes and model background, see:
 
 ## Current Status & Quality Gates
 
-**Pre-Stage III (beta v0.2.1) Status — Post-Refactoring:**
-- ✅ 2D world model implementation completed and verified
+**Pre-Stage III (beta v0.2.1) Status — Actively Under Development:**
+- ✅ 2D world model implementation completed and determinism-verified
 - ✅ Energy system decoupled into modular initialization phases
 - ✅ Agent factory pattern extracted for cleaner creation paths
-- ✅ Performance profiling framework integrated (PerfSink)
-- ✅ Deterministic execution verified across refactoring changes  
+- ✅ Performance profiling framework integrated and generating insights (PerfSink)
+- ✅ Deterministic execution verified across all refactoring changes  
 - ✅ Snapshot/restore continuation equivalence maintained through topology transition
 - ✅ Isolated RNG domains (world, movement, reproduction, energy)
 - ✅ Canonical state hashing verified unchanged (determinism preserved)
 - ✅ Comprehensive pytest-based validation suite (extended for 2D features)
 - ✅ Batch orchestration with metrics collection
-- 🔄 Regime validation tests refactoring (code cleanup in progress)
-- 🔄 Performance optimization of agent initialization (bottleneck identified, optimization roadmap ready)
+- 🔄 Regime validation tests refactoring (code cleanup ongoing)
+- 🔄 Performance optimization of agent initialization (identified as bottleneck ~70% of runtime, optimization in progress)
+- 🔄 Extend metrics for 2D spatial patterns (in queue for Stage III)
+
+**Development Notes:**
+- High commit frequency reflects active problem-solving and iterative refinement
+- All changes validated against determinism suites before integration
+- Performance improvements underway while maintaining reproducibility
+- Timeline projections for Stage III and beyond are provisional pending optimization completion
 
 **Quality Gates (Required for All Releases):**
 - Deterministic behavior required across all simulation logic refactoring
