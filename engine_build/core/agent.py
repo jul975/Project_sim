@@ -78,13 +78,11 @@ class Agent:
 
     def _init_rngs(self, agent_setup : AgentSetup) -> None:
         """ initializes agent lineage. """
-        move_seed_words : tuple[int, ...] = agent_setup.identity_words + (MOVEMENT,)
-        repro_ss : tuple[int, ...] = agent_setup.identity_words + (REPRODUCTION,)
-        energy_ss : tuple[int, ...] = agent_setup.identity_words + (ENERGY,)
+        
 
-        self.move_rng = np.random.Generator(np.random.PCG64(move_seed_words))
-        self.repro_rng = np.random.Generator(np.random.PCG64(repro_ss))
-        self.energy_rng = np.random.Generator(np.random.PCG64(energy_ss))
+        self.move_rng = np.random.Generator(np.random.PCG64(agent_setup.identity_words + (MOVEMENT,)))
+        self.repro_rng = np.random.Generator(np.random.PCG64(agent_setup.identity_words + (REPRODUCTION,)))
+        self.energy_rng = np.random.Generator(np.random.PCG64(agent_setup.identity_words + (ENERGY,)))
 
 
         return 
