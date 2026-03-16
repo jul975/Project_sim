@@ -159,13 +159,11 @@ def test_restored_agents_match_original(make_engine, stable_regime, seed_ref, ti
         assert b.age == a.age
         assert b.energy_level == a.energy_level
         assert b.alive == a.alive
-        assert b.agent_spawn_count == a.agent_spawn_count
-        assert b.agent_seed.entropy == a.agent_seed.entropy
-        assert tuple(b.agent_seed.spawn_key) == tuple(a.agent_seed.spawn_key)
-        assert b.agent_seed.pool_size == a.agent_seed.pool_size
-        assert b.agent_entropy == a.agent_entropy
-        assert tuple(b.agent_spawn_key) == tuple(a.agent_spawn_key)
-        assert b.pool_size == a.pool_size
+        assert b.offspring_count == a.offspring_count
+        # relevant? below? have to check
+        assert b.move_rng.bit_generator.state == a.move_rng.bit_generator.state
+        assert b.repro_rng.bit_generator.state == a.repro_rng.bit_generator.state
+        assert b.energy_rng.bit_generator.state == a.energy_rng.bit_generator.state
 
 
 

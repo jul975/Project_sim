@@ -77,9 +77,9 @@ Agents (sorted by id):
   energy
   age
   alive
-  agent_spawn_count
-  agent_entropy
-  agent_spawn_key
+
+  
+  offspring_count
   move_rng_state
   repro_rng_state
   energy_rng_state
@@ -131,9 +131,9 @@ def _schema_v2(engine : "Engine" ) -> bytes:
         buffer += set_int64(agent.energy_level)
         buffer += set_int64(agent.age)
         buffer += set_uint8(int(agent.alive))
-        buffer += set_int64(agent.agent_spawn_count)
-        buffer += set_int64(agent.agent_entropy)
-        buffer += serialize_spawn_key(agent.agent_spawn_key)
+
+        buffer += set_int64(agent.offspring_count)
+
         buffer += serialize_rng_state(agent.move_rng)
         buffer += serialize_rng_state(agent.repro_rng)
         buffer += serialize_rng_state(agent.energy_rng)
