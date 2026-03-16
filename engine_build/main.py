@@ -1,6 +1,3 @@
-
-
-
 from __future__ import annotations
 
 import argparse
@@ -64,6 +61,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Plot verbose development figures",
     )
+    experiment_parser.add_argument(
+        "--perf_flag",
+        action="store_true",
+        help="Enable development performance profiling output",
+    )
 
     validate_parser = subparsers.add_parser(
         "validate",
@@ -108,6 +110,7 @@ def build_experiment_request(args: argparse.Namespace) -> ExperimentRequest:
         ticks=args.ticks,
         plot=args.plot,
         plot_dev=args.plot_dev,
+        perf_flag=args.perf_flag,
     )
 
 

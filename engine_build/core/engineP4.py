@@ -32,11 +32,13 @@ if TYPE_CHECKING:
 
 
 class Engine:
-    def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime ,change_condition=False) -> None:
+    def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime, perf_flag : bool = False ,change_condition=False) -> None:
 
 
         self.master_ss = seed_seq
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
+
+        self.perf_flag = perf_flag
 
         self.collect_world_view = False
 
@@ -155,8 +157,36 @@ class Engine:
     def step(self) -> StepReport:
         """ restructuring step method in order to evaluate agents for death and birth together. 
             After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
+        if self.perf_flag:
+            return self._step_profiled()
+        return self._step_fast()
+    
+    def _step_fast(self) -> StepReport:
+        context = TransitionContext()
+
+        movement_report = movement_phase(self.agents, context)
+        interaction_report = interaction_phase(context, self.world)
+        biology_report = biology_phase(context)
+        commit_report = self.commit_phase(context)
+
         
-        
+
+        step_report = StepReport(
+            tick = self.world.tick,
+            movement_report = movement_report,
+            interaction_report = interaction_report,
+            biology_report = biology_report,
+            commit_report = commit_report,
+            world_view = None,
+            step_profile = None
+        )
+
+        ## end of current tick, go to the next tick
+        self.world.tick += 1
+        return step_report
+    
+
+    def _step_profiled(self) -> StepReport:
         context = TransitionContext()
 
 
@@ -211,9 +241,44 @@ class Engine:
 
     def commit_phase(self, context : TransitionContext) -> CommitReport:
         """ commits pending births and deaths to the engine. """
+        if self.perf_flag:
+            return self._commit_profiled(context)
+        return self._commit_fast(context)
+
+    
+    def _commit_fast(self, context : TransitionContext) -> CommitReport:
+        """ commits pending births and deaths to the engine. """
+        pending_deaths_by_cause = context.pending_deaths_by_cause
+        reproducing_agents = context.reproducing_agents
+
+        deaths_this_tick = sum(death_bucket.count for death_bucket in pending_deaths_by_cause.values())
+        effective_population = len(self.agents) - deaths_this_tick 
+        available_capacity = self.max_agent_count - effective_population
+        reproducers_to_commit = reproducing_agents[:available_capacity]
+
+        # D
+        for death_bucket in pending_deaths_by_cause.values():
+            for agent_id in death_bucket.agents_ids:
+                assert agent_id in self.agents
+                del self.agents[agent_id]
+
+        # B
+        for parent_agent in reproducers_to_commit:
+
+            self.create_new_agent(parent_agent)
+
+        # world state update 
+        self.world.regrow_resources()
+
+        return CommitReport(
+            population = len(self.agents),
+            births_count = len(reproducers_to_commit),
+            deaths_count = deaths_this_tick,
+            commit_profile = None,
+        )
 
         
-
+    def _commit_profiled(self, context : TransitionContext) -> CommitReport:
         c_time0 = time.perf_counter()
         pending_deaths_by_cause = context.pending_deaths_by_cause
         reproducing_agents = context.reproducing_agents

@@ -40,9 +40,7 @@ class BatchPhaseProfile:
     biology_ratio: float = 0.0
     commit_ratio: float = 0.0
 
-    agent_creation_seed: float = 0.0
-    agent_creation_agent: float = 0.0
-    agent_creation_dict_insertion: float = 0.0
+
 
 
 
@@ -66,7 +64,7 @@ class BatchAnalysis:
 
 
 
-def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = None) -> BatchAnalysis:
+def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = None, perf_flag : bool = False) -> BatchAnalysis:
     """ analyze a batch of runs. """
     fingerprints_dict = {}
     if batch_results.ticks is None:
@@ -74,39 +72,44 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
     # change to last 25% of run later on 
     tail_start = int(batch_results.ticks * 0.75)
 
+    if perf_flag:
+        batch_phase_profile = BatchPhaseProfile()
+    else:
+        batch_phase_profile = None
     
     for i, run_results in batch_results.runs.items():
         if run_results.metrics is None:
             raise ValueError(f"run_results.metrics is None for run {i}")
         fingerprints_dict[i] = compute_fingerprint(run_results.metrics, tail_start)
+        if batch_phase_profile is not None:
+            for run_results in batch_results.runs.values():
+                
+                batch_phase_profile.movement += run_results.phase_profile.movement
+                batch_phase_profile.interaction += run_results.phase_profile.interaction
+                batch_phase_profile.biology += run_results.phase_profile.biology
+                batch_phase_profile.commit += run_results.phase_profile.commit
 
-    aggregate_fingerprint = get_aggregate_fingerprints(list(fingerprints_dict.values()))
-    batch_duration = batch_results.batch_duration
+                batch_phase_profile.commit_setup += run_results.phase_profile.commit_setup
+                batch_phase_profile.commit_deaths += run_results.phase_profile.commit_deaths
+                batch_phase_profile.commit_births += run_results.phase_profile.commit_births
+                batch_phase_profile.commit_resource_regrowth += run_results.phase_profile.commit_resource_regrowth
 
-    batch_phase_profile = BatchPhaseProfile()
-    for run_results in batch_results.runs.values():
-        if run_results.phase_profile is None:
-            raise ValueError(f"run_results.phase_profile is None for run {i}")
-        batch_phase_profile.movement += run_results.phase_profile.movement
-        batch_phase_profile.interaction += run_results.phase_profile.interaction
-        batch_phase_profile.biology += run_results.phase_profile.biology
-        batch_phase_profile.commit += run_results.phase_profile.commit
-
-        batch_phase_profile.commit_setup += run_results.phase_profile.commit_setup
-        batch_phase_profile.commit_deaths += run_results.phase_profile.commit_deaths
-        batch_phase_profile.commit_births += run_results.phase_profile.commit_births
-        batch_phase_profile.commit_resource_regrowth += run_results.phase_profile.commit_resource_regrowth
+        aggregate_fingerprint = get_aggregate_fingerprints(list(fingerprints_dict.values()))
+        batch_duration = batch_results.batch_duration
 
 
 
 
 
 
-    batch_phase_profile.movement_ratio = batch_phase_profile.movement / batch_duration
-    batch_phase_profile.interaction_ratio = batch_phase_profile.interaction / batch_duration
-    batch_phase_profile.biology_ratio = batch_phase_profile.biology / batch_duration
-    batch_phase_profile.commit_ratio = batch_phase_profile.commit / batch_duration
-    
+
+
+    if batch_phase_profile is not None:
+        batch_phase_profile.movement_ratio = batch_phase_profile.movement / batch_duration
+        batch_phase_profile.interaction_ratio = batch_phase_profile.interaction / batch_duration
+        batch_phase_profile.biology_ratio = batch_phase_profile.biology / batch_duration
+        batch_phase_profile.commit_ratio = batch_phase_profile.commit / batch_duration
+        
 
 
 

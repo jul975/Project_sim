@@ -61,34 +61,34 @@ def summarize_analytics(batch_analysis : BatchAnalysis , n_runs : int , ticks : 
     print(f"    batch_low_population_rate     : {agg.batch_near_low_population_rate:.3f}")
     print("")
 
-    print("Batch Phase Profile:")
-    print(f"    movement                      : {batch_analysis.batch_phase_profile.movement:.3f}")
-    print(f"    interaction                   : {batch_analysis.batch_phase_profile.interaction:.3f}")
-    print(f"    biology                       : {batch_analysis.batch_phase_profile.biology:.3f}")
-    print(f"    commit                        : {batch_analysis.batch_phase_profile.commit:.3f}")
-    print("")
-    print("Batch Phase Profile Ratios:")
-    print(f"    movement                      : {batch_analysis.batch_phase_profile.movement_ratio:.3f}")
-    print(f"    interaction                   : {batch_analysis.batch_phase_profile.interaction_ratio:.3f}")
-    print(f"    biology                       : {batch_analysis.batch_phase_profile.biology_ratio:.3f}")
-    print(f"    commit                        : {batch_analysis.batch_phase_profile.commit_ratio:.3f}")
-    print("")
+    if batch_analysis.batch_phase_profile is not None:
+        print("Batch Phase Profile:")
+        print(f"    movement                      : {batch_analysis.batch_phase_profile.movement:.3f}")
+        print(f"    interaction                   : {batch_analysis.batch_phase_profile.interaction:.3f}")
+        print(f"    biology                       : {batch_analysis.batch_phase_profile.biology:.3f}")
+        print(f"    commit                        : {batch_analysis.batch_phase_profile.commit:.3f}")
+        print("")
+        print("Batch Phase Profile Ratios:")
+        print(f"    movement                      : {batch_analysis.batch_phase_profile.movement_ratio:.3f}")
+        print(f"    interaction                   : {batch_analysis.batch_phase_profile.interaction_ratio:.3f}")
+        print(f"    biology                       : {batch_analysis.batch_phase_profile.biology_ratio:.3f}")
+        print(f"    commit                        : {batch_analysis.batch_phase_profile.commit_ratio:.3f}")
+        print("")
 
-    print("Batch Commit Profile:")
-    print(f"    total                         : {batch_analysis.batch_phase_profile.commit:.3f}")
-    print(f"    setup                         : {batch_analysis.batch_phase_profile.commit_setup:.3f}")
-    print(f"    deaths                        : {batch_analysis.batch_phase_profile.commit_deaths:.3f}")
-    print(f"    births                        : {batch_analysis.batch_phase_profile.commit_births:.3f}")
-    print(f"    resource_regrowth             : {batch_analysis.batch_phase_profile.commit_resource_regrowth:.3f}")
-    print("")
+        print("Batch Commit Profile:")
+        print(f"    total                         : {batch_analysis.batch_phase_profile.commit:.3f}")
+        print(f"    setup                         : {batch_analysis.batch_phase_profile.commit_setup:.3f}")
+        print(f"    deaths                        : {batch_analysis.batch_phase_profile.commit_deaths:.3f}")
+        print(f"    births                        : {batch_analysis.batch_phase_profile.commit_births:.3f}")
+        print(f"    resource_regrowth             : {batch_analysis.batch_phase_profile.commit_resource_regrowth:.3f}")
+        print("")
 
-    print("Batch Commit Agent Creation Profile:")
-    print(f"    total                         : {batch_analysis.batch_phase_profile.commit_births:.3f}")    
-    print(f"    seed_creation                 : {batch_analysis.batch_phase_profile.agent_creation_seed:.3f}")
-    print(f"    agent_creation                : {batch_analysis.batch_phase_profile.agent_creation_agent:.3f}")
-    print(f"    dict_insertion                : {batch_analysis.batch_phase_profile.agent_creation_dict_insertion:.3f}")
+        print("Batch Commit Agent Creation Profile:")
+        print(f"    total                         : {batch_analysis.batch_phase_profile.commit_births:.3f}")    
+        
 
-    print("============================================================")
+
+        print("============================================================")
 
 
 if __name__ == "__main__":
@@ -101,33 +101,48 @@ if __name__ == "__main__":
         #   -   No logic, no control flow, no dependencies, no implementation details.
 
 
-def run_experiment_mode(args) -> None:
-    regime_spec = get_regime_spec(args.regime)
+def run_experiment_mode(request) -> int:
+    regime_spec = get_regime_spec(request.regime)
     regime_config = compile_regime(regime_spec)
 
-    ticks = args.ticks if args.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
-    n_runs = args.runs if args.runs is not None else EXPERIMENT_DEFAULTS["runs"]
+    ticks = request.ticks if request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
+    n_runs = request.runs if request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
 
     runner = Runner(
         regime_config=regime_config,
         n_runs=n_runs,
-        batch_id=args.seed
+        batch_id=request.seed,
     )
 
-    batch_results : BatchRunResults = runner.run_regime_batch(ticks=ticks)
-    batch_analysis : BatchAnalysis = analyze_batch(batch_results, regime_label=args.regime)
+    batch_results: BatchRunResults = runner.run_regime_batch(
+        ticks=ticks,
+        perf_flag=request.perf_flag,
+    )
 
-    summary : RegimeSummary = summarise_regime(batch_analysis)
-    regime_class : RegimeClass = classify_regime(summary)
+    batch_analysis: BatchAnalysis = analyze_batch(
+        batch_results,
+        regime_label=request.regime,
+        perf_flag=request.perf_flag,
+    )
 
-    summarize_analytics(batch_analysis, ticks=ticks, n_runs=n_runs, regime_class=regime_class, summary=summary)
+    summary: RegimeSummary = summarise_regime(batch_analysis)
+    regime_class: RegimeClass = classify_regime(summary)
 
-    if args.plot:
+    summarize_analytics(
+        batch_analysis,
+        ticks=ticks,
+        n_runs=n_runs,
+        regime_class=regime_class,
+        summary=summary,
+    )
+
+    if request.plot:
         plot_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})
 
-    if args.plot_dev:
+    if request.plot_dev:
         plot_development_metrics(batch_results, runner.batch_id)
 
+    return 0
 """
 Spatial Concentration ratio:
 

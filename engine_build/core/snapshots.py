@@ -55,6 +55,8 @@ class EngineSnapshot:
     master_ss : dict
     next_agent_id : int
     config : dict
+
+    perf_flag : bool
     reproduction_probability : float
     
     max_age : int
@@ -136,6 +138,7 @@ def engine_to_snapshot(engine : "Engine") -> EngineSnapshot:
     next_agent_id = engine.next_agent_id
     config = asdict(engine.config)
 
+    perf_flag = engine.perf_flag
     reproduction_probability = engine.reproduction_probability
 
     max_age = engine.max_age
@@ -149,6 +152,7 @@ def engine_to_snapshot(engine : "Engine") -> EngineSnapshot:
         master_ss = master_ss,
         next_agent_id = next_agent_id,
         config = config,
+        perf_flag = perf_flag,
         reproduction_probability = reproduction_probability,
         max_age = max_age,
         max_agent_count = max_agent_count,
@@ -198,8 +202,9 @@ def _world_from_snapshot(world_cls, world_snapshot : WorldSnapshot) -> "World":
     clone_world.tick = world_snapshot.tick
     clone_world.rng_world = reconstruct_rng(world_snapshot.rng_world)
     
-    clone_world.change_condition = world_snapshot.change_condition
 
+    clone_world.change_condition = world_snapshot.change_condition
+    
     
     # these are array!! so need to avoid copy by reference.
     clone_world.resources = world_snapshot.resources.copy()
@@ -253,6 +258,7 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
         engine_clone : "Engine" = object.__new__(engine_cls)
 
         # config
+        engine_clone.perf_flag = snapshot.perf_flag
         engine_clone.config = CompiledRegime.from_dict(snapshot.config) 
         engine_clone.energy_params = engine_clone.config.energy_params
         engine_clone.resource_params = engine_clone.config.resource_params

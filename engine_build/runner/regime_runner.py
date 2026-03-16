@@ -80,6 +80,18 @@ class BatchRunResults:
     regime_config : CompiledRegime | None = None
     ticks : np.int64 | None = None
     batch_duration : float | None = None
+
+def reset_phase_profile(phase_profile : PhaseProfile) -> None:
+    """ resets phase profile. """
+    phase_profile.movement = 0.0
+    phase_profile.interaction = 0.0
+    phase_profile.biology = 0.0
+    phase_profile.commit = 0.0
+
+    phase_profile.commit_setup = 0.0
+    phase_profile.commit_deaths = 0.0
+    phase_profile.commit_births = 0.0
+    phase_profile.commit_resource_regrowth = 0.0
     
 
 
@@ -114,16 +126,29 @@ class Runner:
 
 
 #############################################################
-    def run_single(self, seed : np.random.SeedSequence, ticks : np.int64) -> RunArtifacts:
+    def run_single(self, 
+                   seed : np.random.SeedSequence, 
+                   ticks : np.int64, 
+                   
+                   phase_profile : PhaseProfile | None = None
+                   ) -> RunArtifacts:
+        
         """ runs a single simulation for a given seed and ticks. """
+
+        perf_flag = True if phase_profile is not None else False
     
-        eng = Engine(seed, self.regime_config)
+        eng = Engine(seed, self.regime_config, perf_flag=perf_flag )
         metrics = SimulationMetrics(eng.max_agent_count)
 
-        phase_profile = PhaseProfile()
+        # reset to avoid creation on each run.
+        if phase_profile is not None:
+                reset_phase_profile(phase_profile)
 
 
         for _ in range(ticks):
+            
+
+
             step_report : StepReport = eng.step()
             metrics.record(step_report = step_report)
 
@@ -167,16 +192,22 @@ class Runner:
 
 
 #############################################################
-    def run_regime_batch(self, ticks : np.int64) -> BatchRunResults:
+    def run_regime_batch(self, ticks : np.int64, perf_flag : bool = False) -> BatchRunResults:
         """ only return aggregates and results."""
 
         batch_start_time = time.perf_counter()
 
-        batch_data: BatchRunResults = BatchRunResults({}, self.batch_id, self.regime_config, ticks)
+        if perf_flag: 
+            print("Performance flag is set. Running with performance profiling.")
+            phase_profile = PhaseProfile()
+        else:
+            phase_profile = None
+
+        batch_data: BatchRunResults = BatchRunResults(runs={}, batch_id= self.batch_id, regime_config= self.regime_config, ticks= ticks, batch_duration= None)
 
         for i, seed in enumerate(self.run_seeds):
 
-            run_results : RunArtifacts = self.run_single(seed, ticks)
+            run_results : RunArtifacts = self.run_single(seed, ticks , phase_profile)
             batch_data.runs[i] = run_results   
 
 

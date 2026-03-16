@@ -16,6 +16,7 @@ class ExperimentRequest:
     ticks: int | None = None
     plot: bool = False
     plot_dev: bool = False
+    perf_flag: bool = False
 
 
 @dataclass(frozen=True)

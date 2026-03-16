@@ -58,6 +58,8 @@ Engine:
   tick
   next_agent_id
   max_age
+
+  perf_flag
   reproduction_probability
 
 
@@ -101,6 +103,7 @@ def _schema_v2(engine : "Engine" ) -> bytes:
     buffer += set_int64(len(engine.agents))
     buffer += set_int64(engine.next_agent_id)
     buffer += set_int64(engine.max_age)
+    buffer += set_uint8(int(engine.perf_flag))
     
 
     # rule environment
