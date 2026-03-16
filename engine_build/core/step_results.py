@@ -6,12 +6,6 @@ import numpy as np
 
 
 @dataclass(frozen=True)
-class AgentCreationProfile:
-    seed_creation : float = 0.0
-    agent_creation : float = 0.0
-    dict_insertion : float = 0.0
-
-@dataclass(frozen=True)
 class CommitProfile:
 
     setup : float = 0.0
@@ -63,7 +57,6 @@ class CommitReport:
     births_count : int = 0
     deaths_count : int = 0
     commit_profile : CommitProfile | None = None
-    agent_creation_profiles : AgentCreationProfile | None = None
 
 
 

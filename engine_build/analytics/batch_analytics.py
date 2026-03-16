@@ -97,9 +97,6 @@ def analyze_batch(batch_results : BatchRunResults, regime_label : str | None = N
         batch_phase_profile.commit_births += run_results.phase_profile.commit_births
         batch_phase_profile.commit_resource_regrowth += run_results.phase_profile.commit_resource_regrowth
 
-        batch_phase_profile.agent_creation_seed += run_results.phase_profile.seed_creation
-        batch_phase_profile.agent_creation_agent += run_results.phase_profile.agent_creation
-        batch_phase_profile.agent_creation_dict_insertion += run_results.phase_profile.dict_insertion
 
 
 
