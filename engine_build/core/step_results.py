@@ -3,6 +3,9 @@
 from dataclasses import dataclass, field
 import numpy as np
 
+@dataclass(frozen=True)
+class AgentSetup:
+    identity_words : tuple[np.int64, ...]
 
 
 @dataclass(frozen=True)

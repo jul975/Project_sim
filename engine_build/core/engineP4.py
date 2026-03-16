@@ -14,7 +14,8 @@ from .world import World
 
 
 
-from .step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile
+
+from .step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile, AgentSetup
 
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
@@ -28,7 +29,6 @@ import time
 
 if TYPE_CHECKING:
     from .snapshots import EngineSnapshot
-
 
 
 class Engine:
@@ -100,39 +100,44 @@ class Engine:
 
 
 
-    def initialize_state(self, agent_count) -> dict[np.int64, Agent]:
-        """ creates initial agent population. """
-        agent_seeds = self.master_ss.spawn(agent_count)
+    def initialize_state(self, agent_count: int) -> dict[int, Agent]:
+        return {
+            founder_id: Agent(self, founder_id, self.get_first_agent_setup(founder_id))
+            for founder_id in range(agent_count)
+        }
 
-        return {i : Agent(self, i, agent_seeds[i]) for i in range(agent_count)}
-    
 
-
-    # NOTE: temp 
-    def check_initial_population_spread(self) -> None:
-        """ checks initial population spread. => not wired yet, needs to check if it's necessary. """
-        density = np.zeros((self.world_params.world_height, self.world_params.world_width))
-
-        for agent in self.agents.values():
-            x, y = agent.position
-            density[y, x] += 1
-    
 
     
     def create_new_agent(self, parent_agent : Agent) -> None:
         """ creates new agent from parent_agent. """
-        child_seed = self.get_child_seed(parent_agent)
-        child_new = Agent(self, self.next_agent_id, child_seed, parent_agent.position)
+        child_setup : AgentSetup = self.get_child_setup(parent_agent)
+
+        child_new = Agent(self, self.next_agent_id, child_setup, parent_agent.position)
 
         self.agents[self.next_agent_id] = child_new
+        parent_agent.offspring_count += 1
         self.next_agent_id += 1
+
+    
 
        
         
 
-    def get_child_seed(self, parent_agent : Agent) -> np.random.SeedSequence:
-        """ gets child seed from parent_agent. """
-        return parent_agent.reproduce()
+    def get_child_setup(self, parent_agent : Agent) -> AgentSetup:
+        """ returns child setup. """
+        run_entropy : np.int64 = self.master_ss.entropy
+        child_entropy : np.int64 = parent_agent.reproduce()
+        parent_id : np.int64 = parent_agent.id
+        parent_spawn_count : np.int64 = parent_agent.offspring_count
+
+
+        return AgentSetup( identity_words=(run_entropy, child_entropy, parent_id, parent_spawn_count) )
+
+    def get_first_agent_setup(self, founder_id : np.int64) -> AgentSetup:
+        """ returns first agent setup. """
+        run_entropy = self.master_ss.entropy
+        return AgentSetup( identity_words=(run_entropy, founder_id) )
 
 
     def get_agent_count(self) -> np.int64:

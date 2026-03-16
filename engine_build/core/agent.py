@@ -7,7 +7,9 @@ if TYPE_CHECKING:
     from .snapshots import AgentSnapshot
 
 
+from dataclasses import dataclass
 
+from .step_results import AgentSetup
 from .snapshots import _agent_from_snapshot
 
 
@@ -37,19 +39,12 @@ GENERAL NOTES:
 
 
 
-"""
-NOTE:
-NumPy does not expose n_children_spawned in SeedSequence.
 
-We emulate spawn counter restoration by extending spawn_key
-with the stored spawn_count.
 
-This preserves deterministic lineage for this engine
-but does not reproduce NumPy internal state exactly.
+MOVEMENT : int = 1
+REPRODUCTION : int = 2
+ENERGY : int = 3
 
-SeedSequence is used here only as entropy mixer,
-not as authoritative lineage tracker.
-"""
 
 # relocated temp for now bc of performance reasons.
 moves = ((-1, 0), (1, 0), (0, -1), (0, 1))
@@ -58,40 +53,43 @@ moves = ((-1, 0), (1, 0), (0, -1), (0, 1))
 
 class Agent:
     ''' agents should be a subclass in order to acces span new agent functionality cleanly. '''
-    def __init__(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence, position : tuple[np.int64, np.int64] | None = None) -> None:
-
+    def __init__(self, engine : "Engine" , id : np.int64, agent_setup : AgentSetup, position : tuple[np.int64, np.int64] | None = None) -> None:
         """ engine: Engine
-
                         id: np.int64
-                agent_seed: np.random.SeedSequence
+                agent_setup: AgentSetup
         """
-        self._init_identity(engine, id, agent_seed)
-        self._init_lineage()
-        self._init_rngs()
+        self._init_identity(engine, id)
+        self._init_rngs(agent_setup)
         self._init_state(position=position)
 
+   
+
             
-    def _init_identity(self, engine : "Engine" , id : np.int64, agent_seed : np.random.SeedSequence) -> None:
+    def _init_identity(self, engine : "Engine" , id : np.int64) -> None:
         """ initializes agent identity. """
         self.id : np.int64 = id
         self.engine : "Engine" = engine
-        self.agent_seed : np.random.SeedSequence = agent_seed
-        self.agent_spawn_count : np.int64 = 0
+
+        self.offspring_count : np.int64 = 0
+
+
         self.age : np.int64 = 0
-        self.agent_entropy : np.int64 = self.agent_seed.entropy
-        self.agent_spawn_key : tuple[np.int64, ...] = self.agent_seed.spawn_key
-        self.pool_size : np.int64 = self.agent_seed.pool_size
 
 
-    def _init_lineage(self) -> None:
+    def _init_rngs(self, agent_setup : AgentSetup) -> None:
         """ initializes agent lineage. """
-        self.move_ss, self.repro_ss, self.energy_ss = self.agent_seed.spawn(3)
+        move_seed_words : tuple[int, ...] = agent_setup.identity_words + (MOVEMENT,)
+        repro_ss : tuple[int, ...] = agent_setup.identity_words + (REPRODUCTION,)
+        energy_ss : tuple[int, ...] = agent_setup.identity_words + (ENERGY,)
 
-    def _init_rngs(self) -> None:
-        """ initializes agent rngs. """
-        self.move_rng = np.random.default_rng(self.move_ss)
-        self.repro_rng = np.random.default_rng(self.repro_ss)
-        self.energy_rng = np.random.default_rng(self.energy_ss)
+        self.move_rng = np.random.Generator(np.random.PCG64(move_seed_words))
+        self.repro_rng = np.random.Generator(np.random.PCG64(repro_ss))
+        self.energy_rng = np.random.Generator(np.random.PCG64(energy_ss))
+
+
+        return 
+
+
         
 
     def _init_state(self, position : tuple[np.int64, np.int64] | None = None) -> None:
@@ -132,29 +130,21 @@ class Agent:
 
         # lineage
         # RNG lineage invariant
+        """     
         assert self.agent_spawn_count >= 0
 
         assert self.agent_seed.entropy == self.agent_entropy
         assert tuple(self.agent_seed.spawn_key) == tuple(self.agent_spawn_key)
         assert self.agent_seed.pool_size == self.pool_size
 
+        """
 
 
 
-
-    def reproduce(self) -> np.random.SeedSequence:
-        """ reproduces agent. """
-        # I'm returning the child seed in order to maintain sep of consernce. reproduction should be a method of the engine. (for now)
-
-        index = self.agent_spawn_count
-        child_spawn_key = self.agent_spawn_key + (index,)
-        child_seed = np.random.SeedSequence(
-            entropy=self.agent_entropy,
-            spawn_key=child_spawn_key,
-            pool_size=self.pool_size
-        )
-        self.agent_spawn_count += 1
-        return child_seed
+    def reproduce(self) -> np.int64:
+        """ reproduces agent, returning child entropy. Parent is responsible for energy cost and child creation."""
+        child_entropy = self.repro_rng.bit_generator.random_raw()
+        return child_entropy
 
     def harvest_resources(self, harvest : np.int64) -> None:
         """ harvests resources from current position. """
