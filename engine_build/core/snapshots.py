@@ -29,8 +29,6 @@ class AgentSnapshot:
 
     age : int
 
-    agent_seed : dict
-
     move_rng : dict
     repro_rng : dict
     energy_rng : dict
@@ -96,15 +94,12 @@ def _get_agent_snapshot(agent : "Agent") -> AgentSnapshot:
     
     return AgentSnapshot(
         id = agent.id,
-        agent_spawn_count = agent.agent_spawn_count,
+        agent_spawn_count = agent.offspring_count,
         position = agent.position,
         energy_level = agent.energy_level,
         alive = agent.alive,
 
         age = agent.age,
-        
-
-        agent_seed = get_seed_seq_dict(agent.agent_seed),
 
         move_rng = agent.move_rng.bit_generator.state,
         repro_rng = agent.repro_rng.bit_generator.state,
@@ -174,16 +169,8 @@ def _agent_from_snapshot(agent_cls, agent_snapshot: AgentSnapshot, engine: "Engi
     agent_clone.alive = agent_snapshot.alive
     agent_clone.energy_level = agent_snapshot.energy_level
 
-    # restore future child cursor
-    agent_clone.agent_spawn_count = agent_snapshot.agent_spawn_count
+    agent_clone.offspring_count = agent_snapshot.agent_spawn_count  
 
-    # restore exact agent identity seed
-    agent_clone.agent_seed = reconstruct_seed_seq(agent_snapshot.agent_seed)
-
-    # cache seed identity fields from the reconstructed seed
-    agent_clone.agent_entropy = agent_clone.agent_seed.entropy
-    agent_clone.agent_spawn_key = tuple(agent_clone.agent_seed.spawn_key)
-    agent_clone.pool_size = agent_clone.agent_seed.pool_size
 
     assert isinstance(agent_snapshot.move_rng, dict)
     assert isinstance(agent_snapshot.repro_rng, dict)
