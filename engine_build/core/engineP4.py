@@ -8,17 +8,13 @@ from .snapshots import engine_to_snapshot, engine_from_snapshot
 from .agent import Agent
 from .world import World
 
-from .agent_factory import create_initial_agent, create_newborn_agent
-
-from engine_build.dev.perf import PerfSink, NullPerfSink, measure_block
-
-from engine_build.dev.perf import DictPerfSink
 
 
 
 
 
-from .step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile, AgentCreationProfile
+
+from .step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile
 
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
@@ -108,7 +104,7 @@ class Engine:
         """ creates initial agent population. """
         agent_seeds = self.master_ss.spawn(agent_count)
 
-        return {i : create_initial_agent(self, i, agent_seeds[i]) for i in range(agent_count)}
+        return {i : Agent(self, i, agent_seeds[i]) for i in range(agent_count)}
     
 
 
@@ -123,13 +119,10 @@ class Engine:
     
 
     
-    def create_new_agent(self, parent_agent : Agent, perf_sink : PerfSink | None = None) -> None:
+    def create_new_agent(self, parent_agent : Agent) -> None:
         """ creates new agent from parent_agent. """
-        # gen child seed
         child_seed = self.get_child_seed(parent_agent)
-        
-        # create child temp split, for review
-        child_new = create_newborn_agent( self , self.next_agent_id , child_seed, parent_agent.position, perf_sink)
+        child_new = Agent(self, self.next_agent_id, child_seed, parent_agent.position)
 
         self.agents[self.next_agent_id] = child_new
         self.next_agent_id += 1
@@ -214,7 +207,7 @@ class Engine:
     def commit_phase(self, context : TransitionContext) -> CommitReport:
         """ commits pending births and deaths to the engine. """
 
-
+        
 
         c_time0 = time.perf_counter()
         pending_deaths_by_cause = context.pending_deaths_by_cause
@@ -235,12 +228,11 @@ class Engine:
         c_time2 = time.perf_counter()
         # B
 
-        tick_perf = DictPerfSink()
+        
         for parent_agent in reproducers_to_commit:
 
-            self.create_new_agent(parent_agent, perf_sink=tick_perf)
+            self.create_new_agent(parent_agent)
 
-        times = tick_perf.times
             
 
         c_time3 = time.perf_counter()
@@ -256,15 +248,7 @@ class Engine:
             births = c_time3 - c_time2,
             resource_regrowth = c_time4 - c_time3
         )
-        
-        agent_creation_profile = AgentCreationProfile(
-            seed_creation = times.get("agent_factory.newborn.total", 0.0),
-            agent_creation = times.get("agent.__init__.total", 0.0),
-            dict_insertion = times.get("agent_factory.newborn.total", 0.0)
-        )
 
-        # NOTE: temp solution for positional metrics.
-        
         """if __debug__:
             self._assert_invariants()"""
 
@@ -273,9 +257,6 @@ class Engine:
             births_count = len(reproducers_to_commit),
             deaths_count = deaths_this_tick,
             commit_profile = commit_profile,
-            agent_creation_profiles = agent_creation_profile
-
-
         )
 
 

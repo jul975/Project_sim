@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 from .step_results import MovementReport, InteractionReport, BiologyReport
 
-
 from typing import List
 
 if TYPE_CHECKING:
@@ -38,7 +37,7 @@ class TransitionContext:
     post_harvest_alive : list["Agent"] = field(default_factory=list)
     pending_deaths_by_cause: dict[str, DeathBucket] = field(default_factory=dict)
     reproducing_agents : list["Agent"] = field(default_factory=list)
-    # energy_deltas : dict[int, int] 
+    # energy_deltas : dict[int, int]
 
 
 

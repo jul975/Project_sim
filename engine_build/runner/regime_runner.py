@@ -58,10 +58,6 @@ class PhaseProfile:
     commit_births: float = 0.0
     commit_resource_regrowth: float = 0.0
 
-    seed_creation: float = 0.0
-    agent_creation: float = 0.0
-    dict_insertion: float = 0.0
-
 
 
 
@@ -142,10 +138,7 @@ class Runner:
                 phase_profile.commit_births += step_report.commit_report.commit_profile.births
                 phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
 
-                phase_profile.seed_creation += step_report.commit_report.agent_creation_profiles.seed_creation
-                phase_profile.agent_creation += step_report.commit_report.agent_creation_profiles.agent_creation
-                phase_profile.dict_insertion += step_report.commit_report.agent_creation_profiles.dict_insertion
-                
+
 
             
 
@@ -182,22 +175,15 @@ class Runner:
         batch_data: BatchRunResults = BatchRunResults({}, self.batch_id, self.regime_config, ticks)
 
         for i, seed in enumerate(self.run_seeds):
-            run_start_time = time.perf_counter()
 
             run_results : RunArtifacts = self.run_single(seed, ticks)
             batch_data.runs[i] = run_results   
 
-            run_end_time = time.perf_counter()
 
-            print(
-            f"Run {i+1}/{self.n_runs} finished "
-            f"in {run_end_time - run_start_time:.2f}s "
-            f"| final_pop={run_results.metrics.population[-1]}"
-            )
+            
 
         batch_end_time = time.perf_counter()
         batch_duration = batch_end_time - batch_start_time
-        print(f"Batch finished in {batch_duration:.2f}s")
         batch_data.batch_duration = batch_duration
         return batch_data
 

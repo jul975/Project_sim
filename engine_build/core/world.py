@@ -175,7 +175,7 @@ class World:
         if available_resources <= 0:
             return 
         # NOTE: potentially remove after next testing round sort agents by id
-        agents = sorted(agents, key=lambda a: a.id)
+        # agents = sorted(agents, key=lambda a: a.id)
 
         n_agents = len(agents)
         total_demand = n_agents * self.max_harvest
@@ -203,8 +203,9 @@ class World:
         np.add(self.resources, self.resource_regen_rate, out=self.resources)
         np.minimum(self.resources, self.fertility, out=self.resources)
         # evaluate and return as array of bools
-        assert (self.resources >= 0).all()
-        assert (self.resources <= self.fertility).all()
+        if __debug__:    
+            assert (self.resources >= 0).all()
+            assert (self.resources <= self.fertility).all()
         
         
 
