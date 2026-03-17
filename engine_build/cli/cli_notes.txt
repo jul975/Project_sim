@@ -1,0 +1,18 @@
+
+
+
+FRONT ENDS
+├─ CLI args
+└─ terminal menu
+
+both produce
+      ↓
+typed request objects
+      ↓
+dispatcher
+      ↓
+EXECUTION LANES
+├─ simulation lane
+│   regime -> compile -> runner -> engine -> analytics -> report
+└─ test lane
+    pytest suite -> pass/fail -> report

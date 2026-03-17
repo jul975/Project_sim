@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from typing import Literal
 
 
-RegimeName = Literal["stable", "test_stable", "fragile", "abundant", "saturated", "collapse", "extinction"]
-ValidationSuite = Literal["all", "determinism", "regime", "invariants"]
-
+RegimeName = Literal["stable", "fragile", "abundant", "saturated", "collapse", "extinction"]
+VerificationSuite = Literal["all", "determinism", "regime", "invariants", "rng", "snapshots", ]
+ValidationSuite = Literal["test_regime_contracts", "test_regime_separation"]
 
 @dataclass(frozen=True)
 class ExperimentRequest:
@@ -19,11 +19,31 @@ class ExperimentRequest:
     perf_flag: bool = False
 
 
+
+@dataclass(frozen=True)
+class VerificationRequest:
+    suite: Literal[
+        "all",
+        "determinism",
+        "invariants",
+        "rng",
+        "snapshots",
+        "regime",
+    ]
+    verbose: bool = True
+    fail_fast: bool = True
+    pytest_args: tuple[str, ...] = ()
+
 @dataclass(frozen=True)
 class ValidationRequest:
-    suite: ValidationSuite = "all"
-    verbose: bool = False
-    fail_fast: bool = False
+    suite: Literal[
+        "test_regime_contracts",
+        "test_regime_separation",
+    ]
+    verbose: bool = True    
+    fail_fast: bool = True
+    pytest_args: tuple[str, ...] = ()
+
 
 
 @dataclass(frozen=True)

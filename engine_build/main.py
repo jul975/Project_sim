@@ -1,196 +1,67 @@
-from __future__ import annotations
 
-
-"""
-
-verify calls pytest markers for verification
-
-validate calls pytest markers for behavioral validation
-
-experiment runs descriptive analysis
-
-characterize runs heavier behavioral studies and emits reports, not CI-style pass/fail
-
-That preserves one source of truth for pass/fail while still giving you a user-friendly entrypoint.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
-import argparse
 import sys
 
-from engine_build.cli.requests import (
-    ExperimentRequest,
-    ValidationRequest,
-    FertilityRequest,
-)
-from engine_build.experiments.run_experiment import run_experiment_mode
-from engine_build.validation.run_validation import run_validation_mode
-from engine_build.experiments.fertility_dist_plot import run_and_plot_population_dynamics
+from engine_build.cli.menu import run_menu
+from engine_build.cli.parser import build_parser
+from engine_build.cli.dispatch import dispatch
+
+from engine_build.cli.parser import build_parser
+from engine_build.cli.menu import run_menu
+from engine_build.cli.menu import _build_experiment_request, _build_validation_request, _build_fertility_request
 
 
-def add_common_experiment_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "--regime",
-        choices=["fragile", "abundant", "stable", "test_stable", "saturated", "collapse", "extinction"],
-        default="stable",
-        help="Select ecological regime type",
-    )
-    parser.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Optional master seed override",
-    )
-    parser.add_argument(
-        "--runs",
-        type=int,
-        default=None,
-        help="Number of runs to execute",
-    )
-    parser.add_argument(
-        "--ticks",
-        type=int,
-        default=None,
-        help="Number of ticks per run",
-    )
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        description="Ecosystem emergent behavior simulator CLI"
-    )
-    subparsers = parser.add_subparsers(dest="command", required=True)
+'''
+FRONT ENDS
+├─ CLI args
+└─ terminal menu
 
-    experiment_parser = subparsers.add_parser(
-        "experiment",
-        help="Run an experiment batch",
-    )
-    add_common_experiment_args(experiment_parser)
-    experiment_parser.add_argument(
-        "--plot",
-        action="store_true",
-        help="Plot batch population dynamics",
-    )
-    experiment_parser.add_argument(
-        "--plot-dev",
-        action="store_true",
-        help="Plot verbose development figures",
-    )
-    experiment_parser.add_argument(
-        "--perf_flag",
-        action="store_true",
-        help="Enable development performance profiling output",
-    )
-
-    validate_parser = subparsers.add_parser(
-        "validate",
-        help="Run validation workflows",
-    )
-    validate_parser.add_argument(
-        "--suite",
-        choices=["all", "determinism", "regime", "invariants"],
-        default="all",
-        help="Validation suite to run",
-    )
-    validate_parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose validation output",
-    )
-    validate_parser.add_argument(
-        "--fail-fast",
-        action="store_true",
-        help="Stop at the first validation failure",
-    )
-
-    fertility_parser = subparsers.add_parser(
-        "fertility",
-        help="Run fertility/population dynamics demo",
-    )
-    fertility_parser.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Optional seed override",
-    )
-
-    return parser
+both produce
+      ↓
+typed request objects
+      ↓
+dispatcher
+      ↓
+EXECUTION LANES
+├─ simulation lane
+│   regime -> compile -> runner -> engine -> analytics -> report
+└─ test lane
+    pytest suite -> pass/fail -> report
 
 
-def build_experiment_request(args: argparse.Namespace) -> ExperimentRequest:
-    return ExperimentRequest(
-        regime=args.regime,
-        seed=args.seed,
-        runs=args.runs,
-        ticks=args.ticks,
-        plot=args.plot,
-        plot_dev=args.plot_dev,
-        perf_flag=args.perf_flag,
-    )
+That is the key simplification:
+
+    Menu and CLI are just input methods
+    Runner is only for simulation execution
+    Pytest suite execution is a separate lane
+    Both lanes are reached through the same dispatcher
 
 
-def build_validation_request(args: argparse.Namespace) -> ValidationRequest:
-    return ValidationRequest(
-        suite=args.suite,
-        verbose=args.verbose,
-        fail_fast=args.fail_fast,
-    )
 
+'''
 
-def build_fertility_request(args: argparse.Namespace) -> FertilityRequest:
-    return FertilityRequest(
-        seed=args.seed,
-    )
 
 
 def main(argv: list[str] | None = None) -> int:
+    if argv is None:
+        argv = sys.argv[1:]
+
+    if not argv or argv[0] == "menu":
+        request = run_menu()
+        if request is None:
+            return 0
+        return dispatch(request)
+
     parser = build_parser()
     args = parser.parse_args(argv)
 
     if args.command == "experiment":
-        request = build_experiment_request(args)
-        return run_experiment_mode(request)
-
+        return dispatch(_build_experiment_request(args))
     if args.command == "validate":
-        request = build_validation_request(args)
-        return run_validation_mode(request)
-
+        return dispatch(_build_validation_request(args))
     if args.command == "fertility":
-        request = build_fertility_request(args)
-        run_and_plot_population_dynamics()
-        return 0
-    
-
+        return dispatch(_build_fertility_request(args))
 
     parser.error(f"Unknown command: {args.command}")
     return 2
-
-
-if __name__ == "__main__":
-    sys.exit(main())
