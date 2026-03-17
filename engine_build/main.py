@@ -1,5 +1,46 @@
 from __future__ import annotations
 
+
+"""
+
+verify calls pytest markers for verification
+
+validate calls pytest markers for behavioral validation
+
+experiment runs descriptive analysis
+
+characterize runs heavier behavioral studies and emits reports, not CI-style pass/fail
+
+That preserves one source of truth for pass/fail while still giving you a user-friendly entrypoint.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
 import argparse
 import sys
 

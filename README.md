@@ -139,6 +139,7 @@ python -m engine_build.main fertility --seed 42
 ```
 
 **Experiment CLI Output** includes batch summaries with:
+
 - final population mean and standard deviation
 - extinction rate
 - capacity-hit rate
@@ -174,6 +175,7 @@ python -m pytest tests/test_regime_validation.py # regime-specific behavior
 ```
 
 **Available pytest markers** (see [pytest.ini](pytest.ini)):
+
 - `dev` — unit checks
 - `validate` — validation suite
 - `slow` — long-running tests
@@ -200,6 +202,7 @@ The project follows a staged development plan with clear exit criteria and valid
 **Current Stage:** Pre-Stage III (beta v0.2.1) — 2D refactoring complete, performance optimization in progress
 
 **Near-term priorities** (subject to iteration based on discoveries):
+
 1. Complete regime validation test refactoring (align with current regime names)
 2. Define validation thresholds for fragile/abundant regimes via empirical runs
 3. Optimize agent initialization performance (reduce batch runtime from ~15-20min to <5min)
@@ -207,6 +210,7 @@ The project follows a staged development plan with clear exit criteria and valid
 5. Design Stage III spatial interaction mechanics before implementation
 
 **Provisional version targets** (timelines may shift during active optimization):
+
 - **v0.3** (Stage III) — Explicit Interaction and Spatial Competition (foundation complete, feature development pending)
 - **v0.4–v0.6** (Stage IV) — Trait Variation and Selection  
 - **v1.0** (Stage V) — Research Platform maturity
@@ -214,12 +218,11 @@ The project follows a staged development plan with clear exit criteria and valid
 **Development Approach:** Given the active optimization and rapid iteration pace (100+ commits/4 weeks), version timelines are estimates subject to adjustment as performance work and design iterations emerge.
 
 All releases require:
+
 - Passing determinism, invariant, and regime validation suites
 - Updated baseline artifacts and documentation
 - Clear change notes when baseline hashes update
 - Determinism verification across all refactoring changes
-
-## Repository Guide
 
 ## Repository Guide
 
@@ -238,10 +241,14 @@ All releases require:
 Major systems restructuring completed to prepare for Stage III spatial interactions:
 
 - **2D world topology:** Transitioned from 1D wrapped array to 2D height×width grid with proper toroidal semantics
+
 - **Energy system decoupling:** Agent initialization broken into four independent phases (`_init_identity`, `_init_lineage`, `_init_rngs`, `_init_state`) enabling modular customization and performance profiling
 - **Agent factory pattern:** Extracted agent creation into dedicated module with separate code paths for initial vs. newborn agents
+
 - **Performance infrastructure:** Added `PerfSink` framework for bottleneck measurement; agent initialization identified as critical path
+
 - **State schema updates:** Snapshots and serialization refactored to handle 2D positions; determinism verified throughout
+
 - **Metrics pipeline refinement:** Restructured for performance data integration while maintaining fingerprint analysis capabilities
 
 **Determinism Impact:** All changes verified to maintain bit-exact reproducibility with fixed seeds. State hashes unchanged (refactoring is transparent to validation).
@@ -262,6 +269,7 @@ For deeper design notes and model background, see:
 ## Current Status & Quality Gates
 
 **Pre-Stage III (beta v0.2.1) Status — Actively Under Development:**
+
 - ✅ 2D world model implementation completed and determinism-verified
 - ✅ Energy system decoupled into modular initialization phases
 - ✅ Agent factory pattern extracted for cleaner creation paths
@@ -277,12 +285,14 @@ For deeper design notes and model background, see:
 - 🔄 Extend metrics for 2D spatial patterns (in queue for Stage III)
 
 **Development Notes:**
+
 - High commit frequency reflects active problem-solving and iterative refinement
 - All changes validated against determinism suites before integration
 - Performance improvements underway while maintaining reproducibility
 - Timeline projections for Stage III and beyond are provisional pending optimization completion
 
 **Quality Gates (Required for All Releases):**
+
 - Deterministic behavior required across all simulation logic refactoring
 - No unordered state transitions in core pipeline
 - All new features must define invariants and validation checks
@@ -290,6 +300,7 @@ For deeper design notes and model background, see:
 - Release tags require passing validation suites and baseline artifacts
 
 **Code Organization Principles:**
+
 - Determinism over convenience
 - Explicit entropy over hidden randomness
 - Invariants before new features

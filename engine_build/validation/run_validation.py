@@ -1,5 +1,46 @@
 from __future__ import annotations
 
+
+"""
+Instead, engine_build/validation/ should contain library code used by tests and CLI wrappers, for example:
+
+engine_build/validation/
+  contracts.py        # thresholds/envelopes for canonical regimes
+  assertions.py       # reusable behavioral assertions
+  baselines.py        # fixed seed panels / validation defaults
+  report.py           # human-readable validation summaries
+
+So the pattern becomes:
+
+engine_build/validation/ = reusable validation machinery
+
+tests/validation/ = pytest pass/fail checks using that machinery
+
+
+
+
+
+
+
+
+
+
+
+"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 from engine_build.cli.requests import ValidationRequest
 from engine_build.validation.suites import (
     run_all_validations,

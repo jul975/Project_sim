@@ -1,0 +1,13 @@
+{
+  "globs": [
+    "**/*.md",
+    "!**/.git/**",
+    "!**/.venv/**",
+    "!**/.venv-linux/**",
+    "!**/node_modules/**",
+    "!**/vendor/**",
+    "!**/dist/**",
+    "!**/build/**",
+    "!**/.pytest_cache/**"
+  ]
+}

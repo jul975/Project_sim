@@ -14,13 +14,6 @@ REGIMES = {
         landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
         population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)
     ),
-    "test_stable": RegimeSpec(
-        energy_spec=EnergySpec(beta=5, gamma=10, harvest_fraction=0.35),
-        reproduction_spec=ReproductionSpec(probability=0.25, probability_change_condition=0.5),
-        resources_spec=ResourceSpec(regen_fraction=0.1),
-        landscape_spec=LandscapeSpec(correlation=0.055, contrast=1.0, floor=0.0),
-        population_spec=PopulationSpec(max_agent_count=1000, initial_agent_count=10, max_age=100)
-    ),
     "fragile": RegimeSpec(
         energy_spec=EnergySpec(beta=5, gamma=10, harvest_fraction=0.35),
         reproduction_spec=ReproductionSpec(probability=0.25, probability_change_condition=0.5),
