@@ -16,7 +16,7 @@ from engine_build.experiments.fertility_dist_plot import run_and_plot_population
 def add_common_experiment_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--regime",
-        choices=["fragile", "abundant", "stable", "test_stable"],
+        choices=["fragile", "abundant", "stable", "test_stable", "saturated", "collapse", "extinction"],
         default="stable",
         help="Select ecological regime type",
     )
@@ -144,6 +144,8 @@ def main(argv: list[str] | None = None) -> int:
         request = build_fertility_request(args)
         run_and_plot_population_dynamics()
         return 0
+    
+
 
     parser.error(f"Unknown command: {args.command}")
     return 2

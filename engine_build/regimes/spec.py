@@ -40,6 +40,10 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class EnergySpec:
+    # β = c_r / θ
+    # γ = θ / c_m
+    # α = c_m / H_max
+    # h = H_max / R_max
     beta: float # REPRODUCTIVE DEPLETION => reproduction_cost / reproduction_threshold
     gamma: float # ENERGY MATURITY SCALE => reproduction_threshold / movement_cost
     harvest_fraction: float # H_MAX / R_MAX
