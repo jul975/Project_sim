@@ -199,13 +199,11 @@ class Runner:
 
         if perf_flag: 
             print("Performance flag is set. Running with performance profiling.")
-            phase_profile = PhaseProfile()
-        else:
-            phase_profile = None
 
         batch_data: BatchRunResults = BatchRunResults(runs={}, batch_id= self.batch_id, regime_config= self.regime_config, ticks= ticks, batch_duration= None)
 
         for i, seed in enumerate(self.run_seeds):
+            phase_profile = PhaseProfile() if perf_flag else None
 
             run_results : RunArtifacts = self.run_single(seed, ticks , phase_profile)
             batch_data.runs[i] = run_results   
@@ -222,4 +220,3 @@ class Runner:
 
 if __name__ == "__main__":
     pass
-
