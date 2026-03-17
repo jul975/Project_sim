@@ -51,6 +51,7 @@ from engine_build.validation.suites import (
 
 
 def run_validation_mode(request: ValidationRequest) -> int:
+    print(f"[validation] Running validation suite: {request.suite}")
     if request.verbose:
         print(f"[validation] suite={request.suite} fail_fast={request.fail_fast}")
 

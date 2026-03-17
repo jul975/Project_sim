@@ -1,15 +1,4 @@
 
-import sys
-
-from engine_build.cli.menu import run_menu
-from engine_build.cli.parser import build_parser
-from engine_build.cli.dispatch import dispatch
-
-from engine_build.cli.parser import build_parser
-from engine_build.cli.menu import run_menu
-from engine_build.cli.menu import _build_experiment_request, _build_validation_request, _build_fertility_request
-
-
 
 
 '''
@@ -40,14 +29,27 @@ That is the key simplification:
 
 
 '''
+from __future__ import annotations
 
+import sys
+
+from engine_build.cli.dispatch import dispatch
+from engine_build.cli.menu import run_menu
+from engine_build.cli.parser import (
+    build_parser,
+    build_experiment_request,
+    build_verification_request,
+    build_validation_request,
+    build_fertility_request,
+)
 
 
 def main(argv: list[str] | None = None) -> int:
-    if argv is None:
-        argv = sys.argv[1:]
+    argv = sys.argv[1:] if argv is None else argv
 
-    if not argv or argv[0] == "menu":
+    # Keep the interactive menu explicit.
+    # CLI remains the canonical anchor path.
+    if argv and argv[0] == "menu":
         request = run_menu()
         if request is None:
             return 0
@@ -57,11 +59,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "experiment":
-        return dispatch(_build_experiment_request(args))
-    if args.command == "validate":
-        return dispatch(_build_validation_request(args))
-    if args.command == "fertility":
-        return dispatch(_build_fertility_request(args))
+        request = build_experiment_request(args)
+    elif args.command == "verify":
+        request = build_verification_request(args)
+    elif args.command == "validate":
+        request = build_validation_request(args)
+    elif args.command == "fertility":
+        request = build_fertility_request(args)
+    else:
+        parser.error(f"Unknown command: {args.command}")
+        return 2
 
-    parser.error(f"Unknown command: {args.command}")
-    return 2
+    return dispatch(request)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
