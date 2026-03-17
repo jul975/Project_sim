@@ -11,6 +11,7 @@ class RegimeSummary:
     extinction_rate: float
     cap_hit_rate: float
     near_cap_rate: float
+    low_population_rate: float
     birth_death_ratio: float
     mean_time_cv_over_runs: float
     final_population_cv: float
@@ -30,6 +31,7 @@ def summarise_regime(batch_analysis : BatchAnalysis) -> RegimeSummary:
         extinction_rate=agg.extinction_rate,
         cap_hit_rate=agg.cap_hit_rate,
         near_cap_rate=agg.batch_near_cap_rate,
+        low_population_rate=agg.batch_near_low_population_rate,
         birth_death_ratio=agg.birth_death_ratio,
         mean_time_cv_over_runs=agg.mean_time_cv_over_runs,
         final_population_cv=std_final / mean_final,
@@ -39,20 +41,38 @@ def summarise_regime(batch_analysis : BatchAnalysis) -> RegimeSummary:
 
 def classify_regime(summary: RegimeSummary) -> RegimeClass:
     pop_ratio = summary.mean_population_over_runs / summary.max_agent_count
+    bdr = summary.birth_death_ratio
+    time_cv = summary.mean_time_cv_over_runs
 
-    if summary.extinction_rate >= 0.8:
+    stable_like = (
+        time_cv <= 0.10
+        and 0.95 <= bdr <= 1.05
+    )
+
+    # 1) FAILURE STATES
+    if summary.extinction_rate >= 0.95:
+        return RegimeClass.EXTINCTION
+
+    if summary.extinction_rate >= 0.50:
         return RegimeClass.COLLAPSE
 
-    if summary.extinction_rate > 0.0:
-        return RegimeClass.FRAGILE
+    # severe low-pop persistence without full extinction
+    if summary.low_population_rate >= 0.80 and bdr < 0.95:
+        return RegimeClass.COLLAPSE
 
-    if summary.cap_hit_rate >= 0.05 or summary.near_cap_rate >= 0.35:
+    # 2) BOUNDARY STATE
+    if summary.cap_hit_rate >= 0.20 or summary.near_cap_rate >= 0.30:
         return RegimeClass.SATURATED
 
-    if pop_ratio >= 0.14 and summary.mean_time_cv_over_runs <= 0.08:
+    # 3) SURVIVING BUT STRESSED
+    if summary.low_population_rate >= 0.20:
+        return RegimeClass.FRAGILE
+
+    # 4) INTERIOR REGIMES
+    if stable_like and pop_ratio >= 0.20:
         return RegimeClass.ABUNDANT
 
-    if summary.mean_time_cv_over_runs <= 0.10 and 0.95 <= summary.birth_death_ratio <= 1.05:
+    if stable_like:
         return RegimeClass.STABLE
 
     return RegimeClass.UNCLASSIFIED

@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class RegimeClass(str, Enum):
+    EXTINCTION = "extinction"
     COLLAPSE = "collapse"
     FRAGILE = "fragile"
     STABLE = "stable"

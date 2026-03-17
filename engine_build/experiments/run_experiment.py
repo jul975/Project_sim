@@ -149,7 +149,7 @@ def summarize_analytics(
     _print_metric("batch_near_cap_rate", _format_percent(agg.batch_near_cap_rate))
     _print_metric("batch_low_population_rate", _format_percent(agg.batch_near_low_population_rate))
 
-
+    _print_phase_summary(batch_analysis, n_runs)
     print("")
     _rule()
 
@@ -158,9 +158,27 @@ def run_experiment_mode(request) -> int:
     regime_spec = get_regime_spec(request.regime)
     regime_config : CompiledRegime = compile_regime(regime_spec)
     print("======================================================================")
-    print("regime_spec: ", regime_spec)
+    print("regime_spec: ")
+    print(f"        energy_sec: ")
+    print(f"                beta: {regime_spec.energy_spec.beta}")
+    print(f"                gamma: {regime_spec.energy_spec.gamma}")
+    print(f"                harvest_fraction: {regime_spec.energy_spec.harvest_fraction}")
+    print(f"        reproduction_spec: ")
+    print(f"                probability: {regime_spec.reproduction_spec.probability}")
+    print(f"                probability_change_condition: {regime_spec.reproduction_spec.probability_change_condition}")
+    print(f"        resources_spec: ")
+    print(f"                regen_fraction: {regime_spec.resources_spec.regen_fraction}")
+    print(f"        landscape_spec: ")
+    print(f"                correlation: {regime_spec.landscape_spec.correlation}")
+    print(f"                contrast: {regime_spec.landscape_spec.contrast}")
+    print(f"                floor: {regime_spec.landscape_spec.floor}")
+    print(f"        population_spec: ")
+    print(f"                max_agent_count: {regime_spec.population_spec.max_agent_count}")
+    print(f"                initial_agent_count: {regime_spec.population_spec.initial_agent_count}")
+    print(f"                max_age: {regime_spec.population_spec.max_age}")
+
     print("======================================================================")
-    print("regime_config: ", regime_config)
+   
     print("======================================================================")
     ticks = request.ticks if request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
     n_runs = request.runs if request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
