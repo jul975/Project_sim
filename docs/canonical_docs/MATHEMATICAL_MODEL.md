@@ -1,6 +1,7 @@
 ﻿# Mathematical Model
 
 ## Purpose
+
 This document defines the mathematical model of the current system (Stage II / `beta0.2`) as implemented in `engine_build/core/*`.
 
 The simulation is a discrete-time transition system:
@@ -12,6 +13,7 @@ $$
 with reproducible stochasticity under fixed `(seed, config, code version, runtime)`.
 
 ## 1. State
+
 Let the world size be $W$ (`world_size`) with 1D toroidal topology:
 
 $$
@@ -25,6 +27,7 @@ S_t = \Big(F, R_t, \{(x_i(t), E_i(t), a_i(t), \ell_i(t))\}_{i \in \mathcal{I}_t}
 $$
 
 Where:
+
 - $F \in \{0,\dots,R_{\max}-1\}^{W}$: fertility/capacity field (static after init)
 - $R_t \in \mathbb{Z}_{\ge 0}^{W}$: resource field, bounded by
 
@@ -33,6 +36,7 @@ $$
 $$
 
 Agent variables:
+
 - $x_i(t)$: position
 - $E_i(t)$: energy
 - $a_i(t)$: age
@@ -41,7 +45,9 @@ Agent variables:
 Agents are processed in ascending ID order.
 
 ## 2. Parameters
+
 ### 2.1 World and population
+
 - $W$ = `world_size`
 - $R_{\max}$ = `max_resource_level`
 - $r$ = `resource_regen_rate`
@@ -51,12 +57,14 @@ Agents are processed in ascending ID order.
 - $A_{\max}$ = `max_age`
 
 ### 2.2 Reproduction probability
+
 - $p_0$ = `reproduction_probability`
 - $p_1$ = `reproduction_probability_change_condition`
 
 Each agent receives fixed $p \in \{p_0, p_1\}$ at construction, selected by `change_condition`.
 
 ### 2.3 Energy parameterization (ratio-derived)
+
 Ratios: $\alpha$ (metabolic pressure), $\beta$ (reproductive depletion), $\gamma$ (maturity scale).
 
 Derived runtime values:
@@ -72,6 +80,7 @@ $$
 (using Python `int(...)` truncation).
 
 ## 3. Initialization
+
 ### 3.1 World
 
 $$
@@ -79,6 +88,7 @@ F(x) \sim \mathrm{Unif}\{0,\dots,R_{\max}-1\}, \qquad R_0(x)=F(x)
 $$
 
 ### 3.2 Initial agents
+
 For each $i \in \{0,\dots,N_0-1\}$:
 
 $$
@@ -92,6 +102,7 @@ $$
 with `(E_min, E_max) = energy_init_range`.
 
 ## 4. Tick Operator
+
 The implemented operator decomposes as:
 
 $$
@@ -103,12 +114,15 @@ $$
 - $G$: world regrowth
 
 ## 5. Per-Agent Evaluation $U$
+
 For each agent in sorted order:
 
 ### 5.1 Alive gate
+
 If $\ell_i = 0$, queue old-age removal and skip further updates.
 
 ### 5.2 Movement and metabolic check
+
 Sample $\Delta x_i \in \{-1,+1\}$:
 
 $$
@@ -138,6 +152,7 @@ $$
 This creates implicit competition through update order when multiple agents share a cell.
 
 ### 5.4 Reproduction gate and stochastic event
+
 Eligibility:
 
 $$
@@ -169,7 +184,9 @@ a_i \ge A_{\max} \Rightarrow \ell_i \leftarrow 0
 $$
 
 ## 6. Commit Phase $C$ (Deaths Then Births)
+
 Let:
+
 - $D_t$: total queued deaths in tick $t$
 - $B_t^{\mathrm{raw}}$: successful reproduction events in tick $t$
 - $N_t$: pre-commit population
@@ -205,6 +222,7 @@ E_j(0) \sim \mathrm{Unif}\{E_{\min},\dots,E_{\max}-1\}
 $$
 
 ## 7. Regrowth Operator $G$
+
 After commits:
 
 $$
@@ -214,6 +232,7 @@ $$
 where $R_t'$ is the post-harvest, post-commit resource field.
 
 ## 8. System Loop
+
 The ecological feedback loop is:
 
 $$
@@ -221,6 +240,7 @@ R \rightarrow h \rightarrow E \rightarrow (\text{birth/death}) \rightarrow N \ri
 $$
 
 ## 9. Implementation Notes
+
 - Reproduction is event-based (successes), not guaranteed by eligibility.
 - Child position is explicitly overwritten to parent position at commit time.
 - `post_harvest_starvation` exists as a death bucket in code, but under current update rules is effectively unreachable because energy does not decrease in harvest and metabolic death is resolved earlier.

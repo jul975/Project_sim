@@ -1,134 +1,158 @@
-﻿# Configuration Reference
+# Configuration
 
 ## Purpose
-This document defines the configuration model used by the ecosystem engine and experiment runner.
 
-Deterministic behavior is defined by:
-- seed
-- configuration
-- code version
+This document describes the current configuration model used by the engine, runner, and CLI.
 
-## Configuration Principles
-- Explicit parameters: ecological behavior is driven by declared config values.
-- Immutable runtime config: simulation config objects are frozen dataclasses.
-- Ratio-based energy control: runtime energy costs are derived from dimensionless ratios.
-
-## 1. Configuration Model
-Source: `engine_build/regimes/spec.py` and `engine_build/regimes/compiled.py`
+The authoritative pipeline is:
 
 ```text
-RegimeSpec (human-authored)
-├─ EnergySpec(beta, gamma, harvest_fraction)
-├─ ReproductionSpec(probability, probability_change_condition)
-├─ ResourceSpec(regen_fraction)
-├─ LandscapeSpec(correlation, contrast, floor)
-└─ PopulationSpec(max_agent_count, initial_agent_count, max_age)
-
-CompiledRegime (runtime, computed)
-├─ EnergyParams(movement_cost, reproduction_threshold, reproduction_cost, max_harvest, max_energy)
-├─ ReproductionParams(probability, probability_change_condition)
-├─ ResourceParams(max_resource_level, regen_rate)
-├─ LandscapeParams(correlation, contrast, floor)
-├─ PopulationParams(max_agent_count, initial_agent_count, max_age)
-└─ WorldParams(world_width, world_height)
+RegimeSpec -> compile_regime() -> CompiledRegime -> Engine / World / Agent
 ```
 
-## 2. Current Defaults
-### 2.1 World Parameters (2D Grid)
-| Field | Default | Description |
-|---|---:|---|
-| `world_width` | `20` | Number of cells in X dimension |
-| `world_height` | `20` | Number of cells in Y dimension |
-| `world_size` | `400` | Total cells (width × height) |
+Configuration lives in `engine_build/regimes/`. There is no active legacy `core/config.py` runtime layer.
 
-Agents move on a 2D toroidal grid with wrapping boundaries:
-```text
-(x + dx) mod world_width
-(y + dy) mod world_height
-```
+## Configuration Model
 
-### 2.2 `PopulationSpec`
-| Field | Default | Description |
+### Authoring layer: `RegimeSpec`
+
+`RegimeSpec` is the human-authored input. It contains:
+
+- `energy_spec: EnergySpec`
+- `resources_spec: ResourceSpec`
+- `landscape_spec: LandscapeSpec`
+- `reproduction_spec: ReproductionSpec`
+- `population_spec: PopulationSpec`
+- `max_energy: int = 100`
+- `max_resource_level: int = 80`
+- `world_size: int = 400`
+
+Subsystem fields:
+
+- `EnergySpec(beta, gamma, harvest_fraction, alpha=0.6, initial_energy_low_ratio=0.3, initial_energy_high_ratio=0.6)`
+- `ReproductionSpec(probability=0.25, probability_change_condition=0.5)`
+- `ResourceSpec(regen_fraction)`
+- `LandscapeSpec(correlation, contrast, floor)`
+- `PopulationSpec(max_agent_count, initial_agent_count, max_age)`
+
+All current spec and compiled config dataclasses are frozen.
+
+### Runtime layer: `CompiledRegime`
+
+`compile_regime()` converts a `RegimeSpec` into runtime parameters:
+
+- `EnergyParams(max_energy, energy_init_range, max_harvest, movement_cost, reproduction_threshold, reproduction_cost)`
+- `ResourceParams(max_resource_level, regen_rate)`
+- `ReproductionParams(probability, probability_change_condition)`
+- `PopulationParams(max_agent_count, initial_agent_count, max_age)`
+- `WorldParams(world_width, world_height)`
+- `LandscapeParams(correlation, contrast, floor)`
+
+## Compilation Rules
+
+The compiler in `engine_build/regimes/compiler.py` applies the following rules:
+
+| Runtime field | Current rule |
+|---|---|
+| `max_harvest` | `min(max_energy, max(1, round(harvest_fraction * max_resource_level)))` |
+| `movement_cost` | `min(max_energy, max_harvest, max(1, round(alpha * max_harvest)))` |
+| `reproduction_threshold` | `min(max_energy, max(movement_cost, round(gamma * movement_cost)))` |
+| `reproduction_cost` | `min(reproduction_threshold, max(1, round(beta * reproduction_threshold)))` |
+| `energy_init_range` | `(max(1, round(low_ratio * max_energy)), max(low, round(high_ratio * max_energy)))` |
+| `regen_rate` | `max(1, round(regen_fraction * max_resource_level))` |
+| `world_width` / `world_height` | `round(sqrt(world_size))` |
+
+Important implementation notes:
+
+- `max_energy` is a compilation anchor and initialization bound. The runtime does not currently clamp `agent.energy_level` to it.
+- `world_size` is treated as a square-world anchor. Non-perfect squares are rounded, not rejected.
+
+## Current Shared Defaults
+
+These values are shared by the checked-in named regimes unless a regime overrides them:
+
+| Field | Current value | Notes |
 |---|---:|---|
-| `initial_agent_count` | `10` | Initial population size |
+| `max_energy` | `100` | Energy-system anchor |
+| `max_resource_level` | `80` | Resource-system anchor |
+| `world_size` | `400` | Compiles to a `20 x 20` toroidal grid |
+| `alpha` | `0.6` | Movement-cost ratio |
+| `initial_energy_low_ratio` | `0.3` | Lower bound for initial energy draw |
+| `initial_energy_high_ratio` | `0.6` | Upper bound for initial energy draw |
+| `probability` | `0.25` | Default reproduction probability |
+| `probability_change_condition` | `0.5` | Alternate reproduction probability used by the RNG-isolation check |
+| `correlation` | `0.055` | Used to derive fertility smoothing kernel size |
+| `contrast` | `1.0` | Present in config, not currently applied in world generation |
+| `floor` | `0.0` | Present in config, not currently applied in world generation |
 | `max_agent_count` | `1000` | Hard population cap |
-| `max_age` | `100` | Age threshold for old-age death marking |
+| `initial_agent_count` | `10` | Founder count |
+| `max_age` | `100` | Age-based death threshold |
 
-### 2.3 `EnergySpec` and Derived `EnergyParams`
-| Field | Default | Description |
-|---|---:|---|
-| `beta` | `0.8` | Reproductive cost multiplier |
-| `gamma` | `10` | Energy maturity scale factor |
-| `harvest_fraction` | `0.35` | Fraction of fertility harvestable per tick |
-| *derived:* `movement_cost` | varies | int(beta × max_harvest) |
-| *derived:* `reproduction_threshold` | varies | int(gamma × movement_cost) |
-| *derived:* `reproduction_cost` | varies | int(beta × reproduction_threshold) |
+## Stable Baseline
 
-### 2.4 Resource and Landscape Parameters
-| Field | Default | Description |
-|---|---:|---|
-| `regen_fraction` | `0.1` | Fraction of fertility regenerated per tick |
-| `correlation` | `0.055` | Landscape correlation radius (as fraction of world_width) |
-| `contrast` | `1.0` | Fertility contrast multiplier |
-| `floor` | `0.0` | Minimum fertility level |
+The default baseline regime is `stable`. Its compiled runtime values are:
 
-## 3. Derived Runtime Energy Parameters
-At engine compilation, landscape is generated and energy parameters computed as:
+| Field | Value |
+|---|---:|
+| `world_width` | `20` |
+| `world_height` | `20` |
+| `energy_init_range` | `(30, 60)` |
+| `max_harvest` | `28` |
+| `movement_cost` | `17` |
+| `reproduction_threshold` | `100` |
+| `reproduction_cost` | `80` |
+| `regen_rate` | `8` |
 
-$$
-\begin{aligned}
-\text{movement\_cost} &= \text{int}(\text{beta} \cdot \text{max\_harvest}) \\
-\text{reproduction\_threshold} &= \text{int}(\text{gamma} \cdot \text{movement\_cost}) \\
-\text{reproduction\_cost} &= \text{int}(\text{beta} \cdot \text{reproduction\_threshold})
-\end{aligned}
-$$
+## Named Regimes
 
-`int(...)` uses Python truncation.
+The current registry defines six named regimes:
 
-## 4. Regime Presets
-Source: `engine_build/regimes/registry.py`
-
-| Regime | Description | Use Case |
+| Regime | Key compiled values | Intent |
 |---|---|---|
-| `stable` | Bounded population, low extinction pressure | Default baseline for experiments |
-| `test_stable` | Tighter energy budget variant of stable | Rapid validation checks |
-| `fragile` | Tight energy constraints, high collapse risk | Testing robustness under stress |
-| `abundant` | High resources, relaxed energy requirements | Testing growth capacity dynamics |
+| `stable` | `regen_rate=8`, `threshold=100`, `repro_cost=80` | Baseline bounded regime |
+| `fragile` | `regen_rate=8`, `threshold=100`, `repro_cost=100` | Reproduction becomes maximally expensive |
+| `extinction` | `regen_rate=2`, `threshold=85`, `repro_cost=85` | Low regeneration with costly reproduction |
+| `collapse` | `regen_rate=2`, `threshold=42`, `repro_cost=42` | Low regeneration with earlier but still fully draining reproduction |
+| `saturated` | `max_harvest=4`, `movement_cost=2`, `threshold=2`, `repro_cost=2` | Extremely cheap survival and reproduction pressure toward capacity |
+| `abundant` | `regen_rate=10`, `threshold=17`, `repro_cost=2` | Easy reproduction and faster regrowth |
 
-Each regime is defined via `RegimeSpec` with configurable energy, reproduction, resource, landscape, and population parameters.
+## Landscape Behavior
 
-Reference: Energy parameters (beta, gamma, harvest_fraction) determine agent energy dynamics. Resource parameters (regen_fraction) control regeneration rates. See [engine_build/regimes/compiler.py](../../engine_build/regimes/compiler.py) for compilation logic.
+Landscape generation currently uses:
 
-## 5. Execution-Level Controls
-These are runtime controls for batch execution (not fields of `SimulationConfig`).
+```text
+kernel_size = max(3, round(correlation * world_width))
+```
 
-Source: `engine_build/execution/default.py`
+If the kernel is even, it is incremented to keep it odd. The world then smooths raw noise on a toroidal grid.
+
+Current limitation: `contrast` and `floor` are carried through the config layer but are not yet used by `World._generate_fertility_fields()`.
+
+## Runtime Controls
+
+Execution defaults in `engine_build/execution/default.py` are:
+
 - `DEFAULT_MASTER_SEED = 20250302`
 - `EXPERIMENT_DEFAULTS = {"ticks": 1000, "runs": 10}`
 - `VALIDATION_DEFAULTS = {"ticks": 300, "runs": 2}`
 
-CLI-level overrides in `engine_build/main.py`:
-- `experiment {regime}` — Run regime experiments
-- `validate {--suite}` — Run validation suites
-- `fertility {--seed}` — Run fertility exploration
-- Regime choices: `stable`, `test_stable`, `fragile`, `abundant`
-- `--seed`, `--runs`, `--ticks` — Override defaults
+Current CLI examples:
 
-## 6. Determinism Constraints
-For reproducible runs:
-- do not mutate config during a run
-- use explicit seed values
-- keep code/runtime environment stable
-
-## 7. Minimal Usage Example
-```python
-from engine_build.core.config import SimulationConfig, EnergyConfig, EnergyRatios
-
-cfg = SimulationConfig(
-    energy_config=EnergyConfig(
-        ratios=EnergyRatios(alpha=0.6, beta=0.8, gamma=10.0)
-    )
-)
+```bash
+python -m engine_build.main experiment --regime stable
+python -m engine_build.main experiment --regime stable --seed 42 --runs 5 --ticks 500
+python -m engine_build.main verify --suite determinism
 ```
 
-For canonical presets, use `get_regime_config("stable")`.
+## Recommended Usage
+
+For normal runs and tests:
+
+```python
+from engine_build.regimes.registry import get_regime_spec
+from engine_build.regimes.compiler import compile_regime
+
+regime = compile_regime(get_regime_spec("stable"))
+```
+
+That is the current canonical path from named regime to runtime configuration.

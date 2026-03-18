@@ -1,102 +1,128 @@
-﻿# Determinism Guarantees
+# Determinism
 
 ## Purpose
-This document summarizes the current determinism guarantees, the validation coverage across test modes, and residual uncertainty.
 
-## Determinism Contract
-A run is expected to be reproducible for fixed:
-- seed
-- configuration
+This document defines the determinism contract implemented by the current engine.
+
+## Contract
+
+For a fixed:
+
+- run seed or batch seed
+- compiled regime
+- execution flags that affect runtime state (`change_condition`, `perf_flag`)
 - code version
-- runtime stack (especially NumPy RNG behavior)
+- Python and NumPy runtime
 
-State equivalence is defined by canonical hashing:
+the engine is expected to produce the same canonical state trajectory and the same snapshot continuation behavior.
+
+The codebase also expects different seeds to diverge under the same regime.
+
+## Canonical Equality
+
+Engine equality is hash-based:
 
 ```text
 sha256(get_state_bytes(engine))
 ```
 
-## System Guarantees
-### 1. Canonical state serialization
-- Equality is hash-based (`Engine.__eq__` -> `get_state_hash()`).
-- `state_schema.py` serializes deterministic fields in canonical order (agents sorted by ID).
+`Engine.__eq__()` delegates to `get_state_hash()`.
 
-### 2. Deterministic execution order
-- Agent loop uses sorted IDs.
-- Structural commits are ordered and stable: deaths -> births -> world regrowth.
+The current canonical schema is `SCHEMA_VERSION = 2` in `engine_build/core/state_schema.py`. It includes:
 
-### 3. RNG isolation
-Independent RNG streams are maintained for:
-- world randomness
-- movement
-- reproduction
-- energy initialization
+- engine tick and structural counters
+- execution flags and rule-environment values
+- world dimensions, fertility, resources, and world RNG state
+- all agents sorted by ID for serialization
+- each agent's position, energy, age, alive flag, offspring count, and RNG states
 
-This isolates stochastic concerns and prevents cross-stream pollution.
+Important: canonical equality is stricter than "same ecological outcome". It includes runtime flags and RNG state, not just visible world state.
 
-### 4. Snapshot continuation reproducibility
-- Snapshot includes agent/world RNG states and lineage metadata.
-- `Engine.from_snapshot(...)` reconstructs a continuation-equivalent engine state.
+## How Determinism Is Enforced
 
-### 5. Seed sensitivity
-Different seeds produce different trajectories/hashes under the same config.
+### Stable step pipeline
 
-## Determinism Test Coverage
-Entry point:
+`Engine.step()` always executes the same phase order:
 
-```bash
-python -m engine_build.test.test_determinism --mode <dev|validate|full|reference>
+```text
+movement -> interaction -> biology -> commit -> tick += 1
 ```
 
-### Suite inventory
-- Determinism suite:
+### Deterministic structural mutation
+
+`commit_phase()` always applies:
+
+```text
+deaths -> births -> world resource regrowth
+```
+
+Births are capacity-limited after queued deaths are counted, and agent IDs are allocated monotonically through `next_agent_id`.
+
+### Stable traversal semantics
+
+The live simulation does not sort agents every tick. Runtime traversal currently depends on:
+
+- Python's stable dictionary insertion order
+- deterministic append order inside each phase
+- deterministic encounter order for local harvest sharing
+
+Canonical hashing then sorts agents by ID so that equality checks do not depend on dictionary layout.
+
+### RNG isolation
+
+Randomness is partitioned across independent domains:
+
+- `world.rng_world`
+- `agent.move_rng`
+- `agent.repro_rng`
+- `agent.energy_rng`
+
+This prevents movement, reproduction, and initialization draws from polluting each other.
+
+### Snapshot continuation
+
+`Engine.get_snapshot()` and `Engine.from_snapshot()` preserve:
+
+- compiled regime data
+- structural counters
+- world arrays
+- world and agent RNG bit-generator state
+- master seed metadata needed by the current runtime path
+
+Continuation equivalence is tested directly in the verification suite.
+
+## Verification Coverage
+
+The current CLI entry point for determinism-oriented checks is:
+
+```bash
+python -m engine_build.main verify --suite <determinism|rng|snapshots|invariants|all>
+```
+
+Primary checked-in tests:
+
+- `tests/verification/test_determinism.py`
   - `test_same_seed_determinism`
   - `test_snapshot_equivalence`
   - `test_seed_sensitivity`
-- Structural invariant suite:
-  - `test_spatial_invariants`
-  - `test_resource_bounds`
-  - `test_identity_monotonicity`
-- Dynamics sanity suite:
-  - `test_population_variability`
-  - `test_energy_boundedness`
-- RNG isolation suite:
+- `tests/verification/test_rng_isolation.py`
   - `test_movement_rng_isolated_from_reproduction`
-- Reference baseline suite:
-  - `test_reference_hash`
+- `tests/verification/test_snapshots.py`
+  - round-trip, world restore, agent restore, RNG restore, and continuation checks
+- `tests/verification/test_invariants.py`
+  - spatial bounds, resource bounds, and monotonic ID allocation
 
-### Mode behavior
-| Mode | Included checks | Purpose |
-|---|---|---|
-| `dev` | Determinism + Structural invariants | Fast core checks during development |
-| `validate` | `dev` + Dynamics sanity + RNG isolation | Broader reproducibility and behavior checks |
-| `full` | `validate` + Reference baseline hash | Drift detection against pinned baseline |
-| `reference` | Prints current baseline candidate hash | Baseline refresh workflow support |
+## Current Limits
 
-## Current Verified Status (March 5, 2026)
-Latest run results:
-- `dev`: PASS
-- `validate`: PASS
-- `full`: PASS
+- Reproducibility is a same-code, same-runtime guarantee. Changes in Python, NumPy, or PCG64 behavior can change hashes.
+- Snapshot restoration rebuilds `master_ss` from `entropy`, `spawn_key`, and `pool_size`, but it does not restore NumPy's internal child counter. This is acceptable for the current engine because post-initialization logic no longer depends on repeated `master_ss.spawn()` calls.
+- The canonical hash captures runtime state, not the original `RegimeSpec` source text.
 
-Pinned reference hash in `test_reference_hash`:
-- `4d6b796776b544cf9f2328c7fbe9c50d0e192b0d204c0cc732a413e90bf8e0b6`
+## Practical Guidance
 
-Interpretation:
-- Relative determinism guarantees are validated.
-- Baseline hash lock is currently consistent with implementation.
+For deterministic runs:
 
-## Risk Assessment
-### Medium risk
-- Environment drift: NumPy/CPython/version differences can change RNG behavior or serialized values, breaking cross-environment hash comparability.
-- Baseline governance risk: updating reference hashes without strict review can hide unintentional behavioral drift.
-
-### Low-to-medium risk
-- Seed lineage reconstruction is deterministic for this engine path but relies on an emulation pattern (`spawn_key + spawn_count`) because NumPy does not expose full `SeedSequence` child counter restoration.
-
-### Low risk
-- Ordering nondeterminism is currently well controlled by sorted iteration and explicit commit ordering.
-- Snapshot continuation risk is currently mitigated by dedicated equivalence tests.
-
-## Practical Conclusion
-Current determinism guarantees are strong for same-code, same-environment reproducibility and for regression detection through the full-mode baseline hash. Remaining uncertainty is primarily operational: environment pinning and disciplined baseline management.
+- use explicit seeds
+- compile regimes through `compile_regime(get_regime_spec(...))`
+- compare canonical hashes when testing equivalence
+- use the verification CLI as the authoritative regression check

@@ -1,260 +1,272 @@
-# Agent Energy Dynamics and Ratio Calibration
+# Agent
+
+## Purpose
+
+This document describes the current `Agent` implementation in the engine.
+
+It is an implementation reference, not a future design note. The agent model is intentionally compact and built to support deterministic execution, snapshot restore, and batch experimentation.
 
 ## Overview
 
-Agent behavior in the simulation is governed by a **dimensionless energy system**.
-Instead of relying on arbitrary absolute values, biological dynamics are controlled through **dimensionless ratios** derived from a small set of energy parameters.
+An agent represents one live organism in the simulation. The class lives in `engine_build/core/agent.py` and is owned by `Engine`.
 
-This approach provides several advantages:
+The current agent is responsible for:
 
-* **Scale invariance** — parameters remain meaningful regardless of numeric magnitude.
-* **Predictable regime tuning** — survival, reproduction, and lifecycle dynamics can be adjusted systematically.
-* **Reproducible experimentation** — behavioral regimes can be defined and reproduced through configuration.
+- local state: position, energy, age, alive flag
+- deterministic identity within the run
+- domain-specific RNG ownership
+- movement
+- harvest application
+- reproduction decisions
+- age progression
 
-These ratios define the **metabolic constraints and reproductive dynamics** of agents within the ecosystem.
+The agent does not own batch orchestration, regime compilation, or world-level resource logic.
 
----
+## Agent State
 
-# 1. Core Energy Parameters
+Each agent currently stores:
 
-The agent energy model is defined by four primary parameters:
+- `id`
+- `engine`
+- `position`
+- `energy_level`
+- `alive`
+- `age`
+- `offspring_count`
+- `move_rng`
+- `repro_rng`
+- `energy_rng`
 
-| Parameter                | Description                                                       |
-| ------------------------ | ----------------------------------------------------------------- |
-| `movement_cost`          | Energy spent per tick for movement                                |
-| `max_harvest`            | Maximum energy an agent can harvest from the environment per tick |
-| `reproduction_threshold` | Energy level required before reproduction becomes possible        |
-| `reproduction_cost`      | Energy lost when reproduction occurs                              |
+Important notes:
 
-These parameters determine the **energy balance** governing agent survival and population growth.
+- `position` is a 2D `(x, y)` tuple
+- `offspring_count` is part of deterministic child identity
+- RNG streams are separate by concern
 
----
+## Initialization
 
-# 2. Dimensionless Control Ratios
+Agent construction is split into three internal steps:
 
-Three key ratios define the biological regime of the system.
+- `_init_identity()`
+- `_init_rngs()`
+- `_init_state()`
 
-## 2.1 Metabolic Pressure (α)
+### Identity model
 
-$$\alpha = \frac{movement\_cost}{max\_harvest}$$
+The current engine no longer stores a full per-agent `SeedSequence` lineage object. Instead, each agent is created from deterministic `identity_words`.
 
-This ratio represents the **baseline difficulty of survival**.
+Founders use:
 
-| α Range     | Interpretation                                                             |
-| ----------- | -------------------------------------------------------------------------- |
-| α → 1       | Movement nearly consumes all harvested energy. Survival becomes difficult. |
-| α ≈ 0.6–0.9 | Balanced regime. Agents must actively gather resources to survive.         |
-| α ≪ 1       | Energy surplus. Population growth may become explosive.                    |
-
-Recommended operating range:
-
-```
-0.6 ≤ α ≤ 0.9
-```
-
----
-
-## 2.2 Reproductive Depletion (β)
-
-$$\beta = \frac{reproduction\_cost}{reproduction\_threshold}$$
-
-This ratio determines the **post-reproduction recovery cost**.
-
-| β Value     | Interpretation                            |
-| ----------- | ----------------------------------------- |
-| β < 0.5     | Reproduction has little energetic impact  |
-| β ≈ 0.8–1.0 | Reproduction nearly depletes agent energy |
-
-Recommended range:
-
-```
-0.8 ≤ β ≤ 1.0
+```text
+(run_entropy, founder_id)
 ```
 
-High β values introduce **natural spacing between births** by forcing agents to recover energy before reproducing again.
+Children use:
 
----
-
-## 2.3 Energy Maturity Scale (γ)
-
-
-$$\gamma = \frac{reproduction\_threshold}{movement\_cost}$$
-
-
-This ratio determines the **energy accumulation period required for reproduction**.
-
-| γ Value | Interpretation                              |
-| ------- | ------------------------------------------- |
-| γ small | Agents reach maturity quickly               |
-| γ large | Long accumulation phase before reproduction |
-
-Recommended range:
-
-```
-5 ≤ γ ≤ 15
+```text
+(run_entropy, child_entropy, parent_id, parent.offspring_count)
 ```
 
-Rule of thumb:
+This identity is produced by `Engine.get_first_agent_setup()` and `Engine.get_child_setup()`.
 
-```
-reproduction_threshold = γ × movement_cost
-```
+### RNG setup
 
----
+Each agent derives three independent `PCG64` generators from its `identity_words` plus fixed domain tags:
 
-# 3. Example Calibration
+- movement: `identity_words + (1,)`
+- reproduction: `identity_words + (2,)`
+- energy: `identity_words + (3,)`
 
-The following example demonstrates a stable parameter configuration.
+This isolates stochastic concerns and is one of the core determinism mechanisms in the project.
 
-### Step 1 — Environmental Constraints
+### Initial state
 
-```
-movement_cost = 2
-max_harvest   = 3
-```
+At creation:
 
-Result:
+- founders sample their initial position from `move_rng`
+- newborns inherit the parent position directly
+- `alive` is set to `True`
+- `age` starts at `0`
+- `offspring_count` starts at `0`
+- `energy_level` is sampled from `energy_init_range` using `energy_rng`
 
-```
-α = 2 / 3 ≈ 0.67
-```
+The initial energy draw uses NumPy `integers(low, high)`, so the upper bound is exclusive.
 
-This creates moderate metabolic pressure.
+## Configuration Dependencies
 
----
+The agent consumes compiled runtime parameters from `CompiledRegime` through its owning engine.
 
-### Step 2 — Lifecycle Parameters
+Relevant inputs:
 
-Select lifecycle ratio:
+- `EnergyParams.energy_init_range`
+- `EnergyParams.movement_cost`
+- `EnergyParams.reproduction_threshold`
+- `EnergyParams.reproduction_cost`
+- `PopulationParams.max_age`
+- `PopulationParams.max_agent_count`
+- `WorldParams.world_width`
+- `WorldParams.world_height`
+- `Engine.reproduction_probability`
 
-```
-γ = 10
-```
+The ratio math that defines these values lives in `engine_build/regimes/compiler.py`, not in the agent class.
 
-Derive reproduction threshold:
+## Tick Behavior
 
-```
-reproduction_threshold = 20
-```
+The agent participates in the engine's phase-structured tick pipeline:
 
-Set reproduction depletion:
-
-```
-β = 0.9
-reproduction_cost = 18
-```
-
----
-
-### Step 3 — Energy Accumulation Time
-
-If the average net surplus per tick is:
-
-```
-S ≈ 1 energy / tick
+```text
+movement -> interaction -> biology -> commit
 ```
 
-Then expected accumulation time is:
+### Movement
 
+`move_agent()` performs the following steps:
+
+1. subtract `movement_cost`
+2. sample one of four cardinal moves
+3. update position
+4. wrap position on the torus
+5. mark the agent dead if energy is now `<= 0`
+
+The current move set is:
+
+```text
+(-1, 0), (1, 0), (0, -1), (0, 1)
 ```
-T_energy ≈ reproduction_threshold / S
-         ≈ 20 ticks
+
+Movement is always axis-aligned and one cell per tick.
+
+### Harvest
+
+Agents do not decide harvest amounts themselves. The world distributes cell resources deterministically among all occupants of a position, then calls:
+
+```text
+agent.harvest_resources(harvest)
 ```
 
-This determines the **typical reproductive cycle length**.
+This simply adds the harvested amount to `energy_level`.
 
----
+### Reproduction
 
-# 4. Population Stability
+Reproduction is a two-step check:
 
-Population stability can be approximated using the **basic reproduction number**.
+1. `can_reproduce()` requires:
 
-$$R_0 = L \times R$$
+```text
+energy_level >= reproduction_threshold
+```
 
-Where:
+1. `does_reproduce()` draws from `repro_rng` and succeeds when:
 
-| Variable | Meaning                             |
-| -------- | ----------------------------------- |
-| (L)      | Expected agent lifespan             |
-| (R)      | Expected reproduction rate per tick |
+```text
+repro_rng.random() < engine.reproduction_probability
+```
 
-Interpretation:
+On success:
 
-| R₀ Range   | System Behavior     |
-| ---------- | ------------------- |
-| R₀ < 1     | Population collapse |
-| R₀ ≈ 1–1.5 | Stable population   |
-| R₀ ≫ 1     | Exponential growth  |
+- `reproduction_cost` is subtracted immediately from the parent
+- the parent is queued in `TransitionContext.reproducing_agents`
+- child creation happens later in `Engine.commit_phase()`
 
-This metric is useful when evaluating simulation regimes during batch experiments.
+Child entropy is generated by:
 
----
+```text
+parent.repro_rng.bit_generator.random_raw()
+```
 
-# 5. Calibration Workflow
+### Aging
 
-Recommended tuning procedure:
+Agents age through `age_agent()`:
 
-1. **Fix environmental parameters**
+- `age += 1`
+- if `age >= max_age`, set `alive = False`
 
-   ```
-   movement_cost
-   max_harvest
-   ```
+Current behavior detail:
 
-2. **Run exploratory simulations** to measure average energy gain
+- agents only age on ticks where they do not reproduce successfully
+- an agent marked dead by age is removed on the next tick's movement/commit cycle, not immediately in the same biology phase
 
-3. **Set lifecycle scale**
+## Births And Deaths
 
-   ```
-   reproduction_threshold = γ × movement_cost
-   ```
+The agent class marks or enables state transitions, but structural mutation is owned by the engine.
 
-4. **Set reproduction cost**
+### Death paths
 
-   ```
-   reproduction_cost ≈ 0.9 × reproduction_threshold
-   ```
+The current runtime distinguishes:
 
-5. **Run simulations and measure**
+- metabolic death after movement cost
+- age death for agents already marked `alive = False` at the start of a tick
+- post-reproduction death if reproduction cost pushes energy to `<= 0`
 
-   * lifespan distribution
-   * reproduction frequency
-   * population trajectory
+### Birth path
 
-6. **Adjust one ratio at a time**
+When a reproducing parent is committed:
 
-Maintaining controlled adjustments preserves **experimental interpretability**.
+- the engine creates a newborn at `next_agent_id`
+- the newborn starts at the parent position
+- the parent's `offspring_count` is incremented
+- `next_agent_id` is incremented
 
----
+Births are capacity-limited by `max_agent_count` after queued deaths are counted.
 
-# 6. Design Rationale
+## Determinism And Snapshots
 
-The ratio-based approach provides several structural advantages:
+The agent is part of the engine's canonical state and snapshot system.
 
-### Scale Independence
+### Canonical hashing
 
-Agent dynamics remain stable across different absolute energy scales.
+State serialization includes, for each agent:
 
-### Systematic Regime Definition
+- `id`
+- `position`
+- `energy_level`
+- `age`
+- `alive`
+- `offspring_count`
+- `move_rng` state
+- `repro_rng` state
+- `energy_rng` state
 
-Different ecological regimes can be created by modifying a small set of ratios.
+Agents are serialized in ID order for canonical hashing.
 
-### Extensibility
+### Snapshot restore
 
-Future model expansions (multi-species ecosystems, genetic variation, adaptive behavior) can build upon the same energy framework.
+`AgentSnapshot` stores:
 
----
+- `id`
+- `agent_spawn_count` (`offspring_count` at runtime)
+- `position`
+- `energy_level`
+- `alive`
+- `age`
+- RNG bit-generator states for movement, reproduction, and energy
 
-# 7. Future Extensions
+`Agent.from_snapshot()` restores the live agent directly from this state.
 
-Possible extensions to the current energy model include:
+## Invariants
 
-* **genetic variation in metabolic ratios**
-* **age-dependent energy efficiency**
-* **species-specific parameter sets**
-* **adaptive reproduction strategies**
-* **energy storage constraints**
+The current agent invariants include:
 
-These extensions allow the system to evolve toward **heterogeneous ecological dynamics** while maintaining the same underlying ratio framework.
+- `id >= 0`
+- engine reference is present
+- `position` is inside world bounds
+- `age >= 0`
+- `energy_level >= 0` unless the agent is dead
+- all three RNGs are valid NumPy generators
 
----
+These invariants are checked during restoration and through the broader verification suite.
+
+## Current Limits
+
+- There are no explicit agent-agent interaction rules yet beyond shared-cell harvesting and birth competition through the population cap.
+- Successful reproduction currently skips aging for that tick.
+- Newborns inherit the parent position instead of sampling a new spawn location.
+- `max_energy` exists in the compiled regime, but agent energy is not currently clamped to it at runtime.
+- Local harvest order depends on stable runtime traversal order, not an explicit per-cell ID sort.
+
+## Related Documents
+
+- `docs/canonical_docs/CONFIGURATION.md`
+- `docs/canonical_docs/DETERMINISM.md`
+- `docs/canonical_docs/RNG_ARCHITECTURE.md`
+- `docs/canonical_docs/SIMULATION_PIPELINE.md`

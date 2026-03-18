@@ -1,243 +1,313 @@
-# Current Project State (March 2026)
+# Current Project State (March 18, 2026)
 
 ## Overview
-The Ecosystem Emergent Behavior Simulator is in **active pre-Stage III development** with rapid iteration and continuous refactoring. Recent work (100+ commits in ~4 weeks) transitioned the world model from 1D to 2D topology and decoupled energy initialization from agent core logic. The codebase provides a determinism-preserving foundation for explicit spatial interactions, suitable for experimental work but subject to ongoing architectural improvements.
 
-**Last Updated:** March 15, 2026  
-**Current Version:** beta v0.2.1 (post-refactor, actively developed)  
-**Commit Velocity:** 100+ commits in ~4 weeks (rapid iteration phase)  
-**Next Target:** v0.3 (Stage III - Explicit Interaction and Spatial Competition)
+The Ecosystem Emergent Behavior Simulator is in active **pre-Stage III stabilization**.
 
-## Development Approach
+The major architectural transition to a 2D world model is complete, the post-refactor runtime crisis has been resolved, and the determinism-preserving simulation core is in much better shape than it was earlier in March. The project is no longer blocked by the earlier catastrophic abundant-run slowdown, but it is still in an active cleanup and alignment phase before a clean Stage III freeze.
 
-This project employs **continuous refactoring with determinism-preserving principles**:
-- Frequent commits capture experimental and stabilization work
-- Major architectural changes (1D→2D, energy decoupling) delivered incrementally
-- Deterministic reproducibility maintained as non-negotiable constraint throughout
-- High commit frequency reflects active problem-solving and optimization, not instability
-- All changes validated against determinism suites before merge
+The main work still in motion is now:
 
-**Timeline Expectations:** Given the active development pace and ongoing optimization work, delivery timelines for Stage III and beyond should be considered provisional and subject to adjustment as discoveries emerge.
+- validation contract alignment,
+- CLI surface cleanup,
+- spatial metric reintroduction,
+- and Stage III interaction design.
 
-## Project Status
+**Last updated:** March 18, 2026
 
-### ✅ Recently Completed & Determinism-Verified
+**Current stage:** Pre-Stage III / pre-`v0.3`
 
-**Major Systems Refactoring (Pre-Stage III, March 8-15, 2026)**
+**Project posture:** Working experimental engine with strong determinism guarantees, active refactoring, and remaining interface/validation cleanup
 
-This week's work transitioned the core engine architecture to support 2D spatial models while maintaining deterministic reproducibility. These changes are now in daily use but remain subject to optimization refinement.
+## Headline Status
 
-- **2D World Model Implementation** (completed, active optimization)
-  - Replaced 1D wrapped topology with 2D (height × width) grid system
-  - Fertility and resource fields refactored to 2D numpy arrays
-  - Agent positions now `(x, y)` tuples enabling neighborhood-based queries
-  - Toroidal boundary wrapping updated for 2D semantics
-  - Deterministic state serialization verified across topology transition
-  - All position-based invariants re-validated for 2D space
-  - **Note:** Performance still being optimized; 15-20min batch runs currently, <5min target
+- **2D topology is live**
+  - the engine, world, snapshots, and state serialization all operate on 2D `(x, y)` positions
+- **The runtime crisis is resolved**
+  - the earlier abundant birth-path slowdown is no longer blocking development
+- **Determinism remains a hard constraint**
+  - snapshot continuation, RNG isolation, and canonical state behavior remain central quality gates
+- **Verification is strong; validation is not fully settled**
+  - on March 18, 2026, the full pytest run was `19 passed, 1 failed`
+  - the remaining failure is `tests/validation/test_regime_contracts.py::test_extinction_regime_validation`
+- **The CLI module is in transition, not frozen**
+  - the request/parser/dispatch architecture is taking shape
+  - the experiment path is usable
+  - the validation and fertility lanes still need contract cleanup
 
-- **Decoupled Energy System Architecture** (completed, usage patterns emerging)
-  - Agent initialization restructured into four phases:
-    - `_init_identity()` — agent ID and lineage setup
-    - `_init_lineage()` — RNG seed sequence management
-    - `_init_rngs()` — spawn domain-specific RandomGenerators
-    - `_init_state()` — energy, position, and lifecycle initialization
-  - Each phase independently measurable for performance profiling
-  - Energy parameters now separately configurable from agent identity
-  - Prepares foundation for heterogeneous agent traits (Stage IV)
-  - **In-progress:** Agent creation identified as bottleneck; optimization underway
+## Stable Foundations
 
-- **Agent Factory Pattern** (completed, integrated into workflows)
-  - Extracted agent creation into `agent_factory.py` module
-  - Dual code paths optimized for initial population vs. newborn reproduction
-  - Cleaner separation between engine orchestration and agent construction
-  - Performance measurement integrated at factory level
+### 2D simulation core
 
-- **Performance Profiling Framework** (completed, actively generating insights)
-  - Implemented `PerfSink` abstraction in `dev/perf.py`
-  - `measure_block()` utility enables fine-grained bottleneck tracking
-  - Agent initialization identified as primary performance constraint (~70% of batch time)
-  - Framework supports iterative optimization without breaking determinism
-  - Metrics pipeline enhanced to capture performance data per batch
+The system now runs on a 2D toroidal world:
 
-- **State Serialization & Snapshots Updated** (completed, fully validated)
-  - Schema refactored to handle 2D agent positions
-  - State hash verified unchanged (determinism preserved)
-  - Snapshot/restore round-trip tested post-refactoring
-  - All structural invariants re-validated with new topology
+- fertility and resource fields are 2D NumPy arrays
+- agent positions are `(x, y)` tuples
+- movement and wrapping semantics are 2D
+- occupancy is tracked by cell position during the transition phases
 
-**Pre-Refactor Capabilities (Preserved & Extended)**
+This is the key enabling step for Stage III spatial interaction work.
 
-- **Deterministic simulation core** (stable, post-refactoring verified)
-  - Reproducible state trajectories with fixed seeds (verified post-refactoring)
-  - Canonical state hashing via SHA256 remains gold standard
-  - Snapshot/restore continuation equivalence maintained
-  - Isolated RNG streams (world, movement, reproduction, energy)
+### Deterministic execution model
 
-- **Ecological model dynamics** (stable, now 2D)
-  - 2D toroidal world with fertility/resource fields (newly implemented)
-  - Energy-gated movement, reproduction, harvesting, and death pathways
-  - Bounded resource regeneration with configurable rates
-  - Population capacity enforcement with 2D occupancy checks
+The simulation still centers determinism as a first-class design rule:
 
-- **Batch execution infrastructure** (stable, extended for 2D)
-  - Multi-run orchestration via `Runner` class
-  - Automatic seed sequence generation from master seed
-  - Per-tick metrics collection via `SimulationMetrics`
-  - Tail-window fingerprint analysis and regime classification
+- reproducible trajectories from fixed seeds
+- isolated RNG ownership across world, movement, reproduction, and energy
+- canonical state serialization and hashing
+- snapshot/restore continuation support
+- explicit invariants around IDs, bounds, age, energy, and population caps
 
-- **Validation framework** (stable, extended for 2D)
-  - Determinism checks verified post-refactoring
-  - Snapshot round-trip equivalence tested
-  - Structural invariants extended for 2D topology (position bounds, neighbors, caps)
-  - RNG isolation tests passing
-  - Stable regime behavioral validation
+### Updated agent identity and initialization model
 
-- **CLI interface** (stable, unchanged)
-  - Experiment execution: `python -m engine_build.main experiment`
-  - Validation runners: `python -m engine_build.main validate`
-  - Batch execution with configurable seed/runs/ticks
-  - Optional visualization support
+The current agent design is materially different from the older seed-lineage-heavy version.
 
-### 🔄 In Transition & Refinement
+Important current characteristics:
 
-- **Regime validation suite**
-  - Tests currently reference legacy regime names (extinction/saturated)
-  - Pending refactor to use current regime set (stable/fragile/abundant)
-  - Behavioral classification framework in place, not yet enforced in validation gates
-  - Post-hoc classification via `classify_regime()` ready for integration
+- newborn identity is derived from compact deterministic identity words
+- agents no longer store the older `SeedSequence` lineage scaffolding on-object
+- each agent still owns three separate RNG streams:
+  - movement
+  - reproduction
+  - energy
+- initialization is cleaner than the earlier generic birth path, even though more cleanup is still possible
 
-- **Performance optimization roadmap**
-  - Agent initialization identified as critical path
-  - Next phase: systematic optimization of spawn/initialization sequence
-  - Goal: reduce batch run time to <5min for 1000-tick baseline
-  - Maintains determinism throughout optimization work
+This is one of the main reasons the post-refactor runtime profile is far healthier than it was during the earlier abundant-run slowdown.
 
-- **Metrics pipeline refinement**
-  - Recently restructured to support performance profiling
-  - Pending integration of 2D-specific metrics (occupancy patterns, neighborhood effects)
-  - Regime fingerprints working, Stage III will extend for spatial patterns
+### Phase-structured engine
 
-### ⏳ Next Priority (Stage III Ready)
+The engine loop is now clearly shaped around:
 
-**Explicit Spatial Interactions** — Foundation Now Ready
-  - **Why ready**: 2D topology complete, neighborhood queries now possible
-  - **What's needed**: collision/crowding rules, local competition mechanics
-  - **Implementation path**: Minimal changes to core loop, localized to movement/interaction phase
-  - **Validation**: Existing determinism suite extends naturally to collision mechanics
+1. movement
+2. interaction
+3. biology
+4. commit
 
-**Additional Stage III Candidates**
-  - Optional local interaction metrics (clustering, territory formation)
-  - Spatial occupancy statistics for fingerprinting
-  - Distance-aware resource competition (local vs. global)
+That phase structure is important because it improves:
 
-- **Trait heterogeneity** (Stage IV)
-  - Currently: homogeneous agents
-  - Planned: trait schema, inheritance, mutation, selection dynamics
+- reasoning clarity,
+- profiling,
+- future interaction work,
+- and validation targeting.
 
-- **2D topology** (optional Stage III path)
-  - Currently: 1D wrapped topology
-  - Planned: optional 2D world extension
+### Batch execution and analytics
 
-- **Advanced analytics** (Stage V)
-  - Regime boundary mapping
-  - Early-warning signal detection
-  - Predictive/inference pipelines
-  - Benchmark and reproducibility manifest standards
+The batch/analytics layer is in active use and remains one of the stronger parts of the codebase:
 
-## Regime Set (Current)
+- multi-run orchestration through `Runner`
+- deterministic run-seed generation from a batch seed
+- per-tick metrics collection
+- tail-window fingerprint analysis
+- regime summarization and classification
+- experiment reporting with phase timing output
 
-| Regime | Use Case | Characteristics |
-|---|---|---|
-| `stable` | Default baseline | Bounded population, moderate growth, low extinction |
-| `test_stable` | Fast validation | Tighter energy budget, fewer long-running experiments |
-| `fragile` | Collapse testing | Tight energy/resource constraints, higher extinction |
-| `abundant` | Growth testing | High resources, relaxed energy, saturation dynamics |
+## Performance State
 
-**Configuration:** See [engine_build/regimes/registry.py](../../engine_build/regimes/registry.py) for parameter details.
+### The earlier performance blocker is no longer the main problem
 
-## Known Limitations & Gaps
+The severe long-horizon abundant slowdown that previously made development impractical has been addressed.
 
-1. **Regime validation test inconsistency** (in progress)
-   - Tests reference "extinction"/"saturated" regimes removed from registry
-   - Requires refactoring test suite to use current regime names
-   - Fix priority: medium (code cleanup, not blocking functionality)
+The documented benchmark in `docs/Project_Status/PERFORMANCE_REPORT.md` captures the core shift:
 
-2. **Performance optimization ongoing**
-   - Agent initialization bottleneck identified
-   - Current batch runtime ~15-20 min for 1000-tick × 10-run experiments
-   - Optimization roadmap in place, implementations pending
+- legacy abundant `5000`-tick benchmark: `1682.87s`
+- documented post-refactor comparable benchmark: `19.47s`
 
-3. **2D spatial metrics not yet captured**
-   - Grid topology now available, but occupancy/clustering metrics not integrated
-   - Fingerprint analysis still uses legacy 1D-era metrics
-   - Stage III will extend metrics for spatial patterns
+The exact runtime will still vary by machine and run shape, but the important project-state conclusion is:
 
-4. **Behavioral classification not enforced**
-   - Post-hoc classification framework exists but isn't gated in validation
-   - Validation still uses hardcoded threshold checks
-   - Pending integration in validation refactor
+> the birth-path runtime pathology is no longer blocking iterative work.
 
-5. **No explicit agent-agent interactions yet**
-   - 2D topology enables them but not yet implemented
-   - Competition remains implicit (resource depletion + update order)
-   - Core Stage III deliverable
+### Current performance frontier
 
-## Quality Gates & Policies
+Performance work is no longer emergency triage. It is now targeted refinement.
 
-**All merges affecting simulation logic must:**
-- Pass determinism test suite
-- Maintain snapshot continuation equivalence
-- Define and test new invariants
-- Preserve canonical state hash (or document intentional change)
-- Update documentation to reflect behavior changes
+Current technical reading:
 
-**Release criteria:**
-- All validation suites green
-- Baseline artifacts updated
-- Change notes explain any hash changes
-- Documentation is current and tested
+- commit births remain the dominant runtime hotspot in high-growth regimes
+- movement has become the next visible hot path
+- movement does not currently look pathological; it scales roughly linearly with agent count
+- the most expensive sub-cost inside movement is directional RNG sampling, not a broad structural algorithm failure
+
+So the performance situation is now:
+
+- **resolved as a crisis**
+- **not finished as an optimization story**
+
+## Regime Set (Current Registry)
+
+The current named regimes in `engine_build/regimes/registry.py` are:
+
+| Regime | Role |
+| --- | --- |
+| `stable` | default bounded baseline |
+| `fragile` | high-cost reproduction stress case |
+| `extinction` | low-regeneration collapse pressure |
+| `collapse` | lower-threshold collapse testing |
+| `saturated` | high-occupancy / near-cap growth case |
+| `abundant` | permissive growth regime |
+
+Important note:
+
+- `test_stable` is **not** part of the current registry
+- docs or commands still referring to `test_stable` are stale against the live regime set
+
+## Testing And Validation State
+
+### Verification status
+
+The determinism-oriented verification foundation is in good shape:
+
+- determinism
+- invariants
+- RNG isolation
+- snapshots
+- regime separation checks
+
+These are now conceptually separate from behavioral validation.
+
+### Validation status
+
+Validation is the main quality area still being aligned.
+
+Current observed state:
+
+- full pytest on March 18, 2026: `19 passed, 1 failed`
+- failing test: `tests/validation/test_regime_contracts.py::test_extinction_regime_validation`
+- current failure condition:
+  - expected extinction-rate floor is too strict for current empirical output
+  - observed extinction rate in the failing run was `0.5`, below the asserted `0.8`
+
+Interpretation:
+
+- the validation framework exists
+- the validation tests are no longer completely legacy
+- but at least one behavioral contract still needs recalibration against the current engine behavior
+
+This is a much better state than "no validation," but it is not yet a frozen regime-validation surface.
+
+## CLI Status
+
+The CLI has improved structurally, but it should be described as **in transition**, not fully stable.
+
+### What is now in place
+
+- explicit request objects
+- parser module
+- dispatcher
+- menu frontend
+- split between:
+  - `experiment`
+  - `verify`
+  - `validate`
+  - `fertility`
+
+### What is still misaligned
+
+- the validation CLI request/parser contract and `run_validation.py` do not currently describe the same suite names
+- the menu path still exposes only part of the newer frontend surface
+- the fertility request exists, but the underlying fertility workflow still behaves like a temporary stub
+- the CLI module is closer to the intended architecture than before, but not yet fully coherent end-to-end
+
+So the correct current statement is:
+
+> the CLI architecture is actively being normalized, but it is not yet a finished public interface.
+
+## In Transition
+
+### Validation contract cleanup
+
+Behavioral validation is the biggest open alignment task.
+
+What still needs work:
+
+- update thresholds to current empirical behavior
+- make validation expectations clearly distinct from verification checks
+- stabilize suite naming across CLI requests, parser choices, and runner entry points
+
+### Spatial metrics and fingerprints
+
+The engine now has the 2D structure needed for Stage III, but the analytics layer has not fully caught up.
+
+Still needed:
+
+- occupancy distribution metrics
+- clustering or local-density summaries
+- neighborhood-sensitive spatial diagnostics
+
+The topology is ready; the metrics layer is not fully there yet.
+
+### CLI and entrypoint polish
+
+The request-driven CLI design is close to the correct architecture, but the last wiring inconsistencies still need cleanup before it should be treated as stable.
+
+### Fertility/dev plotting lane
+
+The fertility/dev plotting path remains a secondary lane and still needs alignment with the current request/runner architecture before it should be treated as a first-class interface.
+
+## Known Limitations
+
+1. **Validation is not green yet**
+   - one regime-contract test currently fails
+   - this is a behavioral-threshold issue, not a core determinism failure
+
+2. **CLI surface is not yet frozen**
+   - request objects, parser, menu, and runners are closer to alignment, but not fully consistent
+
+3. **Spatial analytics lag behind the 2D engine**
+   - the topology and occupancy structure exist
+   - the higher-level spatial metrics still need to be reintroduced
+
+4. **Fertility demo path is still provisional**
+   - it exists, but it is not yet as cleanly integrated as the main experiment path
+
+5. **Performance work is still open**
+   - the crisis is resolved
+   - births remain the main optimization frontier in abundant-like runs
+
+## Quality Gates
+
+Simulation logic changes should continue to satisfy all of the following:
+
+- pass determinism-oriented verification
+- preserve snapshot continuation behavior
+- maintain or intentionally update invariants
+- document any intentional state-hash or regime-behavior changes
+- update docs when public behavior or architecture changes
+
+Recommended pre-freeze quality gates:
+
+- verification suites green
+- validation suites green
+- experiment/verify/validate command surface coherent
+- current regime set documented consistently across code and docs
+- post-refactor performance baseline recorded
+
+## Next Immediate Priorities
+
+1. **Stabilize the validation surface**
+   - recalibrate failing extinction contract
+   - align suite naming and expectations
+
+2. **Finish CLI normalization**
+   - make parser, requests, menu, dispatcher, and runners speak the same contract
+   - keep `main.py` as a thin frontend selector only
+
+3. **Reintroduce 2D-aware spatial metrics**
+   - occupancy
+   - clustering
+   - neighborhood pressure
+
+4. **Document Stage III interaction rules before implementation**
+   - collision/crowding policy
+   - local competition semantics
+   - new invariants
+
+5. **Freeze a clean pre-Stage III baseline**
+   - once validation, CLI, and docs are aligned
 
 ## Navigation
 
-- **Running experiments:** See [README.md](../../README.md#running-experiments)
-- **Validation workflow:** See [README.md](../../README.md#validation)
-- **Strategic roadmap:** See [ROADMAP.md](ROADMAP.md)
-- **Architecture details:** See [docs/canonical_docs/ARCHITECTURE.md](../canonical_docs/ARCHITECTURE.md)
-- **Episode validation logic:** See [docs/canonical_docs/EXPERIMENTS.md](../canonical_docs/EXPERIMENTS.md)
-
-## Next Immediate Actions (Priority Order)
-
-1. **Refactor regime validation tests** (code cleanup)
-   - Update test suite to use current regime names (stable/fragile/abundant)
-   - Verify all determinism checks pass with new regime set
-   - ~2-4 hour task, no logical changes
-
-2. **Define validation thresholds for fragile and abundant regimes**
-   - Run empirical baseline for each regime
-   - Extract fingerprint statistics (extinction_rate, cap_hit_rate, etc.)
-   - Define pass/fail thresholds based on distribution
-   - ~4-6 hour empirical work
-
-3. **Optimize agent initialization performance**
-   - Profile each `_init_*` phase using PerfSink data
-   - Target: reduce per-agent initialization time by 30-50%
-   - Maintain determinism throughout
-   - ~1-2 days development time
-
-4. **Extend metrics for 2D spatial patterns**
-   - Add occupancy distribution tracking
-   - Implement neighborhood density metrics
-   - Enable clustering/patterning analysis
-   - Foundation for Stage III validation
-
-5. **Design Stage III spatial interaction mechanics**
-   - Document collision/crowding rules
-   - Specify local competition alternatives
-   - Define new invariants for interaction model
-   - Before implementation: ~4-6 hours design work
-
-6. **Create v0.3 development branch**
-   - Checkpoint current stable state
-   - Begin Stage III feature development
-   - Keep main branch at v0.2.1 (post-refactor baseline)
+- **README / project overview:** [README.md](../../README.md)
+- **Strategic roadmap:** [ROADMAP.md](ROADMAP.md)
+- **Performance status:** [PERFORMANCE_REPORT.md](PERFORMANCE_REPORT.md)
+- **Architecture docs:** [docs/canonical_docs/ARCHITECTURE.md](../canonical_docs/ARCHITECTURE.md)
+- **Experiment / validation concepts:** [docs/canonical_docs/EXPERIMENTS.md](../canonical_docs/EXPERIMENTS.md)
