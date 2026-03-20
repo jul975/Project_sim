@@ -6,7 +6,7 @@ from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_arra
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .engineP4 import Engine
+    from .engine import Engine
 
 
 """

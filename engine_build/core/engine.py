@@ -40,7 +40,7 @@ class Engine:
 
         self.perf_flag = perf_flag
 
-        self.collect_world_view = False
+        self.collect_world_view = True
 
         self.config : CompiledRegime = config
         

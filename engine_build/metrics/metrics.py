@@ -51,6 +51,9 @@ class SimulationMetrics:
             "post_reproduction_death": [],
         }
 
+        self.world_view : list[np.ndarray] = [] 
+
+
 
 
     def record(self, step_report: StepReport) -> None:
@@ -85,6 +88,11 @@ class SimulationMetrics:
         self.death_causes["metabolic_deaths"].append(metabolic_deaths)
         self.death_causes["post_harvest_starvation"].append(post_harvest_starvation)
         self.death_causes["post_reproduction_death"].append(post_reproduction_death)
+
+        # world view
+        if step_report.world_view is not None:
+            self.world_view.append(step_report.world_view)
+        
 
 
         if __debug__:
