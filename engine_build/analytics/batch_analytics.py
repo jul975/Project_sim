@@ -24,6 +24,7 @@ import numpy as np
 from engine_build.analytics.performance import BatchPhaseProfile
 
 
+from engine_build.analytics.world_frames_analytics import analyze_batch_world_frames
 from engine_build.metrics.world_frames import BatchWorldFrames
 
 
@@ -110,8 +111,26 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
 
     batch_world_frames = None
     if analysis_config.include_world_frames:
-        batch_world_frames = analyze_batch_world_frames(batch_results.batch_world_frames)
+        batch_world_frames = analyze_batch_world_frames(batch_results.runs)
         
+
+
+
+    return BatchAnalysis(
+        batch_metadata = metadata,
+        aggregate_fingerprint = aggregate_fingerprint,
+        
+        run_fingerprints = run_fingerprints,
+        batch_phase_profile = batch_phase_profile,
+        
+        batch_world_frames = batch_world_frames,
+        #
+        regime_label = analysis_config.include_regime_label
+    )
+    
+
+
+
     """
     fingerprints_dict = {}
     if batch_results.ticks is None:
@@ -156,19 +175,4 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
 
 
     """
-    
-
-
-
-    return BatchAnalysis(
-        batch_metadata = metadata,
-        aggregate_fingerprint = aggregate_fingerprint,
-        
-        run_fingerprints = run_fingerprints,
-        batch_phase_profile = batch_phase_profile,
-        
-        batch_world_frames = batch_world_frames,
-        #
-        regime_label = analysis_config.include_regime_label
-    )
     

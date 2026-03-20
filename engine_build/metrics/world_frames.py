@@ -37,14 +37,3 @@ class WorldFrames:
         self.ticks.append(world.tick)
         self.agent_positions.append([agent.position for agent in engine.agents.values()])
         self.run_agent_energies.append(agent_energies)
-
-
-
-class BatchWorldFrames:
-    def __init__(self) -> None:
-        self.runs : dict[np.int64, WorldFrames] = {}
-    
-    def add_world_frames_run(self, run_id : np.int64, world_frames : WorldFrames):
-        self.runs[run_id] = world_frames
-        
-        

@@ -48,6 +48,7 @@ CAVE:
 """
 
 
+
 @dataclass
 class PhaseProfile:
     movement: float = 0.0
@@ -87,8 +88,7 @@ class BatchRunResults:
     ticks : np.int64 | None = None
     batch_duration : float | None = None
 
-    # optional world frames 
-    batch_world_frames : BatchWorldFrames | None = None
+
 
 def reset_phase_profile(phase_profile : PhaseProfile) -> None:
     """ resets phase profile. """
@@ -102,6 +102,19 @@ def reset_phase_profile(phase_profile : PhaseProfile) -> None:
     phase_profile.commit_births = 0.0
     phase_profile.commit_resource_regrowth = 0.0
     
+
+def add_perf_to_profile(phase_profile : PhaseProfile, step_report : StepReport) -> None:
+    """ adds tick level perf to run profile. """
+
+    phase_profile.movement += step_report.step_profile.movement
+    phase_profile.interaction += step_report.step_profile.interaction
+    phase_profile.biology += step_report.step_profile.biology
+    phase_profile.commit += step_report.step_profile.commit
+
+    phase_profile.commit_setup += step_report.commit_report.commit_profile.setup
+    phase_profile.commit_deaths += step_report.commit_report.commit_profile.deaths
+    phase_profile.commit_births += step_report.commit_report.commit_profile.births
+    phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
 
 
 
@@ -119,7 +132,6 @@ class Runner:
             self, 
             regime_config : CompiledRegime , 
             n_runs : int, 
-            
             batch_id : int| None = None
             ) -> None:
         """ 
@@ -135,14 +147,14 @@ class Runner:
 
 
 #############################################################
+    # NOTE: world_frames is a temp solution, the flag is getting drilled from to high up 
     def run_single(self, 
                    seed : np.random.SeedSequence, 
                    ticks : np.int64, 
                    
                    phase_profile : PhaseProfile | None = None,
+                   world_frame_flag : bool = False
 
-                # NOTE: 
-                   world_frames : WorldFrames | None = None
                    ) -> RunArtifacts:
         
         """ runs a single simulation for a given seed and ticks. """
@@ -156,8 +168,10 @@ class Runner:
         if phase_profile is not None:
                 reset_phase_profile(phase_profile)
 
+        world_frames = WorldFrames() if world_frame_flag else None
 
         for tick in range(ticks):
+
             
 
 
@@ -165,15 +179,7 @@ class Runner:
             metrics.record(step_report = step_report)
 
             if step_report.step_profile is not None:
-                phase_profile.movement += step_report.step_profile.movement
-                phase_profile.interaction += step_report.step_profile.interaction
-                phase_profile.biology += step_report.step_profile.biology
-                phase_profile.commit += step_report.step_profile.commit
-
-                phase_profile.commit_setup += step_report.commit_report.commit_profile.setup
-                phase_profile.commit_deaths += step_report.commit_report.commit_profile.deaths
-                phase_profile.commit_births += step_report.commit_report.commit_profile.births
-                phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
+                add_perf_to_profile(phase_profile, step_report)
 
 
             # NOTE: good to check perf effect of checking logic. 
@@ -188,7 +194,8 @@ class Runner:
         return RunArtifacts(engine_final=eng, 
                             metrics= metrics, 
                             seed= seed,
-                            phase_profile= phase_profile
+                            phase_profile= phase_profile,
+                            world_frames= world_frames
                             )
     
 
@@ -204,7 +211,8 @@ class Runner:
         return RunArtifacts(engine_final=eng, 
                             metrics= metrics, 
                             seed= eng.master_ss,
-                            phase_profile= phase_profile
+                            phase_profile= phase_profile,
+                            
                             )
 
 
@@ -226,21 +234,20 @@ class Runner:
         if world_frame_flag:
             print("World frame flag is set. Running with world frame capture.")
 
-        batch_world_frames = BatchWorldFrames() if world_frame_flag else None
+        
 
 
         batch_data: BatchRunResults = BatchRunResults(runs={}, batch_id= self.batch_id, regime_config= self.regime_config, ticks= ticks, batch_duration= None)
 
         for i, seed in enumerate(self.run_seeds):
 
-            world_frames = WorldFrames() if world_frame_flag else None
+            
             phase_profile = PhaseProfile() if perf_flag else None
 
-            run_results : RunArtifacts = self.run_single(seed, ticks , phase_profile, world_frames=world_frames)
+            run_results : RunArtifacts = self.run_single(seed, ticks , phase_profile, world_frame_flag=world_frame_flag)
             batch_data.runs[i] = run_results  
 
-            if world_frame_flag:
-                batch_world_frames.add_world_frames_run(i, world_frames) 
+            
 
 
             
@@ -250,8 +257,7 @@ class Runner:
         batch_data.batch_duration = batch_duration
 
 
-        batch_data.batch_world_frames = batch_world_frames
-        
+
         return batch_data
 
 
