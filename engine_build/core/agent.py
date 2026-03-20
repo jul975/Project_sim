@@ -3,7 +3,7 @@ import numpy as np
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .engineP4 import Engine
+    from .engine import Engine
     from .snapshots import AgentSnapshot
 
 

@@ -1,4 +1,4 @@
-from engine_build.core.engineP4 import Engine
+from engine_build.core.engine import Engine
 from engine_build.execution.default import DEFAULT_MASTER_SEED
 from engine_build.core.step_results import StepReport
 
@@ -9,6 +9,8 @@ from engine_build.metrics.metrics import SimulationMetrics
 import numpy as np
 from dataclasses import dataclass
 from typing import Dict
+
+from engine_build.metrics.world_frames import WorldFrames
 
 import time
 """
@@ -72,6 +74,10 @@ class RunArtifacts:
     seed : np.random.SeedSequence | None = None
     phase_profile : PhaseProfile | None = None
 
+    # world frames optional 
+    world_frames : WorldFrames | None = None
+
+
 # raw batch results
 @dataclass
 class BatchRunResults:
@@ -130,7 +136,9 @@ class Runner:
                    seed : np.random.SeedSequence, 
                    ticks : np.int64, 
                    
-                   phase_profile : PhaseProfile | None = None
+                   phase_profile : PhaseProfile | None = None,
+
+                   world_frames : WorldFrames | None = None
                    ) -> RunArtifacts:
         
         """ runs a single simulation for a given seed and ticks. """
@@ -145,7 +153,7 @@ class Runner:
                 reset_phase_profile(phase_profile)
 
 
-        for _ in range(ticks):
+        for tick in range(ticks):
             
 
 
@@ -162,6 +170,10 @@ class Runner:
                 phase_profile.commit_deaths += step_report.commit_report.commit_profile.deaths
                 phase_profile.commit_births += step_report.commit_report.commit_profile.births
                 phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
+
+            if world_frames is not None:
+                if tick % world_frames.capture_every == 0:
+                    world_frames.capture(eng)
 
 
 

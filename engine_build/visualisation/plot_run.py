@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 from engine_build.metrics.metrics import SimulationMetrics
-from engine_build.core.engineP4 import Engine
+from engine_build.core.engine import Engine
 from engine_build.runner.regime_runner import Runner
 
 from engine_build.regimes.registry import get_regime_spec

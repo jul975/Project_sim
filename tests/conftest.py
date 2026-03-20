@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from engine_build.core.engineP4 import Engine
+from engine_build.core.engine import Engine
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 

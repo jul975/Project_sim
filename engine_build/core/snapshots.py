@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from engine_build.core.engineP4 import Engine
+    from engine_build.core.engine import Engine
     from engine_build.core.agent import Agent
 
     from engine_build.core.world import World

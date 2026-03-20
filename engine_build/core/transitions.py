@@ -87,8 +87,7 @@ def interaction_phase(context : TransitionContext, world : "World") -> Interacti
     # H
     for position, local_agents in occupied_positions.items():
         world.harvest(local_agents, position)
-        
-        
+
         for agent in local_agents:
             if agent.energy_level <= 0:
                 

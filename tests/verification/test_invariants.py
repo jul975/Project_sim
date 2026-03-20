@@ -4,7 +4,7 @@ from tests.helpers import advance_engine
 
 from engine_build.regimes.compiled import CompiledRegime
 
-from engine_build.core.engineP4 import Engine
+from engine_build.core.engine import Engine
 
 @pytest.mark.dev
 @pytest.mark.invariant
