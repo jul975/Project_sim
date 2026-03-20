@@ -10,7 +10,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Dict
 
-from engine_build.metrics.world_frames import WorldFrames
+from engine_build.metrics.world_frames import WorldFrames, BatchWorldFrames
 
 import time
 """
@@ -87,6 +87,9 @@ class BatchRunResults:
     ticks : np.int64 | None = None
     batch_duration : float | None = None
 
+    # optional world frames 
+    batch_world_frames : BatchWorldFrames | None = None
+
 def reset_phase_profile(phase_profile : PhaseProfile) -> None:
     """ resets phase profile. """
     phase_profile.movement = 0.0
@@ -138,6 +141,7 @@ class Runner:
                    
                    phase_profile : PhaseProfile | None = None,
 
+                # NOTE: 
                    world_frames : WorldFrames | None = None
                    ) -> RunArtifacts:
         
@@ -171,6 +175,8 @@ class Runner:
                 phase_profile.commit_births += step_report.commit_report.commit_profile.births
                 phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
 
+
+            # NOTE: good to check perf effect of checking logic. 
             if world_frames is not None:
                 if tick % world_frames.capture_every == 0:
                     world_frames.capture(eng)
@@ -204,21 +210,37 @@ class Runner:
 
 
 #############################################################
-    def run_regime_batch(self, ticks : np.int64, perf_flag : bool = False) -> BatchRunResults:
+    def run_regime_batch(self, 
+                         ticks : np.int64, 
+                         perf_flag : bool = False,
+                         world_frame_flag : bool = False
+                         ) -> BatchRunResults:
         """ only return aggregates and results."""
 
         batch_start_time = time.perf_counter()
 
+        # NOTE: tmp entry point connection help. 
         if perf_flag: 
             print("Performance flag is set. Running with performance profiling.")
+
+        if world_frame_flag:
+            print("World frame flag is set. Running with world frame capture.")
+
+        batch_world_frames = BatchWorldFrames() if world_frame_flag else None
+
 
         batch_data: BatchRunResults = BatchRunResults(runs={}, batch_id= self.batch_id, regime_config= self.regime_config, ticks= ticks, batch_duration= None)
 
         for i, seed in enumerate(self.run_seeds):
+
+            world_frames = WorldFrames() if world_frame_flag else None
             phase_profile = PhaseProfile() if perf_flag else None
 
-            run_results : RunArtifacts = self.run_single(seed, ticks , phase_profile)
-            batch_data.runs[i] = run_results   
+            run_results : RunArtifacts = self.run_single(seed, ticks , phase_profile, world_frames=world_frames)
+            batch_data.runs[i] = run_results  
+
+            if world_frame_flag:
+                batch_world_frames.add_world_frames_run(i, world_frames) 
 
 
             
@@ -226,6 +248,10 @@ class Runner:
         batch_end_time = time.perf_counter()
         batch_duration = batch_end_time - batch_start_time
         batch_data.batch_duration = batch_duration
+
+
+        batch_data.batch_world_frames = batch_world_frames
+        
         return batch_data
 
 
