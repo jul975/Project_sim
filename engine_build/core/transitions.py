@@ -118,7 +118,6 @@ def biology_phase(context : TransitionContext) -> BiologyReport:
      
                 if agent.energy_level <= 0:
                     post_reproduction_death.agents_ids.append(agent.id)
-                continue
 
         agent.age_agent()
     context.pending_deaths_by_cause["post_reproduction_death"] = post_reproduction_death
