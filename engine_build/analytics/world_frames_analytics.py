@@ -77,6 +77,8 @@ def get_resource_heterogeneity(resources : np.ndarray) -> float:
     """ get the resource heterogeneity of a resource grid. """
     return float(np.std(resources))
 
+
+# NOTE: 0.1 is a magic number, should be a parameter, will set rel to max_resource_level, so threshold = 0.1 * max_resource_level => 10% of max_resource_level
 def get_resource_depletion_rate(resources : np.ndarray, threshold : float) -> float:
     """ get the low resource cell rate of a resource grid. """
     return float(np.mean(resources <= threshold))
@@ -137,6 +139,8 @@ def analyze_single_run_world_frames(world_frames : WorldFrames) -> SingleRunWorl
     densities = world_frames.density
     resources = world_frames.resources
     energies = world_frames.run_agent_energies
+    if not (len(densities) == len(resources) == len(energies)):
+        raise ValueError("world_frames captured arrays have inconsistent lengths")
     
     # compute the metrics
     mean_occupancy_rate = np.mean([get_occupancy_rate(density) for density in densities])
@@ -145,6 +149,8 @@ def analyze_single_run_world_frames(world_frames : WorldFrames) -> SingleRunWorl
 
     mean_resource_level = np.mean([get_mean_resource_level(resource) for resource in resources])
     mean_resource_heterogeneity = np.mean([get_resource_heterogeneity(resource) for resource in resources])
+
+    # NOTE: 0.1 is a magic number, should be a parameter
     mean_resource_depletion_rate = np.mean([get_resource_depletion_rate(resource, 0.1) for resource in resources])
 
     mean_energy_level_sampled = np.mean([get_mean_energy_level_sampled(energy) for energy in energies])
@@ -169,22 +175,24 @@ def analyze_single_run_world_frames(world_frames : WorldFrames) -> SingleRunWorl
         mean_density_resource_correlation=mean_density_resource_correlation
     )
 
-def get_batch_run_summary(run_results : dict[np.int64, SingleRunWorldFrameSummary]) -> BatchWorldFrameSummary:
+def aggregate_world_frame_summaries(run_summaries : dict[np.int64, SingleRunWorldFrameSummary]) -> BatchWorldFrameSummary:
     """ get the summary of a single run. """
+    if not run_summaries:
+        raise ValueError("No run summaries provided.")
 
-    mean_occupancy_rate_over_runs = np.mean([summary.mean_occupancy_rate for summary in run_results.values()])
-    mean_crowding_nonzero_over_runs = np.mean([summary.mean_crowding_nonzero for summary in run_results.values()])
-    peak_density_mean_over_runs = np.mean([summary.mean_peak_density_sampled for summary in run_results.values()])
+    mean_occupancy_rate_over_runs = np.mean([summary.mean_occupancy_rate for summary in run_summaries.values()])
+    mean_crowding_nonzero_over_runs = np.mean([summary.mean_crowding_nonzero for summary in run_summaries.values()])
+    peak_density_mean_over_runs = np.mean([summary.mean_peak_density_sampled for summary in run_summaries.values()])
 
-    mean_resource_level_over_runs = np.mean([summary.mean_resource_level for summary in run_results.values()])
-    mean_resource_heterogeneity_over_runs = np.mean([summary.mean_resource_heterogeneity for summary in run_results.values()])
-    mean_resource_depletion_rate_over_runs = np.mean([summary.mean_resource_depletion_rate for summary in run_results.values()])
+    mean_resource_level_over_runs = np.mean([summary.mean_resource_level for summary in run_summaries.values()])
+    mean_resource_heterogeneity_over_runs = np.mean([summary.mean_resource_heterogeneity for summary in run_summaries.values()])
+    mean_resource_depletion_rate_over_runs = np.mean([summary.mean_resource_depletion_rate for summary in run_summaries.values()])
 
-    mean_energy_level_sampled_over_runs = np.mean([summary.mean_energy_level_sampled for summary in run_results.values()])
-    mean_energy_std_sampled_over_runs = np.mean([summary.mean_energy_std_sampled for summary in run_results.values()])
-    mean_energy_cv_sampled_over_runs = np.mean([summary.mean_energy_cv_sampled for summary in run_results.values()])
+    mean_energy_level_sampled_over_runs = np.mean([summary.mean_energy_level_sampled for summary in run_summaries.values()])
+    mean_energy_std_sampled_over_runs = np.mean([summary.mean_energy_std_sampled for summary in run_summaries.values()])
+    mean_energy_cv_sampled_over_runs = np.mean([summary.mean_energy_cv_sampled for summary in run_summaries.values()])
 
-    mean_density_resource_correlation_over_runs = np.mean([summary.mean_density_resource_correlation for summary in run_results.values()])
+    mean_density_resource_correlation_over_runs = np.mean([summary.mean_density_resource_correlation for summary in run_summaries.values()])
 
     return BatchWorldFrameSummary(
         mean_occupancy_rate_over_runs=mean_occupancy_rate_over_runs,
@@ -211,13 +219,13 @@ def analyze_batch_world_frames(batch_runs : Dict[np.int64, RunArtifacts]) -> Bat
     
     
     run_summaries : Dict[np.int64, SingleRunWorldFrameSummary] = {}
-    for id, run_results in batch_runs.items():
+    for run_id, run_results in batch_runs.items():
         if run_results.world_frames is None:
             raise ValueError(f"run_results.world_frames is None for run {id}")
         
-        run_summaries[id] = analyze_single_run_world_frames(run_results.world_frames)
+        run_summaries[run_id] = analyze_single_run_world_frames(run_results.world_frames)
 
-    aggregate_summary : BatchWorldFrameSummary = get_batch_run_summary(run_summaries)
+    aggregate_summary : BatchWorldFrameSummary = aggregate_world_frame_summaries(run_summaries)
 
     return BatchWorldFrameAnalysis(
         run_summaries=run_summaries,
