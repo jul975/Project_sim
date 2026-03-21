@@ -10,7 +10,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Dict
 
-from engine_build.metrics.world_frames import WorldFrames, BatchWorldFrames
+from engine_build.metrics.world_frames import WorldFrames
 
 import time
 """
@@ -76,7 +76,8 @@ class RunArtifacts:
     phase_profile : PhaseProfile | None = None
 
     # world frames optional 
-    world_frames : WorldFrames | None = None
+    # NOTE: world frames part of metrics now (SimulationMetrics.world_view)
+    # world_frames : WorldFrames | None = None
 
 
 # raw batch results
@@ -195,7 +196,6 @@ class Runner:
                             metrics= metrics, 
                             seed= seed,
                             phase_profile= phase_profile,
-                            world_frames= world_frames
                             )
     
 

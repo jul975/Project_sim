@@ -13,7 +13,7 @@ from typing import Dict
 from engine_build.runner.regime_runner import BatchRunResults
 
 
-from engine_build.analytics.fingerprint import compute_fingerprint, get_aggregate_fingerprints
+from engine_build.analytics.fingerprint import get_fingerprints, get_aggregate_fingerprints
 from engine_build.analytics.performance import aggregate_phase_profile
 
 
@@ -24,8 +24,7 @@ import numpy as np
 from engine_build.analytics.performance import BatchPhaseProfile
 
 
-from engine_build.analytics.world_frames_analytics import analyze_batch_world_frames
-from engine_build.metrics.world_frames import BatchWorldFrames
+from engine_build.analytics.world_frames_analytics import analyze_batch_world_frames , BatchWorldFrameAnalysis
 
 
 
@@ -79,7 +78,7 @@ class BatchAnalysis:
     run_fingerprints : Dict[np.int64, Fingerprint]
     
     batch_phase_profile : BatchPhaseProfile | None = None
-    batch_world_frames : BatchWorldFrames | None = None
+    batch_world_frames : BatchWorldFrameAnalysis | None = None
     regime_label : str | None = None
 
 
@@ -100,7 +99,7 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
 
 
 
-    run_fingerprints = compute_fingerprint(batch_results, analysis_config)
+    run_fingerprints = get_fingerprints(batch_results.runs, 750)
     aggregate_fingerprint = get_aggregate_fingerprints(list(run_fingerprints.values()))
 
 
@@ -125,7 +124,7 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
         
         batch_world_frames = batch_world_frames,
         #
-        regime_label = analysis_config.include_regime_label
+        regime_label = analysis_config.regime_label
     )
     
 

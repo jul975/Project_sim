@@ -3,6 +3,10 @@ import numpy as np
 from engine_build.metrics.metrics import SimulationMetrics
 from dataclasses import dataclass
 
+
+from engine_build.runner.regime_runner import BatchRunResults, RunArtifacts
+from typing import Dict
+
 """
 Fingerprint
 
@@ -19,6 +23,7 @@ class Fingerprint:
     """ Fingerprint of a single run. """
     min_population: int
     max_population: int
+    final_population: int
     mean_population: float
     std_population: float
     range_population: float
@@ -39,6 +44,7 @@ class Fingerprint:
 @dataclass(frozen=True)
 class AggregatedFingerprint:
     """ Aggregated fingerprint over a batch of runs. """
+    final_populations: list[int] 
     mean_population_over_runs: float
     std_mean_population_over_runs: float
     extinction_rate: float
@@ -54,10 +60,10 @@ class AggregatedFingerprint:
 
 
 
-def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fingerprint:
+def compute_fingerprint( metrics : SimulationMetrics, tail_start : np.int64)-> Fingerprint:
     """ compute tail-window fingerprint of a single simulation run. """
-    if tail_start < 0 or tail_start >= len(metrics.population):
-        raise ValueError(f"tail_start {tail_start} out of bounds for metrics of length {len(metrics.population)}")
+    """if tail_start <= 0 or tail_start >= len(metrics.population):
+        raise ValueError(f"tail_start {tail_start} out of bounds for metrics of length {len(metrics.population)}")"""
 
     population_tail = np.asarray(metrics.population[tail_start:], dtype=float)
     births_tail = np.asarray(metrics.births[tail_start:], dtype=float)
@@ -66,8 +72,8 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
     total_deaths_tail = int(np.sum(deaths_tail))
 
 
-
-    
+    # note what about extinction and early termination? 
+    final_population = int(population_tail[-1])
     min_tail = int(np.min(population_tail))
     max_tail = int(np.max(population_tail))
     mean_tail = float(np.mean(population_tail))
@@ -104,6 +110,9 @@ def compute_fingerprint(metrics : SimulationMetrics, tail_start : np.int64)-> Fi
 
 
     return Fingerprint(
+
+        # population at end of run? 
+        final_population=final_population,
         min_population=min_tail,
         max_population=max_tail,
         mean_population=mean_tail,
@@ -132,6 +141,7 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
 
 
     # 1) simple mean and std aggregation
+    final_populations = [f.final_population for f in fingerprints]
     mean_pop_over_runs = float(np.mean([f.mean_population for f in fingerprints]))
     std_mean_population_over_runs = float(np.std([f.mean_population for f in fingerprints]))
 
@@ -170,6 +180,8 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
     batch_near_low_population_rate = float(np.mean([f.low_population_rate for f in fingerprints]))
 
     return AggregatedFingerprint(
+        final_populations=final_populations,
+
         mean_population_over_runs=mean_pop_over_runs,
 
         std_mean_population_over_runs=std_mean_population_over_runs,
@@ -186,6 +198,21 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
         batch_near_low_population_rate=batch_near_low_population_rate,
 
     )
+
+def get_fingerprints(batch_runs : Dict[np.int64, RunArtifacts], tail_start : int):
+    """ get fingerprints for a batch of runs. """
+    """if batch_results.ticks is None:
+        raise ValueError("batch_results.ticks is None")"""
+    
+    tail_start = 750
+
+    fingerprints = {}
+    
+    for i, run_results in batch_runs.items():
+        if run_results.metrics is None:
+            raise ValueError(f"run_results.metrics is None for run {i}")
+        fingerprints[i] = compute_fingerprint(run_results.metrics, tail_start)
+    return fingerprints
 
 
 if __name__ == "__main__":

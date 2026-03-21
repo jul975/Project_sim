@@ -2,17 +2,23 @@ from dataclasses import dataclass
 from .regime_classification import RegimeClass
 from .batch_analytics import BatchAnalysis
 import numpy as np
+from .fingerprint import AggregatedFingerprint
 
 
 @dataclass(frozen=True)
 class RegimeSummary:
+    final_populations_mean: int
     mean_population_over_runs: float
+
     std_mean_population_over_runs: float
     extinction_rate: float
+    
     cap_hit_rate: float
     near_cap_rate: float
+    
     low_population_rate: float
     birth_death_ratio: float
+    
     mean_time_cv_over_runs: float
     final_population_cv: float
     max_agent_count: int
@@ -20,22 +26,29 @@ class RegimeSummary:
 
 def summarise_regime(batch_analysis : BatchAnalysis) -> RegimeSummary:
     """ summarise a regime from a batch analysis. """
-    agg = batch_analysis.aggregate_fingerprint
-    final_populations = [run_results.metrics.population[-1] for run_results in batch_analysis.batch_metrics.values()]
+    agg : AggregatedFingerprint = batch_analysis.aggregate_fingerprint
+    final_populations = agg.final_populations
     mean_final = np.mean(final_populations)
     std_final = np.std(final_populations)
 
     return RegimeSummary(
+        final_populations_mean= int(mean_final),
         mean_population_over_runs=agg.mean_population_over_runs,
+        
         std_mean_population_over_runs=agg.std_mean_population_over_runs,
         extinction_rate=agg.extinction_rate,
+        
         cap_hit_rate=agg.cap_hit_rate,
         near_cap_rate=agg.batch_near_cap_rate,
+        
         low_population_rate=agg.batch_near_low_population_rate,
         birth_death_ratio=agg.birth_death_ratio,
+        
         mean_time_cv_over_runs=agg.mean_time_cv_over_runs,
+        
         final_population_cv=std_final / mean_final,
-        max_agent_count=next(iter(batch_analysis.batch_metrics.values())).metrics.max_agent_count
+
+        max_agent_count=next(iter(batch_analysis.run_fingerprints.values())).max_population
     )
 
 
