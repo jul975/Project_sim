@@ -5,7 +5,7 @@ from engine_build.core.engine import Engine
 
 
 @pytest.mark.dev
-@pytest.mark.validate
+@pytest.mark.verify
 def test_same_seed_determinism(make_engine, stable_regime, seed_ref, ticks_mid):
     """ test that same seed determinism holds. """
     eng1 : Engine = make_engine(seed_ref, stable_regime)
@@ -18,7 +18,7 @@ def test_same_seed_determinism(make_engine, stable_regime, seed_ref, ticks_mid):
 
 
 @pytest.mark.dev
-@pytest.mark.validate
+@pytest.mark.verify
 def test_snapshot_equivalence(make_engine, stable_regime, seed_ref, ticks_short, ticks_mid):
     eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_short)
@@ -32,7 +32,8 @@ def test_snapshot_equivalence(make_engine, stable_regime, seed_ref, ticks_short,
         assert eng.get_state_hash() == clone.get_state_hash(), f"Snapshot divergence at tick {step}"
 
 
-@pytest.mark.validate
+@pytest.mark.verify
+
 def test_seed_sensitivity(make_engine, stable_regime, seed_a, seed_b, ticks_mid):
     eng1 : Engine = make_engine(seed_a, stable_regime)
     eng2 : Engine = make_engine(seed_b, stable_regime)

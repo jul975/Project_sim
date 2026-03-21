@@ -8,6 +8,7 @@ from engine_build.core.engine import Engine
 
 @pytest.mark.dev
 @pytest.mark.invariant
+@pytest.mark.verify
 def test_spatial_invariants(make_engine, stable_regime, seed_ref, ticks_mid) -> None:
     eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_mid)
@@ -20,6 +21,7 @@ def test_spatial_invariants(make_engine, stable_regime, seed_ref, ticks_mid) -> 
 
 @pytest.mark.dev
 @pytest.mark.invariant
+@pytest.mark.verify
 def test_resource_bounds(make_engine, stable_regime, seed_ref, ticks_mid) -> None:
     eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_mid)
@@ -30,6 +32,7 @@ def test_resource_bounds(make_engine, stable_regime, seed_ref, ticks_mid) -> Non
 
 @pytest.mark.dev
 @pytest.mark.invariant
+@pytest.mark.verify
 def test_identity_monotonicity(make_engine, stable_regime : CompiledRegime, seed_ref : int, ticks_mid : int) -> None:
     eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_mid)

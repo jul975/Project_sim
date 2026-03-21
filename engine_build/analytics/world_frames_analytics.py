@@ -25,6 +25,8 @@ class SingleRunWorldFrameSummary:
 
 @dataclass(frozen=True)
 class BatchWorldFrameSummary:
+
+
     mean_occupancy_rate_over_runs: float
     mean_crowding_nonzero_over_runs: float
     peak_density_mean_over_runs: float
@@ -161,10 +163,13 @@ def sort_run_frames(world_view: list[WorldView]) -> RunFrames:
 
 
 
-def analyze_single_run_world_frames( world_frames : list[WorldView]) -> SingleRunWorldFrameSummary:
+def analyze_single_run_world_frames( world_frames : list[WorldView], max_resource_level : int) -> SingleRunWorldFrameSummary:
     """ analyze single run world frames. """
     if world_frames is None:
         raise ValueError("world_frames is None")
+    
+    # NOTE: 0.1 is a magic number, should be a parameter stored in regime config.
+    threshold = 0.1 * max_resource_level
     
     run_frames = sort_run_frames(world_frames)
 
@@ -184,7 +189,10 @@ def analyze_single_run_world_frames( world_frames : list[WorldView]) -> SingleRu
     mean_resource_heterogeneity = np.mean([get_resource_heterogeneity(resource) for resource in resources])
 
     # NOTE: 0.1 is a magic number, should be a parameter
-    mean_resource_depletion_rate = np.mean([get_resource_depletion_rate(resource, 0.1) for resource in resources])
+
+    max_resource_level = np.max([np.max(resource) for resource in resources])
+    
+    mean_resource_depletion_rate = np.mean([get_resource_depletion_rate(resource, threshold) for resource in resources])
 
     mean_energy_level_sampled = np.mean([get_mean_energy_level_sampled(energy) for energy in energies])
     mean_energy_std_sampled = np.mean([get_energy_std_sampled(energy) for energy in energies])
@@ -245,7 +253,7 @@ def aggregate_world_frame_summaries(run_summaries : dict[np.int64, SingleRunWorl
 
     
 # NOTE: runartifacts contains world_frames, have to review this in the future. 
-def analyze_batch_world_frames(batch_runs : dict[int, RunArtifacts]) -> BatchWorldFrameAnalysis:
+def analyze_batch_world_frames(batch_runs : dict[int, RunArtifacts], max_resource_level : int) -> BatchWorldFrameAnalysis:
     """ analyze batch world frames. """
     if not batch_runs:
         raise ValueError("No runs provided.")
@@ -256,7 +264,7 @@ def analyze_batch_world_frames(batch_runs : dict[int, RunArtifacts]) -> BatchWor
         if run_results.metrics is None:
             raise ValueError(f"run_results.world_frames is None for run {id}")
         
-        run_summaries[run_id] = analyze_single_run_world_frames(run_results.metrics.world_view)
+        run_summaries[run_id] = analyze_single_run_world_frames(run_results.metrics.world_view , max_resource_level)
 
     aggregate_summary : BatchWorldFrameSummary = aggregate_world_frame_summaries(run_summaries)
 

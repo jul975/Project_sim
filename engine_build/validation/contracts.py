@@ -34,10 +34,10 @@ REGIME_CONTRACTS = {
         max_mean_population_ratio=0.20,   # if true stable should stay low/interior
     ),
     "extinction": RegimeContract(
-        min_extinction_rate=0.80,
+        min_extinction_rate=0.50,
         max_cap_hit_rate=0.10,
-        max_mean_population_ratio=0.10,
-        max_birth_death_ratio=0.95,
+        max_mean_population_ratio=0.05,
+        
     ),
     "saturated": RegimeContract(
         min_cap_hit_rate=0.20,

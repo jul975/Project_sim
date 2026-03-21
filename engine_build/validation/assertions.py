@@ -1,12 +1,13 @@
 
 
 # engine_build/validation/assertions.py
+import numbers
 import math
 
 def assert_finite_summary(summary) -> None:
     for name, value in vars(summary).items():
-        if isinstance(value, (int, float)):
-            assert math.isfinite(value), f"{name} is not finite: {value}"
+        if isinstance(value, numbers.Real):
+            assert math.isfinite(float(value)), f"{name} is not finite: {value}"
 
 
 def assert_contract(summary, contract) -> None:

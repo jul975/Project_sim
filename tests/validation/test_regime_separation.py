@@ -6,7 +6,7 @@ from engine_build.validation.helpers import run_validation_case
 
 
 @pytest.mark.regime
-
+@pytest.mark.validate
 def test_stable_vs_extinction():
     stable = run_validation_case("stable")
     extinction = run_validation_case("extinction")
@@ -16,6 +16,8 @@ def test_stable_vs_extinction():
     assert stable.summary.low_population_rate < extinction.summary.low_population_rate
 
 
+@pytest.mark.regime
+@pytest.mark.validate
 def test_saturated_vs_stable():
     saturated = run_validation_case("saturated")
     stable = run_validation_case("stable")
@@ -25,9 +27,11 @@ def test_saturated_vs_stable():
     assert saturated.summary.mean_population_over_runs > stable.summary.mean_population_over_runs
 
 
+@pytest.mark.regime
+@pytest.mark.validate
 def test_fragile_vs_stable():
     fragile = run_validation_case("fragile")
     stable = run_validation_case("stable")
 
     assert fragile.summary.low_population_rate > stable.summary.low_population_rate
-    assert fragile.summary.mean_time_cv_over_runs >= stable.summary.mean_time_cv_over_runs
+    assert fragile.summary.mean_population_over_runs < stable.summary.mean_population_over_runs

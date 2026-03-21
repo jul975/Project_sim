@@ -36,7 +36,7 @@ from tests.helpers import advance_engine
 
 
 @pytest.mark.dev
-@pytest.mark.validate
+@pytest.mark.verify
 @pytest.mark.snapshot
 def test_snapshot_agent_count_matches_engine(make_engine, stable_regime, seed_ref) -> None:
     eng : Engine = make_engine(seed_ref, stable_regime)
@@ -51,7 +51,7 @@ def test_snapshot_agent_count_matches_engine(make_engine, stable_regime, seed_re
 
 
 @pytest.mark.dev
-@pytest.mark.validate
+@pytest.mark.verify
 @pytest.mark.snapshot
 def test_snapshot_world_shape_consistent(make_engine, stable_regime, seed_ref) -> None:
     """ test that snapshot world shape is consistent with engine world. """
@@ -68,7 +68,7 @@ def test_snapshot_world_shape_consistent(make_engine, stable_regime, seed_ref) -
 
 
 @pytest.mark.dev
-@pytest.mark.validate
+@pytest.mark.verify
 @pytest.mark.snapshot
 
 def test_restored_engine_config_matches_original(make_engine, stable_regime, seed_ref) -> None:
@@ -91,6 +91,7 @@ def test_restored_engine_config_matches_original(make_engine, stable_regime, see
 
 @pytest.mark.snapshot
 @pytest.mark.dev
+@pytest.mark.verify
 def test_snapshot_roundtrip_at_tick_zero(make_engine, stable_regime, seed_ref):
     """ test that snapshot roundtrip at tick zero matches original. """
     eng : Engine = make_engine(seed_ref, stable_regime)
@@ -103,7 +104,7 @@ def test_snapshot_roundtrip_at_tick_zero(make_engine, stable_regime, seed_ref):
 
 
 @pytest.mark.snapshot
-@pytest.mark.validate
+@pytest.mark.verify
 def test_restored_world_matches_original(make_engine, stable_regime, seed_ref, ticks_short) -> None:
     """ test that restored world matches original after some steps. """
     eng : Engine = make_engine(seed_ref, stable_regime)
@@ -122,7 +123,7 @@ def test_restored_world_matches_original(make_engine, stable_regime, seed_ref, t
 
 
 @pytest.mark.snapshot
-@pytest.mark.validate
+@pytest.mark.verify
 def test_snapshot_roundtrip_midstream(make_engine, stable_regime, seed_ref, ticks_short):
     eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_short)
@@ -139,7 +140,7 @@ def test_snapshot_roundtrip_midstream(make_engine, stable_regime, seed_ref, tick
 
 
 @pytest.mark.snapshot
-@pytest.mark.validate
+@pytest.mark.verify
 def test_restored_agents_match_original(make_engine, stable_regime, seed_ref, ticks_short) -> None:
     """ test that restored agents match original after some steps. """
     eng : Engine = make_engine(seed_ref, stable_regime)
@@ -169,7 +170,7 @@ def test_restored_agents_match_original(make_engine, stable_regime, seed_ref, ti
 
 
 @pytest.mark.snapshot
-@pytest.mark.validate
+@pytest.mark.verify
 def test_restored_engine_matches_original_after_one_step(make_engine, stable_regime, seed_ref, ticks_short) -> None:
     """ test that restored engine matches original after one step. """
     eng : Engine = make_engine(seed_ref, stable_regime)
@@ -187,7 +188,7 @@ def test_restored_engine_matches_original_after_one_step(make_engine, stable_reg
 
 
 @pytest.mark.snapshot
-@pytest.mark.validate
+@pytest.mark.verify
 def test_restored_engine_matches_original_after_many_steps(
     make_engine, stable_regime, seed_ref, ticks_short, ticks_mid
 ) -> None:
@@ -206,7 +207,7 @@ def test_restored_engine_matches_original_after_many_steps(
 
 
 @pytest.mark.snapshot
-@pytest.mark.validate
+@pytest.mark.verify
 def test_restored_rng_states_match_original(make_engine, stable_regime, seed_ref, ticks_short):
     eng : Engine = make_engine(seed_ref, stable_regime)
     advance_engine(eng, ticks_short)

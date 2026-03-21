@@ -6,7 +6,7 @@ from engine_build.core.engine import Engine
 
 
 @pytest.mark.rng
-@pytest.mark.validate
+@pytest.mark.verify
 @pytest.mark.slow
 def test_movement_rng_isolated_from_reproduction(
     make_engine,
