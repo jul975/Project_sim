@@ -36,6 +36,7 @@ class BatchMetadata:
     ticks: int
     tail_start: int
     batch_duration: float | None
+    max_agent_count: int
 
 @dataclass(frozen=True)
 class AnalysisConfig:
@@ -62,7 +63,9 @@ def build_batch_metadata(batch_results : BatchRunResults, analysis_config : Anal
         batch_id=batch_results.batch_id,
         ticks=batch_results.ticks,
         tail_start=tail_start,
-        batch_duration=batch_results.batch_duration
+        batch_duration=batch_results.batch_duration,
+        max_agent_count=batch_results.max_agent_count,
+
     )
 
 
@@ -98,7 +101,7 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
 
 
 
-    run_fingerprints = get_fingerprints(batch_results.runs, 750)
+    run_fingerprints = get_fingerprints(batch_results.runs, metadata.tail_start)
     aggregate_fingerprint = get_aggregate_fingerprints(list(run_fingerprints.values()))
 
 

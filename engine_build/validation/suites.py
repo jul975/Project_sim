@@ -18,15 +18,7 @@ def _run_pytest(paths: list[str], verbose: bool, fail_fast: bool) -> bool:
 
 def run_all_validations(verbose: bool = False, fail_fast: bool = False) -> bool:
     return _run_pytest(
-        paths=["tests"],
-        verbose=verbose,
-        fail_fast=fail_fast,
-    )
-
-
-def run_determinism_validations(verbose: bool = False, fail_fast: bool = False) -> bool:
-    return _run_pytest(
-        paths=["tests/test_determinism.py"],
+        paths=["tests/validation"],
         verbose=verbose,
         fail_fast=fail_fast,
     )
@@ -40,9 +32,9 @@ def run_regime_validations(verbose: bool = False, fail_fast: bool = False) -> bo
     )
 
 
-def run_invariant_validations(verbose: bool = False, fail_fast: bool = False) -> bool:
+def run_regime_contracts_validation(verbose: bool = False, fail_fast: bool = False) -> bool:
     return _run_pytest(
-        paths=["tests/test_invariants.py"],
+        paths=["tests/validation/test_regime_contracts.py"],
         verbose=verbose,
         fail_fast=fail_fast,
     )

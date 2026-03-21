@@ -87,6 +87,7 @@ class BatchRunResults:
     regime_config : CompiledRegime | None = None
     ticks : np.int64 | None = None
     batch_duration : float | None = None
+    max_agent_count : int | None = None
 
 
 
@@ -235,6 +236,8 @@ class Runner:
         batch_end_time = time.perf_counter()
         batch_duration = batch_end_time - batch_start_time
         batch_data.batch_duration = batch_duration
+
+        batch_data.max_agent_count = batch_data.runs[0].engine_final.max_agent_count
 
 
 

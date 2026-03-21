@@ -44,9 +44,10 @@ tests/validation/ = pytest pass/fail checks using that machinery
 from engine_build.cli.requests import ValidationRequest
 from engine_build.validation.suites import (
     run_all_validations,
-    run_determinism_validations,
+    run_regime_contracts_validation,
+    
     run_regime_validations,
-    run_invariant_validations,
+    
 )
 
 
@@ -60,18 +61,13 @@ def run_validation_mode(request: ValidationRequest) -> int:
             verbose=request.verbose,
             fail_fast=request.fail_fast,
         )
-    elif request.suite == "determinism":
-        success = run_determinism_validations(
-            verbose=request.verbose,
-            fail_fast=request.fail_fast,
-        )
     elif request.suite == "regime":
         success = run_regime_validations(
             verbose=request.verbose,
             fail_fast=request.fail_fast,
         )
-    elif request.suite == "invariants":
-        success = run_invariant_validations(
+    elif request.suite == "regime_contracts":
+        success = run_regime_contracts_validation(
             verbose=request.verbose,
             fail_fast=request.fail_fast,
         )

@@ -10,6 +10,7 @@ REGIME_OPTIONS = [
 ]
 
 VALIDATION_SUITES = [
+    "all",
     "test_regime_contracts",
     "test_regime_separation",
 ]
