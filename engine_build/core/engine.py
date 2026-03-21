@@ -32,7 +32,7 @@ if TYPE_CHECKING:
 
 
 class Engine:
-    def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime, perf_flag : bool = False ,change_condition=False) -> None:
+    def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime, perf_flag : bool = False , world_frame_flag : bool = False,change_condition=False) -> None:
 
 
         self.master_ss = seed_seq
@@ -40,7 +40,7 @@ class Engine:
 
         self.perf_flag = perf_flag
 
-        self.collect_world_view = True
+        self.collect_world_view = world_frame_flag
 
         self.config : CompiledRegime = config
         
@@ -157,8 +157,8 @@ class Engine:
     def step(self) -> StepReport:
         """ restructuring step method in order to evaluate agents for death and birth together. 
             After evaluation, available capacity gets calculated to avoid undershoot of agent capacity."""
-        if self.perf_flag:
-            return self._step_profiled()
+        if self.perf_flag or self.collect_world_view:
+            return self._step_instrumented()
         return self._step_fast()
     
     def _step_fast(self) -> StepReport:
@@ -186,53 +186,52 @@ class Engine:
         return step_report
     
 
-    def _step_profiled(self) -> StepReport:
+    def _step_instrumented(self) -> StepReport:
         context = TransitionContext()
 
+        if self.perf_flag:
+            t0 = time.perf_counter()
+            movement_report = movement_phase(self.agents, context)
+            t1 = time.perf_counter()
 
-        t0 = time.perf_counter()
-        movement_report = movement_phase(self.agents, context)
-        t1 = time.perf_counter()
+            interaction_report = interaction_phase(context, self.world)
+            t2 = time.perf_counter()
 
+            biology_report = biology_phase(context)
+            t3 = time.perf_counter()
 
-        
-        interaction_report = interaction_phase(context, self.world)
-        t2 = time.perf_counter()
+            commit_report = self.commit_phase(context)
+            t4 = time.perf_counter()
 
-        
-        biology_report = biology_phase(context)
-        t3 = time.perf_counter()
-
-
-        commit_report = self.commit_phase(context)
-        t4 = time.perf_counter()
-
-        if self.collect_world_view:
-            world_view = self.build_world_view()
+            step_profile = StepProfile(
+                movement=t1 - t0,
+                interaction=t2 - t1,
+                biology=t3 - t2,
+                commit=t4 - t3,
+            )
         else:
-            world_view = None
+            movement_report = movement_phase(self.agents, context)
+            interaction_report = interaction_phase(context, self.world)
+            biology_report = biology_phase(context)
+            commit_report = self.commit_phase(context)
+            step_profile = None
 
-        step_profile = StepProfile(
-            movement = t1 - t0,
-            interaction = t2 - t1,
-            biology = t3 - t2,
-            commit = t4 - t3
-        )   
+        # NOTE temp hard coded
+
+        world_view = self.build_world_view() if self.collect_world_view and self.world.tick % 10 == 0 else None
 
         step_report = StepReport(
-            tick = self.world.tick,
-            movement_report = movement_report,
-            interaction_report = interaction_report,
-            biology_report = biology_report,
-            commit_report = commit_report,
-            world_view = world_view,
-            step_profile = step_profile
+            tick=self.world.tick,
+            movement_report=movement_report,
+            interaction_report=interaction_report,
+            biology_report=biology_report,
+            commit_report=commit_report,
+            world_view=world_view,
+            step_profile=step_profile,
         )
 
-        ## end of current tick, go to the next tick
         self.world.tick += 1
-        return step_report
-                
+        return step_report            
         
         
 

@@ -10,8 +10,7 @@ import numpy as np
 from dataclasses import dataclass
 from typing import Dict
 
-from engine_build.metrics.world_frames import WorldFrames
-
+from engine_build.core.step_results import WorldView
 import time
 """
     'the runner should own orchestration and lifecycle, not interpretation.'
@@ -133,7 +132,9 @@ class Runner:
             self, 
             regime_config : CompiledRegime , 
             n_runs : int, 
-            batch_id : int| None = None
+            batch_id : int| None = None,
+            include_world_frames : bool = False,
+            include_perf : bool = False,
             ) -> None:
         """ 
             set up batch run with batch_id == batch_seed. 
@@ -146,57 +147,40 @@ class Runner:
 
         self.run_seeds = generate_run_sequences(self.batch_id , n_runs)
 
+        self.include_world_frames = include_world_frames
+        self.include_perf = include_perf
+
 
 #############################################################
     # NOTE: world_frames is a temp solution, the flag is getting drilled from to high up 
-    def run_single(self, 
-                   seed : np.random.SeedSequence, 
-                   ticks : np.int64, 
-                   
-                   phase_profile : PhaseProfile | None = None,
-                   world_frame_flag : bool = False
-
-                   ) -> RunArtifacts:
-        
-        """ runs a single simulation for a given seed and ticks. """
-
-        perf_flag = True if phase_profile is not None else False
-    
-        eng = Engine(seed, self.regime_config, perf_flag=perf_flag )
+    def run_single(self, seed: np.random.SeedSequence, ticks: int) -> RunArtifacts:
+        eng = Engine(
+            seed,
+            self.regime_config,
+            perf_flag=self.include_perf,
+            world_frame_flag=self.include_world_frames,
+        )
         metrics = SimulationMetrics(eng.max_agent_count)
+        phase_profile = PhaseProfile() if self.include_perf else None
 
-        # reset to avoid creation on each run.
         if phase_profile is not None:
-                reset_phase_profile(phase_profile)
+            reset_phase_profile(phase_profile)
 
-        world_frames = WorldFrames() if world_frame_flag else None
+        for _ in range(ticks):
+            step_report = eng.step()
+            metrics.record(step_report=step_report)
 
-        for tick in range(ticks):
-
-            
-
-
-            step_report : StepReport = eng.step()
-            metrics.record(step_report = step_report)
-
-            if step_report.step_profile is not None:
+            if phase_profile is not None:
+                if step_report.step_profile is None:
+                    raise ValueError("Expected step_profile when include_perf=True")
                 add_perf_to_profile(phase_profile, step_report)
 
-
-            # NOTE: good to check perf effect of checking logic. 
-            if world_frames is not None:
-                if tick % world_frames.capture_every == 0:
-                    world_frames.capture(eng)
-
-
-
-            
-
-        return RunArtifacts(engine_final=eng, 
-                            metrics= metrics, 
-                            seed= seed,
-                            phase_profile= phase_profile,
-                            )
+        return RunArtifacts(
+            engine_final=eng,
+            metrics=metrics,
+            seed=seed,
+            phase_profile=phase_profile,
+        )
     
 
 
@@ -220,18 +204,17 @@ class Runner:
 #############################################################
     def run_regime_batch(self, 
                          ticks : np.int64, 
-                         perf_flag : bool = False,
-                         world_frame_flag : bool = False
+
                          ) -> BatchRunResults:
         """ only return aggregates and results."""
 
         batch_start_time = time.perf_counter()
 
         # NOTE: tmp entry point connection help. 
-        if perf_flag: 
+        if self.include_perf: 
             print("Performance flag is set. Running with performance profiling.")
 
-        if world_frame_flag:
+        if self.include_world_frames:
             print("World frame flag is set. Running with world frame capture.")
 
         
@@ -241,10 +224,7 @@ class Runner:
 
         for i, seed in enumerate(self.run_seeds):
 
-            
-            phase_profile = PhaseProfile() if perf_flag else None
-
-            run_results : RunArtifacts = self.run_single(seed, ticks , phase_profile, world_frame_flag=world_frame_flag)
+            run_results : RunArtifacts = self.run_single(seed, ticks)
             batch_data.runs[i] = run_results  
 
             

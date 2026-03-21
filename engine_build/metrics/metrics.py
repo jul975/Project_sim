@@ -28,6 +28,8 @@ NOTE:
 
 """
 
+from engine_build.core.step_results import WorldView
+
 
 
 import numpy as np
@@ -51,7 +53,7 @@ class SimulationMetrics:
             "post_reproduction_death": [],
         }
 
-        self.world_view : list[np.ndarray] = [] 
+        self.world_view : list[WorldView] = [] 
 
 
 

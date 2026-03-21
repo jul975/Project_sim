@@ -57,6 +57,8 @@ class EngineSnapshot:
     config : dict
 
     perf_flag : bool
+    world_frame_flag : bool
+
     reproduction_probability : float
     
     max_age : int
@@ -139,6 +141,7 @@ def engine_to_snapshot(engine : "Engine") -> EngineSnapshot:
     config = asdict(engine.config)
 
     perf_flag = engine.perf_flag
+    world_frame_flag = engine.collect_world_view
     reproduction_probability = engine.reproduction_probability
 
     max_age = engine.max_age
@@ -153,6 +156,7 @@ def engine_to_snapshot(engine : "Engine") -> EngineSnapshot:
         next_agent_id = next_agent_id,
         config = config,
         perf_flag = perf_flag,
+        world_frame_flag = world_frame_flag,
         reproduction_probability = reproduction_probability,
         max_age = max_age,
         max_agent_count = max_agent_count,
@@ -259,6 +263,7 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
 
         # config
         engine_clone.perf_flag = snapshot.perf_flag
+        engine_clone.collect_world_view = snapshot.world_frame_flag
         engine_clone.config = CompiledRegime.from_dict(snapshot.config) 
         engine_clone.energy_params = engine_clone.config.energy_params
         engine_clone.resource_params = engine_clone.config.resource_params

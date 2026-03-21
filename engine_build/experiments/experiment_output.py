@@ -127,6 +127,8 @@ def print_summarize_analytics(
     summary: RegimeSummary,
 ) -> None:
     """Print a concise experiment report."""
+
+  
     
 
 
@@ -158,6 +160,20 @@ def print_summarize_analytics(
     _print_metric("mean_time_cv_over_runs", _format_value(agg.mean_time_cv_over_runs))
     _print_metric("batch_near_cap_rate", _format_percent(agg.batch_near_cap_rate))
     _print_metric("batch_low_population_rate", _format_percent(agg.batch_near_low_population_rate))
+
+    if batch_analysis.batch_world_frames is not None:
+        _section("World Frame Summary")
+        _print_metric("mean_occupancy_rate_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_occupancy_rate_over_runs))
+        _print_metric("mean_crowding_nonzero_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_crowding_nonzero_over_runs))
+        _print_metric("peak_density_mean_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.peak_density_mean_over_runs))
+        _print_metric("mean_resource_level_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_resource_level_over_runs))
+        _print_metric("mean_resource_heterogeneity_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_resource_heterogeneity_over_runs))
+        _print_metric("mean_resource_depletion_rate_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_resource_depletion_rate_over_runs))
+        _print_metric("mean_energy_level_sampled_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_energy_level_sampled_over_runs))
+        _print_metric("mean_energy_std_sampled_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_energy_std_sampled_over_runs))
+        _print_metric("mean_energy_cv_sampled_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_energy_cv_sampled_over_runs))
+        _print_metric("mean_density_resource_correlation_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_density_resource_correlation_over_runs))
+
 
     _print_phase_summary(batch_analysis, n_runs)
     print("")

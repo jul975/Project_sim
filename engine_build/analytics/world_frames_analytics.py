@@ -2,8 +2,9 @@
 from engine_build.runner.regime_runner import RunArtifacts
 from typing import Dict
 import numpy as np
-from dataclasses import dataclass
-from engine_build.metrics.world_frames import WorldFrames
+from dataclasses import dataclass, field
+
+from engine_build.core.step_results import WorldView
 
 @dataclass(frozen=True)
 class SingleRunWorldFrameSummary:
@@ -46,6 +47,12 @@ class BatchWorldFrameAnalysis:
     aggregate_summary: BatchWorldFrameSummary
 
 
+@dataclass
+class RunFrames:
+    """ Metrics of world frames. """
+    densities: list[np.ndarray] = field(default_factory=list)
+    resources: list[np.ndarray] = field(default_factory=list)
+    energies: list[np.ndarray] = field(default_factory=list)
 
 
 
@@ -120,25 +127,51 @@ def get_density_resource_correlation(density: np.ndarray, resources: np.ndarray)
 
 
 
+def build_density_grid(positions: np.ndarray, world_shape: tuple[int, int]) -> np.ndarray:
+    """Build a density grid from agent positions."""
+    height, width = world_shape
+    density = np.zeros((height, width), dtype=np.int32)
+
+    if positions.size == 0:
+        return density
+
+    for x, y in positions:
+        density[y, x] += 1
+
+    return density
+
+
+def sort_run_frames(world_view: list[WorldView]) -> RunFrames:
+    """Convert world views into analysis-ready frame arrays."""
+    if not world_view:
+        raise ValueError("No world view provided.")
+
+    run_frames = RunFrames()
+
+    for frame in world_view:
+        density = build_density_grid(frame.positions, frame.resources.shape)
+
+        run_frames.densities.append(density)
+        run_frames.resources.append(frame.resources.copy())
+        run_frames.energies.append(frame.energies.copy())
+
+    return run_frames
 
 
 
 
 
-
-
-
-
-def analyze_single_run_world_frames(world_frames : WorldFrames) -> SingleRunWorldFrameSummary:
+def analyze_single_run_world_frames( world_frames : list[WorldView]) -> SingleRunWorldFrameSummary:
     """ analyze single run world frames. """
     if world_frames is None:
         raise ValueError("world_frames is None")
     
-    
-    # get all the frames 
-    densities = world_frames.density
-    resources = world_frames.resources
-    energies = world_frames.run_agent_energies
+    run_frames = sort_run_frames(world_frames)
+
+    densities = run_frames.densities
+    resources = run_frames.resources
+    energies = run_frames.energies
+     
     if not (len(densities) == len(resources) == len(energies)):
         raise ValueError("world_frames captured arrays have inconsistent lengths")
     
@@ -212,18 +245,18 @@ def aggregate_world_frame_summaries(run_summaries : dict[np.int64, SingleRunWorl
 
     
 # NOTE: runartifacts contains world_frames, have to review this in the future. 
-def analyze_batch_world_frames(batch_runs : Dict[np.int64, RunArtifacts]) -> BatchWorldFrameAnalysis:
+def analyze_batch_world_frames(batch_runs : dict[int, RunArtifacts]) -> BatchWorldFrameAnalysis:
     """ analyze batch world frames. """
     if not batch_runs:
         raise ValueError("No runs provided.")
     
     
-    run_summaries : Dict[np.int64, SingleRunWorldFrameSummary] = {}
+    run_summaries = {}
     for run_id, run_results in batch_runs.items():
-        if run_results.world_frames is None:
+        if run_results.metrics is None:
             raise ValueError(f"run_results.world_frames is None for run {id}")
         
-        run_summaries[run_id] = analyze_single_run_world_frames(run_results.world_frames)
+        run_summaries[run_id] = analyze_single_run_world_frames(run_results.metrics.world_view)
 
     aggregate_summary : BatchWorldFrameSummary = aggregate_world_frame_summaries(run_summaries)
 
