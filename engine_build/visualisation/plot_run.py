@@ -1,143 +1,315 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 from engine_build.metrics.metrics import SimulationMetrics
-from engine_build.core.engine import Engine
-from engine_build.runner.regime_runner import Runner
-
-from engine_build.regimes.registry import get_regime_spec
-from engine_build.regimes.spec import RegimeSpec
-
-from engine_build.regimes.compiler import compile_regime
+from engine_build.core.step_results import WorldView
 
 
-
-def plot_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
-    """
-    Produces:
-    1) Mean population trajectory with ±1 STD band
-    2) Individual runs plotted within STD envelope
-    """
-
+def _require_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
     if not batch_metrics:
         raise ValueError("No batch metrics provided.")
 
-    # --------------------------------------------------
-    # Stack population time-series
-    # --------------------------------------------------
-    populations = np.array(
-        [metrics.population for metrics in batch_metrics.values()]
-    )  # shape = (n_runs, n_ticks)
 
-    n_runs, n_ticks = populations.shape
-    ticks = np.arange(n_ticks)
+def _stack_metric(
+    batch_metrics: dict[int, SimulationMetrics],
+    attr: str,
+) -> np.ndarray:
+    """
+    Stack a per-tick metric across runs into shape (n_runs, n_ticks).
 
-    # --------------------------------------------------
-    # Compute ensemble statistics
-    # --------------------------------------------------
-    mean_pop = populations.mean(axis=0)
-    std_pop = populations.std(axis=0)
+    Raises if run lengths are inconsistent.
+    """
+    series = [np.asarray(getattr(metrics, attr), dtype=float) for metrics in batch_metrics.values()]
+    lengths = {len(x) for x in series}
+    if len(lengths) != 1:
+        raise ValueError(f"Inconsistent lengths for metric '{attr}': {sorted(lengths)}")
+    return np.vstack(series)
 
-    upper = mean_pop + std_pop
-    lower = mean_pop - std_pop
 
-    # ==================================================
-    # FIGURE 1 — Mean + STD Band
-    # ==================================================
-    plt.figure(figsize=(10, 6))
+def _ensemble_stats(stacked: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    mean = stacked.mean(axis=0)
+    std = stacked.std(axis=0)
+    ticks = np.arange(stacked.shape[1])
+    return ticks, mean, std
+
+
+def _plot_ensemble_panel(
+    ax: plt.Axes,
+    batch_metrics: dict[int, SimulationMetrics],
+    attr: str,
+    title: str,
+    ylabel: str,
+    alpha_runs: float = 0.15,
+) -> None:
+    stacked = _stack_metric(batch_metrics, attr)
+    ticks, mean, std = _ensemble_stats(stacked)
 
     for metrics in batch_metrics.values():
-        plt.plot(ticks, metrics.population, alpha=0.15)
+        ax.plot(ticks, getattr(metrics, attr), alpha=alpha_runs)
 
-    plt.plot(ticks, mean_pop, linewidth=2)
-    plt.fill_between(ticks, lower, upper, alpha=0.3)
-    
-    plt.title("Mean Population Trajectory (±1 STD)")
-    plt.xlabel("Tick")
-    plt.ylabel("Population")
-    plt.tight_layout()
-    plt.show()
+    ax.plot(ticks, mean, linewidth=2)
+    ax.fill_between(ticks, mean - std, mean + std, alpha=0.25)
 
-    # ==================================================
-    # FIGURE 2 — Individual Runs Within STD Envelope
-    # ==================================================
-    plt.figure(figsize=(10, 6))
-
-    # Plot STD envelope first
-    plt.fill_between(ticks, lower, upper, alpha=0.2)
-
-    # Plot individual runs
-    for run_id, metrics in batch_metrics.items():
-        plt.plot(ticks, metrics.population, alpha=0.6)
-
-    plt.plot(ticks, mean_pop, linewidth=2)
-
-    plt.title("Individual Runs Within Ensemble STD Band")
-    plt.xlabel("Tick")
-    plt.ylabel("Population")
-    plt.tight_layout()
-    plt.show()
+    ax.set_title(title)
+    ax.set_xlabel("Tick")
+    ax.set_ylabel(ylabel)
 
 
-
-def plot_world_state() -> None:
+def _build_density_from_positions(
+    positions: np.ndarray,
+    world_shape: tuple[int, int],
+) -> np.ndarray:
     """
-    Visualize the spatial state of the world.
-
-    Produces three heatmaps:
-        1) Fertility landscape
-        2) Current resource levels
-        3) Agent spatial density
+    Convert positions array of shape (n_agents, 2) into a density grid of shape (H, W).
+    Assumes positions are stored as [x, y].
     """
-    regime_spec = get_regime_spec("stable")
-    regime_config = compile_regime(regime_spec)
+    height, width = world_shape
+    density = np.zeros((height, width), dtype=np.int32)
 
-    runner = Runner(regime_config, n_runs=1, ticks=1000, batch_id=42)
-    eng, _, _ = runner.run_single(runner.run_seeds[0], 1000)
-    world = eng.world
+    if positions.size == 0:
+        return density
 
-    fertility = world.fertility
-    resources = world.resources
-
-    height, width = fertility.shape
-
-    # --------------------------------------------------
-    # Build agent density map
-    # --------------------------------------------------
-    density = np.zeros((height, width))
-
-    for agent in eng.agents.values():
-        x, y = agent.position
+    for x, y in positions:
         density[y, x] += 1
 
-    # --------------------------------------------------
-    # Plot heatmaps
-    # --------------------------------------------------
+    return density
+
+
+def plot_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
+    """
+    Batch-level overview of the updated metric system.
+
+    Produces:
+    1) Population ensemble
+    2) Mean energy ensemble
+    3) Births ensemble
+    4) Deaths ensemble
+    """
+    _require_batch_metrics(batch_metrics)
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+
+    _plot_ensemble_panel(
+        axes[0, 0],
+        batch_metrics,
+        attr="population",
+        title="Population Trajectory (Mean ±1 STD)",
+        ylabel="Population",
+    )
+
+    _plot_ensemble_panel(
+        axes[0, 1],
+        batch_metrics,
+        attr="mean_energy",
+        title="Mean Energy Trajectory (Sampled Frames)",
+        ylabel="Mean Energy",
+    )
+
+    _plot_ensemble_panel(
+        axes[1, 0],
+        batch_metrics,
+        attr="births",
+        title="Births Per Tick (Mean ±1 STD)",
+        ylabel="Births",
+    )
+
+    _plot_ensemble_panel(
+        axes[1, 1],
+        batch_metrics,
+        attr="deaths",
+        title="Deaths Per Tick (Mean ±1 STD)",
+        ylabel="Deaths",
+    )
+
+    fig.suptitle("Batch Metrics Overview", fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_single_run_metrics(metrics: SimulationMetrics, run_id: int | None = None) -> None:
+    """
+    Single-run diagnostic plots.
+
+    Produces:
+    1) Population over time
+    2) Mean energy over sampled world-view frames
+    3) Births and deaths over time
+    4) Death causes over time
+    """
+    title_suffix = f" | Run {run_id}" if run_id is not None else ""
+
+    ticks = np.arange(len(metrics.population))
+    energy_ticks = np.arange(len(metrics.mean_energy))
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+
+    axes[0, 0].plot(ticks, metrics.population)
+    axes[0, 0].set_title(f"Population{title_suffix}")
+    axes[0, 0].set_xlabel("Tick")
+    axes[0, 0].set_ylabel("Population")
+
+    axes[0, 1].plot(energy_ticks, metrics.mean_energy)
+    axes[0, 1].set_title(f"Mean Energy (Sampled Frames){title_suffix}")
+    axes[0, 1].set_xlabel("Sample Index")
+    axes[0, 1].set_ylabel("Mean Energy")
+
+    axes[1, 0].plot(ticks, metrics.births, label="Births")
+    axes[1, 0].plot(ticks, metrics.deaths, label="Deaths")
+    axes[1, 0].set_title(f"Births vs Deaths{title_suffix}")
+    axes[1, 0].set_xlabel("Tick")
+    axes[1, 0].set_ylabel("Count")
+    axes[1, 0].legend()
+
+    for cause, values in metrics.death_causes.items():
+        axes[1, 1].plot(ticks, values, label=cause)
+
+    axes[1, 1].set_title(f"Death Causes{title_suffix}")
+    axes[1, 1].set_xlabel("Tick")
+    axes[1, 1].set_ylabel("Deaths")
+    axes[1, 1].legend()
+
+    fig.suptitle("Single Run Metrics", fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_population_envelope(batch_metrics: dict[int, SimulationMetrics]) -> None:
+    """
+    Cleaner dedicated population figure:
+    all runs + mean ± std envelope.
+    """
+    _require_batch_metrics(batch_metrics)
+
+    populations = _stack_metric(batch_metrics, "population")
+    ticks, mean_pop, std_pop = _ensemble_stats(populations)
+
+    plt.figure(figsize=(11, 6))
+
+    for metrics in batch_metrics.values():
+        plt.plot(ticks, metrics.population, alpha=0.18)
+
+    plt.plot(ticks, mean_pop, linewidth=2)
+    plt.fill_between(ticks, mean_pop - std_pop, mean_pop + std_pop, alpha=0.25)
+
+    plt.title("Population Ensemble Trajectory")
+    plt.xlabel("Tick")
+    plt.ylabel("Population")
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_world_view_frame(
+    world_view: WorldView,
+    frame_index: int | None = None,
+) -> None:
+    """
+    Plot one sampled world-view frame as:
+    1) resource grid
+    2) density grid
+    3) agent energy histogram
+    """
+    resources = world_view.resources
+    density = _build_density_from_positions(world_view.positions, resources.shape)
+    energies = world_view.energies
+
+    title_suffix = f" | Frame {frame_index}" if frame_index is not None else ""
+
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
 
-    # Fertility
-    im0 = axes[0].imshow(fertility, vmin=0, vmax=eng.config.max_resource_level)
-    axes[0].set_title("Fertility Field")
+    im0 = axes[0].imshow(resources)
+    axes[0].set_title(f"Resources{title_suffix}")
     plt.colorbar(im0, ax=axes[0], fraction=0.046)
 
-    # Resources
-    im1 = axes[1].imshow(resources)
-    axes[1].set_title("Current Resources")
+    im1 = axes[1].imshow(density)
+    axes[1].set_title(f"Agent Density{title_suffix}")
     plt.colorbar(im1, ax=axes[1], fraction=0.046)
 
-    # Agent density
-    im2 = axes[2].imshow(density)
-    axes[2].set_title(f"Agent Density | {eng.get_agent_count()} agents")
-    plt.colorbar(im2, ax=axes[2], fraction=0.046)
+    axes[2].hist(energies, bins=20)
+    axes[2].set_title(f"Energy Distribution{title_suffix}")
+    axes[2].set_xlabel("Energy")
+    axes[2].set_ylabel("Count")
 
-    for ax in axes:
+    for ax in axes[:2]:
         ax.set_xticks([])
         ax.set_yticks([])
 
     plt.tight_layout()
     plt.show()
 
-if __name__ == "__main__":
-    plot_world_state()
-    pass
+
+def plot_world_view_samples(
+    metrics: SimulationMetrics,
+    sample_indices: list[int] | None = None,
+) -> None:
+    """
+    Plot a few sampled world-view frames from one run.
+
+    Default: first, middle, last available sampled frame.
+    """
+    if not metrics.world_view:
+        raise ValueError("No world_view data available for this run.")
+
+    n_frames = len(metrics.world_view)
+
+    if sample_indices is None:
+        sample_indices = sorted(set([0, n_frames // 2, n_frames - 1]))
+
+    for idx in sample_indices:
+        if idx < 0 or idx >= n_frames:
+            raise IndexError(f"Frame index out of range: {idx}")
+        plot_world_view_frame(metrics.world_view[idx], frame_index=idx)
+
+
+def plot_world_view_summary(metrics: SimulationMetrics) -> None:
+    """
+    Summarize sampled world-view frames over one run.
+
+    Produces:
+    1) occupancy rate per sampled frame
+    2) mean resource level per sampled frame
+    3) mean sampled energy per sampled frame
+    4) peak density per sampled frame
+    """
+    if not metrics.world_view:
+        raise ValueError("No world_view data available for this run.")
+
+    occupancy_rates = []
+    mean_resources = []
+    mean_energies = []
+    peak_densities = []
+
+    for frame in metrics.world_view:
+        density = _build_density_from_positions(frame.positions, frame.resources.shape)
+
+        occupancy_rates.append(float(np.mean(density > 0)))
+        mean_resources.append(float(np.mean(frame.resources)))
+        mean_energies.append(float(np.mean(frame.energies)) if frame.energies.size else 0.0)
+        peak_densities.append(float(np.max(density)))
+
+    x = np.arange(len(metrics.world_view))
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 9))
+
+    axes[0, 0].plot(x, occupancy_rates)
+    axes[0, 0].set_title("Occupancy Rate per Sampled Frame")
+    axes[0, 0].set_xlabel("Sample Index")
+    axes[0, 0].set_ylabel("Occupancy Rate")
+
+    axes[0, 1].plot(x, mean_resources)
+    axes[0, 1].set_title("Mean Resource Level per Sampled Frame")
+    axes[0, 1].set_xlabel("Sample Index")
+    axes[0, 1].set_ylabel("Mean Resource")
+
+    axes[1, 0].plot(x, mean_energies)
+    axes[1, 0].set_title("Mean Energy per Sampled Frame")
+    axes[1, 0].set_xlabel("Sample Index")
+    axes[1, 0].set_ylabel("Mean Energy")
+
+    axes[1, 1].plot(x, peak_densities)
+    axes[1, 1].set_title("Peak Density per Sampled Frame")
+    axes[1, 1].set_xlabel("Sample Index")
+    axes[1, 1].set_ylabel("Peak Density")
+
+    fig.suptitle("World View Summary", fontsize=14)
+    plt.tight_layout()
+    plt.show()

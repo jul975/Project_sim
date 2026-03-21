@@ -1,5 +1,5 @@
-from engine_build.visualisation.plot_run import plot_metrics
-from engine_build.visualisation.dev_plot import plot_development_metrics
+from engine_build.visualisation.plot_run import plot_batch_metrics
+from engine_build.visualisation.plot_run import plot_single_run_metrics, plot_world_view_summary, plot_world_view_samples
 
 from engine_build.analytics.batch_analytics import analyze_batch
 from engine_build.analytics.batch_analytics import BatchAnalysis
@@ -72,11 +72,18 @@ def run_experiment_mode(request) -> int:
     )
 
     if request.plot:
-        plot_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})
+        plot_batch_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})
 
     if request.plot_dev:
-        plot_development_metrics(batch_results, runner.batch_id)
+        first_metrics = batch_results.runs[0].metrics
+        if first_metrics is None:
+            raise ValueError("Missing metrics for run 0")
 
+        plot_single_run_metrics(first_metrics, run_id=0)
+
+        if request.world_frame_flag:
+            plot_world_view_summary(first_metrics)
+            plot_world_view_samples(first_metrics)
     return 0
 
 
