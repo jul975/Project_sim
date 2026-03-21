@@ -17,6 +17,8 @@ class ExperimentRequest:
     plot: bool = False
     plot_dev: bool = False
     perf_flag: bool = False
+    world_frame_flag: bool = False
+    tail_fraction: float = 0.25
 
 
 

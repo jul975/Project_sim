@@ -38,20 +38,23 @@ def run_experiment_mode(request) -> int:
         regime_config=regime_config,
         n_runs=n_runs,
         batch_id=request.seed,
+
+        include_world_frames=request.world_frame_flag,
+        include_perf=request.perf_flag,
     )
 
     batch_results: BatchRunResults = runner.run_regime_batch(
-        ticks=ticks,
-        perf_flag=request.perf_flag,
+        ticks=ticks
     )
 
     batch_analysis: BatchAnalysis = analyze_batch(
         batch_results,
         AnalysisConfig(
-            tail_fraction= 750,
+            
             include_perf=request.perf_flag,
-            include_world_frames=False,
+            include_world_frames=request.world_frame_flag,
             regime_label=request.regime,
+
         ),
 
     )

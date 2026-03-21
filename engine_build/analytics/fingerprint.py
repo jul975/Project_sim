@@ -204,7 +204,8 @@ def get_fingerprints(batch_runs : Dict[np.int64, RunArtifacts], tail_start : int
     """if batch_results.ticks is None:
         raise ValueError("batch_results.ticks is None")"""
     
-    tail_start = 750
+    if tail_start <= 0:
+        raise ValueError(f"tail_start {tail_start} must be positive")
 
     fingerprints = {}
     

@@ -18,7 +18,6 @@ from engine_build.analytics.performance import aggregate_phase_profile
 
 
 from engine_build.analytics.fingerprint import AggregatedFingerprint, Fingerprint
-from engine_build.runner.regime_runner import RunArtifacts
 import numpy as np
 
 from engine_build.analytics.performance import BatchPhaseProfile
@@ -103,15 +102,18 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
     aggregate_fingerprint = get_aggregate_fingerprints(list(run_fingerprints.values()))
 
 
-    batch_phase_profile = None
+    
     if analysis_config.include_perf:
         batch_phase_profile = aggregate_phase_profile(batch_results.runs, metadata.batch_duration)
+    else:
+        batch_phase_profile = None
 
 
-    batch_world_frames = None
+    
     if analysis_config.include_world_frames:
         batch_world_frames = analyze_batch_world_frames(batch_results.runs)
-        
+    else:
+        batch_world_frames = None    
 
 
 

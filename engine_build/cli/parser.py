@@ -69,6 +69,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Enable performance/profiling mode.",
     )
+    experiment.add_argument(
+        "--world-frame-flag",
+        action="store_true",
+        help="Enable world frame capture.",
+    )
+    experiment.add_argument(
+        "--tail-fraction",
+        type=float,
+        default=0.25,
+        help="Fraction of tail to use for analysis.",
+    )
 
     # -------------------------
     # verify
@@ -158,6 +169,8 @@ def build_experiment_request(args: argparse.Namespace) -> ExperimentRequest:
         plot=args.plot,
         plot_dev=args.plot_dev,
         perf_flag=args.perf_flag,
+        world_frame_flag=args.world_frame_flag,
+        tail_fraction=args.tail_fraction,
     )
 
 
