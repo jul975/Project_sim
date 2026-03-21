@@ -46,8 +46,8 @@ def summarise_regime(batch_analysis : BatchAnalysis) -> RegimeSummary:
         
         mean_time_cv_over_runs=agg.mean_time_cv_over_runs,
         
-        final_population_cv=std_final / mean_final,
-
+        final_population_cv = 0.0 if mean_final == 0 else float(std_final / mean_final),
+        
         max_agent_count= batch_analysis.batch_metadata.max_agent_count,
     )
 

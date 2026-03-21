@@ -8,6 +8,6 @@ EXPERIMENT_DEFAULTS = {
 }
 
 VALIDATION_DEFAULTS = {
-    "ticks": 300,
-    "runs": 2,
+    "ticks": 1000,
+    "runs": 10,
 }

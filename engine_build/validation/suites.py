@@ -26,7 +26,7 @@ def run_all_validations(verbose: bool = False, fail_fast: bool = False) -> bool:
 
 def run_regime_validations(verbose: bool = False, fail_fast: bool = False) -> bool:
     return _run_pytest(
-        paths=["tests/test_regime_validation.py"],
+        paths=["tests/validation/test_regime_validation.py"],
         verbose=verbose,
         fail_fast=fail_fast,
     )

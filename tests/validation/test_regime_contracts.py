@@ -5,6 +5,8 @@ from engine_build.validation.contracts import REGIME_CONTRACTS
 from engine_build.validation.assertions import assert_finite_summary, assert_contract
 
 
+@pytest.mark.regime
+@pytest.mark.validate
 @pytest.mark.parametrize("regime_name", ["stable", "extinction", "saturated"])
 def test_regime_contract(regime_name: str):
     case = run_validation_case(regime_name)

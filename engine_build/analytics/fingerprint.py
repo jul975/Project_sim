@@ -158,12 +158,14 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
     mean_deaths_per_tick = float(np.mean([f.mean_deaths_per_tick for f in fingerprints]))
     mean_births_per_tick = float(np.mean([f.mean_births_per_tick for f in fingerprints]))
 
-
-    if mean_deaths_per_tick > 0:
-        birth_death_ratio = float(mean_births_per_tick / mean_deaths_per_tick)
+    # NOTE: No deaths in the tail window => ratio is treated as infinite.
+    if mean_deaths_per_tick == 0:
+        if mean_births_per_tick == 0:
+            birth_death_ratio = 0.0
+        else:
+            birth_death_ratio = float("inf")
     else:
-        # NOTE: No deaths in the tail window => ratio is treated as infinite.
-        birth_death_ratio = np.inf
+        birth_death_ratio = float(mean_births_per_tick / mean_deaths_per_tick)
 
     cv_per_run = []
     for f in fingerprints:

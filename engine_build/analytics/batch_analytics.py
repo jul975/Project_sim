@@ -37,6 +37,7 @@ class BatchMetadata:
     tail_start: int
     batch_duration: float | None
     max_agent_count: int
+    max_resource_level: int
 
 @dataclass(frozen=True)
 class AnalysisConfig:
@@ -65,6 +66,9 @@ def build_batch_metadata(batch_results : BatchRunResults, analysis_config : Anal
         tail_start=tail_start,
         batch_duration=batch_results.batch_duration,
         max_agent_count=batch_results.max_agent_count,
+
+        # NOTE: this is a bit of a hack, assumes all runs in a batch have the same max resource level
+        max_resource_level=batch_results.runs[0].engine_final.world.max_harvest
 
     )
 
@@ -114,7 +118,7 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
 
     
     if analysis_config.include_world_frames:
-        batch_world_frames = analyze_batch_world_frames(batch_results.runs)
+        batch_world_frames = analyze_batch_world_frames(batch_results.runs, metadata.max_resource_level)
     else:
         batch_world_frames = None    
 
