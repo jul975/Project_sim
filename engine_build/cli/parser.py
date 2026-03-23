@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import argparse
 
-from engine_build.cli.options import (
+from engine_build.cli.spec import (
     REGIME_OPTIONS,
-    VALIDATION_SUITES,
-    VERIFICATION_SUITES,
+    validation_suite_choices,
+    verification_suite_choices,
 )
 from engine_build.cli.requests import (
     ExperimentRequest,
     ValidationRequest,
-    VerificationRequest,
-    FertilityRequest,
+    VerificationRequest
 )
+
+# NOTE:
+# fertility/dev plotting remains intentionally off the public parser surface.
+# Keep the request builder for compatibility with legacy imports from main.py.
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -86,12 +89,12 @@ def build_parser() -> argparse.ArgumentParser:
     # -------------------------
     verify = subparsers.add_parser(
         "verify",
-        help="Run verification pytest suites (determinism, invariants, rng, snapshots, regime).",
+        help="Run verification pytest suites.",
     )
     verify.add_argument(
         "--suite",
         required=True,
-        choices=VERIFICATION_SUITES,
+        choices=verification_suite_choices(),
         help="Verification suite to run.",
     )
     verify.add_argument(
@@ -117,12 +120,12 @@ def build_parser() -> argparse.ArgumentParser:
     # -------------------------
     validate = subparsers.add_parser(
         "validate",
-        help="Run validation pytest suites (regime/business validation).",
+        help="Run validation pytest suites.",
     )
     validate.add_argument(
         "--suite",
         required=True,
-        choices=VALIDATION_SUITES,
+        choices=validation_suite_choices(),
         help="Validation suite to run.",
     )
     validate.add_argument(
@@ -141,20 +144,6 @@ def build_parser() -> argparse.ArgumentParser:
         default=[],
         dest="pytest_args",
         help="Extra raw pytest argument. Repeatable.",
-    )
-
-    # -------------------------
-    # fertility
-    # -------------------------
-    fertility = subparsers.add_parser(
-        "fertility",
-        help="Run the fertility/dev plotting workflow.",
-    )
-    fertility.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Optional seed for the fertility/dev flow.",
     )
 
     return parser
@@ -192,7 +181,7 @@ def build_validation_request(args: argparse.Namespace) -> ValidationRequest:
     )
 
 
+# Compatibility stub for main.py import.
+# Not wired into the public parser surface anymore.
 def build_fertility_request(args: argparse.Namespace) -> FertilityRequest:
-    return FertilityRequest(
-        seed=args.seed,
-    )
+    return FertilityRequest(seed=getattr(args, "seed", None))

@@ -5,12 +5,12 @@ from typing import Sequence
 from engine_build.cli.requests import (
     ExperimentRequest,
     ValidationRequest,
-    FertilityRequest,
+    
 )
 from engine_build.cli.options import REGIME_OPTIONS, VALIDATION_SUITES
 
 
-MenuRequest = ExperimentRequest | ValidationRequest | FertilityRequest | None
+MenuRequest = ExperimentRequest | ValidationRequest | None
 
 
 def run_menu() -> MenuRequest:
@@ -20,8 +20,7 @@ def run_menu() -> MenuRequest:
         print("=" * 50)
         print("1. Run experiment")
         print("2. Run validation suite")
-        print("3. Run fertility demo")
-        print("4. Exit")
+        print("3. Exit")
 
         choice = input("\nSelect option: ").strip()
 
@@ -30,8 +29,6 @@ def run_menu() -> MenuRequest:
         if choice == "2":
             return _build_validation_request()
         if choice == "3":
-            return _build_fertility_request()
-        if choice == "4":
             return None
 
         print("Invalid choice.")
@@ -91,17 +88,7 @@ def _build_validation_request() -> ValidationRequest:
     )
 
 
-def _build_fertility_request() -> FertilityRequest:
-    print("\n--- Fertility Demo Setup ---")
-    seed = _optional_int("Seed")
 
-    print("\nFertility demo summary:")
-    print(f"  seed : {seed}")
-
-    if not _yes_no("Run fertility demo?", default=True):
-        return _build_fertility_request()
-
-    return FertilityRequest(seed=seed)
 
 
 def _choose_from_list(title: str, options: Sequence[str]) -> str:

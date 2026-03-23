@@ -1,27 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from engine_build.cli.requests import VerificationRequest
-
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-
-VERIFICATION_SUITE_TARGETS: dict[str, list[str]] = {
-    "all": [str(PROJECT_ROOT / "tests" / "verification")],
-    "determinism": [str(PROJECT_ROOT / "tests" / "verification" /"test_determinism.py")],
-    "invariants": [str(PROJECT_ROOT / "tests" / "verification" / "test_invariants.py")],
-    "rng": [str(PROJECT_ROOT / "tests" / "verification" / "test_rng_isolation.py")],
-    "snapshots": [str(PROJECT_ROOT / "tests" / "verification" / "test_snapshots.py")]
-}
+from engine_build.cli.spec import VERIFICATION_SUITES
 
 
 def run_verification_mode(request: VerificationRequest) -> int:
-    targets = VERIFICATION_SUITE_TARGETS.get(request.suite)
+    targets = VERIFICATION_SUITES.get(request.suite)
     if targets is None:
-        valid = ", ".join(sorted(VERIFICATION_SUITE_TARGETS))
+        valid = ", ".join(sorted(VERIFICATION_SUITES))
         raise ValueError(
             f"Unknown verification suite: {request.suite!r}. Valid suites: {valid}"
         )

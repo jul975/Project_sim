@@ -1,77 +1,35 @@
 from __future__ import annotations
 
-
-"""
-Instead, engine_build/validation/ should contain library code used by tests and CLI wrappers, for example:
-
-engine_build/validation/
-  contracts.py        # thresholds/envelopes for canonical regimes
-  assertions.py       # reusable behavioral assertions
-  baselines.py        # fixed seed panels / validation defaults
-  report.py           # human-readable validation summaries
-
-So the pattern becomes:
-
-engine_build/validation/ = reusable validation machinery
-
-tests/validation/ = pytest pass/fail checks using that machinery
-
-
-
-
-
-
-
-
-
-
-
-"""
-
-
-
-
-
-
-
-
-
-
-
-
-
+import pytest
 
 from engine_build.cli.requests import ValidationRequest
-from engine_build.validation.suites import (
-    run_all_validations,
-    run_regime_contracts_validation,
-    
-    run_regime_validations,
-    
-)
+from engine_build.cli.spec import VALIDATION_SUITES, resolve_validation_suite_name
 
 
 def run_validation_mode(request: ValidationRequest) -> int:
-    print(f"[validation] Running validation suite: {request.suite}")
+    suite_name = resolve_validation_suite_name(request.suite)
+    targets = VALIDATION_SUITES.get(suite_name)
+
+    if targets is None:
+        valid = ", ".join(sorted(VALIDATION_SUITES))
+        raise ValueError(
+            f"Unknown validation suite: {request.suite!r}. Valid suites: {valid}"
+        )
+
+    pytest_args: list[str] = []
+
     if request.verbose:
-        print(f"[validation] suite={request.suite} fail_fast={request.fail_fast}")
+        pytest_args.append("-v")
 
-    if request.suite == "all":
-        success = run_all_validations(
-            verbose=request.verbose,
-            fail_fast=request.fail_fast,
-        )
-    elif request.suite == "regime":
-        success = run_regime_validations(
-            verbose=request.verbose,
-            fail_fast=request.fail_fast,
-        )
-    elif request.suite == "regime_contracts":
-        success = run_regime_contracts_validation(
-            verbose=request.verbose,
-            fail_fast=request.fail_fast,
-        )
-    else:
-        raise ValueError(f"Unknown validation suite: {request.suite}")
+    if request.fail_fast:
+        pytest_args.append("-x")
 
-    return 0 if success else 1
+    pytest_args.extend(targets)
+    pytest_args.extend(request.pytest_args)
+
+    print(f"[validation] Running validation suite: {suite_name}")
+    if request.verbose:
+        print(f"[validation] pytest args: {pytest_args}")
+
+    result = pytest.main(pytest_args)
+    return int(result)

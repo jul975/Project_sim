@@ -3,10 +3,29 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+RegimeName = Literal[
+    "stable",
+    "fragile",
+    "abundant",
+    "saturated",
+    "collapse",
+    "extinction",
+]
 
-RegimeName = Literal["stable", "fragile", "abundant", "saturated", "collapse", "extinction"]
-VerificationSuite = Literal["all", "determinism", "regime", "invariants", "rng", "snapshots", ]
-ValidationSuite = Literal["test_regime_contracts", "test_regime_separation"]
+VerificationSuite = Literal[
+    "all",
+    "determinism",
+    "invariants",
+    "rng",
+    "snapshots",
+]
+
+ValidationSuite = Literal[
+    "all",
+    "contracts",
+    "separation",
+]
+
 
 @dataclass(frozen=True)
 class ExperimentRequest:
@@ -21,33 +40,19 @@ class ExperimentRequest:
     tail_fraction: float = 0.25
 
 
-
 @dataclass(frozen=True)
 class VerificationRequest:
-    suite: Literal[
-        "all",
-        "determinism",
-        "invariants",
-        "rng",
-        "snapshots",
-        "regime",
-    ]
-    verbose: bool = True
-    fail_fast: bool = True
+    suite: VerificationSuite
+    verbose: bool = False
+    fail_fast: bool = False
     pytest_args: tuple[str, ...] = ()
+
 
 @dataclass(frozen=True)
 class ValidationRequest:
-    suite: Literal[
-        "test_regime_contracts",
-        "test_regime_separation",
-    ]
-    verbose: bool = True    
-    fail_fast: bool = True
+    suite: ValidationSuite
+    verbose: bool = False
+    fail_fast: bool = False
     pytest_args: tuple[str, ...] = ()
 
 
-
-@dataclass(frozen=True)
-class FertilityRequest:
-    seed: int | None = None

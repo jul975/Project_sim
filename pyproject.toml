@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ecosystem-emergent-behavior-simulator"
+version = "0.3.0a0"
+description = "Deterministic multi-agent ecology simulator for reproducible experiments on a 2D toroidal resource landscape."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+  { name = "Jules Lowette" }
+]
+keywords = [
+  "agent-based-model",
+  "simulation",
+  "ecology",
+  "determinism",
+  "numpy",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Operating System :: OS Independent",
+  "Topic :: Scientific/Engineering",
+  "Topic :: Scientific/Engineering :: Artificial Life",
+]
+dependencies = [
+  "numpy>=1.26",
+  "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+build = [
+  "build>=1.4",
+  "twine>=5.0",
+]
+
+[project.urls]
+Repository = "https://github.com/jul975/FestinaLente"
+Issues = "https://github.com/jul975/FestinaLente/issues"
+
+[project.scripts]
+ecosim = "engine_build.main:main"
+
+[tool.setuptools.packages.find]
+include = ["engine_build*"]
+exclude = ["tests*"]
+namespaces = false
