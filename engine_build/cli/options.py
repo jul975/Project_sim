@@ -1,25 +1,8 @@
-# engine_build/cli/options.py
+from __future__ import annotations
 
-REGIME_OPTIONS = [
-    "fragile",
-    "abundant",
-    "stable",
-    "saturated",
-    "collapse",
-    "extinction",
-]
+from engine_build.cli.spec import (
+    REGIME_OPTIONS as _REGIME_OPTIONS,
+    verification_suite_choices,
+    validation_suite_choices,
+)
 
-VALIDATION_SUITES = [
-    "all",
-    "test_regime_contracts",
-    "test_regime_separation",
-]
-
-VERIFICATION_SUITES = [
-    "all",
-    "determinism",
-    "invariants",
-    "rng",
-    "snapshots",
-    "regime",
-]
