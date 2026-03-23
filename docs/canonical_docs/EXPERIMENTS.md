@@ -1,148 +1,278 @@
-﻿# Experiments and Regime Validation
+# Experiments, Analytics, and Validation
 
-## Purpose
+## Status
 
-This document defines the experiment-level validation system used to verify regime behavior.
+This document describes the live experiment and validation surface on March 23, 2026.
 
-It covers:
+Current project posture:
 
-1. regime validation approach
-2. metric definitions
-3. regime classification logic
+- pre-Stage III / pre-`v0.3` freeze candidate
+- experiment lane is usable and is the main runtime path
+- verification and validation are both wired through the CLI and pytest
+- full local test run in the project virtual environment passed on March 23, 2026: `31 passed`
 
-Source of truth:
+## 1. Experiment Lane
 
-- `tests/test_regime_validation.py`
-- `engine_build/analytics/fingerprint.py`
-- `engine_build/analytics/regime_summery.py`
+The canonical experiment entrypoint is:
 
-## Current Status (Stage II)
+```bash
+python -m engine_build.main experiment --regime <name>
+```
 
-**Actively Validated Regimes:**
+Runtime path:
 
-- `stable` — Standard baseline for bounded population dynamics
+```text
+CLI / menu
+-> ExperimentRequest
+-> dispatch()
+-> run_experiment_mode()
+-> get_regime_spec()
+-> compile_regime()
+-> Runner.run_regime_batch()
+-> analyze_batch()
+-> summarise_regime()
+-> classify_regime()
+-> report / optional plots
+```
 
-**Regimes Under Evaluation:**
+## 2. Current CLI Surface
 
-- `fragile` — Testing collapse dynamics and population stress responses
-- `abundant` — Testing growth capacity and saturation effects
+`experiment` currently supports:
 
-**Legacy Validation Tests:** Pending refactor to align with current regime set.
+- `--regime`
+- `--runs`
+- `--ticks`
+- `--seed`
+- `--plot`
+- `--plot-dev`
+- `--perf-flag`
+- `--world-frame-flag`
+- `--tail-fraction`
 
-## 1. Regime Validation Framework
+Important current limitation:
 
-Validation evaluates batch-run aggregate fingerprints against regime-specific thresholds.
+- `tail_fraction` is exposed on the request object and menu, but `run_experiment_mode()` does not currently pass it into `AnalysisConfig`
+- as a result, the experiment lane still analyzes the final `25%` of each run
 
-Execution path:
+## 3. Defaults
 
-- `python -m engine_build.main validate --suite regime`
-- config loaded from `engine_build/regimes/registry.get_regime_spec(regime)`
-- run defaults from `engine_build/execution/default.VALIDATION_DEFAULTS`
+From `engine_build/execution/default.py`:
 
-Current validation defaults:
+- `DEFAULT_MASTER_SEED = 20250302`
+- `EXPERIMENT_DEFAULTS = {"ticks": 1000, "runs": 10}`
+- `VALIDATION_DEFAULTS = {"ticks": 1000, "runs": 10}`
 
-- `ticks = 300`
-- `runs = 2`
-- `batch_id = DEFAULT_MASTER_SEED`
+That validation default is now the same as the experiment default. Older docs referring to `300` ticks and `2` runs are stale.
 
-Shared validation gate (all regimes):
+## 4. Named Regimes
 
-- every `AggregatedFingerprint` field must be finite (`np.isfinite`)
+The live regime registry is:
 
-If this gate fails, regime validation fails immediately.
+| Regime | Current role |
+|---|---|
+| `stable` | bounded baseline |
+| `fragile` | stressed but surviving case |
+| `extinction` | high-failure regime |
+| `collapse` | low-regeneration collapse regime |
+| `saturated` | cap-pressure / dense occupancy regime |
+| `abundant` | permissive growth regime |
 
-## 2. Metric Definitions
+## 5. Per-Run Metrics
 
-Validation uses `AggregatedFingerprint` fields:
+`SimulationMetrics` records:
 
+- `population`
+- `births`
+- `deaths`
+- death causes:
+  - `age_deaths`
+  - `metabolic_deaths`
+  - `post_harvest_starvation`
+  - `post_reproduction_death`
+- optional `mean_energy`
+- optional `world_view`
+
+`mean_energy` and `world_view` are only populated when world-frame capture is enabled.
+
+## 6. Fingerprints
+
+### Run-level fingerprint
+
+`engine_build/analytics/fingerprint.py::compute_fingerprint()` produces:
+
+- `min_population`
+- `max_population`
+- `final_population`
+- `mean_population`
+- `std_population`
+- `range_population`
+- `cap_hit_rate`
+- `extinction_tick`
+- `mean_births_per_tick`
+- `mean_deaths_per_tick`
+- `mean_deaths_cause_tail`
+- `proportion_deaths_cause_tail`
+- `near_cap_rate`
+- `low_population_rate`
+
+### Batch aggregate fingerprint
+
+`get_aggregate_fingerprints()` produces:
+
+- `final_populations`
 - `mean_population_over_runs`
 - `std_mean_population_over_runs`
 - `extinction_rate`
 - `cap_hit_rate`
 - `birth_death_ratio`
 - `mean_time_cv_over_runs`
+- `batch_near_cap_rate`
+- `batch_near_low_population_rate`
 
-Definitions:
+The tail window is currently the last `25%` of the run unless `AnalysisConfig` is built manually elsewhere.
 
-### `mean_population_over_runs`
+## 7. Regime Summary and Classification
 
-Mean of per-run tail-window population means.
+The experiment lane converts aggregate fingerprints into a `RegimeSummary`, then classifies them with `classify_regime()`.
 
-### `std_mean_population_over_runs`
+Current classification logic:
 
-Standard deviation of per-run tail-window population means.
+```text
+stable_like = (time_cv <= 0.10) and (0.95 <= birth_death_ratio <= 1.05)
 
-### `extinction_rate`
-
-Fraction of runs where `extinction_tick is not None`.
-
-### `cap_hit_rate`
-
-Mean across runs of per-run frequency where population equals `max_agent_count` in the tail window.
-
-### `birth_death_ratio`
-
-$$
-\text{birth\_death\_ratio} =
-\begin{cases}
-\frac{\overline{b}}{\overline{d}} & \text{if } \overline{d} > 0 \\
-\infty & \text{if } \overline{d} = 0
-\end{cases}
-$$
-where $\overline{b}$ and $\overline{d}$ are aggregated mean births/deaths per tick.
-
-### `mean_time_cv_over_runs`
-
-Mean coefficient of variation (CV) over runs:
-$$
-\text{CV} = \frac{\sigma_{\text{pop}}}{\mu_{\text{pop}}}
-$$
-using each run's tail-window population series.
-
-## 3. Regime Classification Logic
-
-The system uses post-hoc classification via `engine_build/analytics/regime_summery.py`:
-
-```python
-def classify_regime(summary: RegimeSummary) -> RegimeClass:
-    # Returns one of: COLLAPSE, FRAGILE, STABLE, ABUNDANT, SATURATED, UNCLASSIFIED
+if extinction_rate >= 0.95: EXTINCTION
+elif extinction_rate >= 0.50: COLLAPSE
+elif low_population_rate >= 0.80 and birth_death_ratio < 0.95: COLLAPSE
+elif cap_hit_rate >= 0.20 or near_cap_rate >= 0.30: SATURATED
+elif low_population_rate >= 0.20: FRAGILE
+elif stable_like and pop_ratio >= 0.20: ABUNDANT
+elif stable_like: STABLE
+else: UNCLASSIFIED
 ```
 
-This provides automatic behavioral classification independent of preset names.
+Important implication:
 
-### Stable Regime (Active Validation)
+- classification is behavioral and post hoc
+- the configured regime name and the classified regime can diverge
 
-Test: `tests/test_regime_validation.py::test_stable_regime_validation`
+## 8. Optional Analysis Paths
 
-Rules:
+### Performance profiling
 
-- `mean_population_over_runs > 0`
-- `extinction_rate < 0.1`
-- `cap_hit_rate < 0.2`
-- `mean_time_cv_over_runs <= 0.2`
-- `abs(birth_death_ratio - 1.0) <= 0.1`
+When `--perf-flag` is enabled:
 
-Interpretation: bounded non-zero population with moderate stability and near birth/death balance.
+- step-level phase timings are collected
+- commit timings are split into setup, deaths, births, and resource regrowth
+- batch profiling aggregates those timings across runs
 
-### Fragile Regime (Emerging)
+### World-frame analytics
 
-Target behavior:
+When `--world-frame-flag` is enabled:
 
-- Higher extinction rate (triggered by tighter energy/resource constraints)
-- Lower mean population
-- Higher variability
+- `Engine.step()` samples a `WorldView` every 10 ticks
+- batch analysis can then compute:
+  - occupancy rate
+  - crowding
+  - peak density
+  - resource level and heterogeneity
+  - sampled energy moments
+  - density/resource correlation
 
-### Abundant Regime (Emerging)
+This path is useful but still secondary to the main experiment and verification flow.
 
-Target behavior:
+## 9. Validation Surface
 
-- Near-capacity occupancy
-- Low extinction rate
-- Growth-toward-limit dynamics
+The validation CLI is:
 
-## Notes
+```bash
+python -m engine_build.main validate --suite <all|contracts|separation>
+```
 
-- Regime validation thresholds are hard-coded in `tests/test_regime_validation.py`
-- Any threshold or metric logic change should update this document in the same changeset
-- Legacy validation tests for "extinction" and "saturated" regimes are pending refactor to align with current regime preset names
-- Post-hoc classification via `classify_regime()` provides continuous behavioral taxonomy independent of preset brittleness
+`run_validation_mode()` resolves the requested suite through `engine_build/cli/spec.py`.
+
+There is also a small alias layer for older suite names:
+
+- `test_regime_contracts -> contracts`
+- `test_regime_separation -> separation`
+- `regime_contracts -> contracts`
+
+### Contract validation
+
+`tests/validation/test_regime_contracts.py` currently checks:
+
+- `stable`
+- `extinction`
+- `saturated`
+
+using the regime contracts in `engine_build/validation/contracts.py`.
+
+### Separation validation
+
+`tests/validation/test_regime_separation.py` currently checks:
+
+- `stable` vs `extinction`
+- `saturated` vs `stable`
+- `fragile` vs `stable`
+
+### Validation helper path
+
+Programmatic validation currently runs through:
+
+```text
+run_validation_case()
+-> Runner.run_regime_batch()
+-> analyze_batch()
+-> summarise_regime()
+-> classify_regime()
+```
+
+using `VALIDATION_DEFAULTS`.
+
+## 10. Verification Surface
+
+The verification CLI is:
+
+```bash
+python -m engine_build.main verify --suite <all|determinism|invariants|rng|snapshots>
+```
+
+Verification currently covers:
+
+- determinism
+- snapshots
+- RNG isolation
+- invariants
+
+## 11. Freeze-Relevant Limits
+
+- validation is selective, not exhaustive across all six named regimes
+- `collapse` and `abundant` are classified and runnable, but they are not yet covered by hard contract tests
+- world-frame analytics and `plot_dev` are useful support tools, not yet the most polished public interface
+- custom `tail_fraction` is not fully wired into `run_experiment_mode()`
+
+## 12. Recommended Commands
+
+Baseline experiment:
+
+```bash
+python -m engine_build.main experiment --regime stable
+```
+
+Experiment with profiling:
+
+```bash
+python -m engine_build.main experiment --regime abundant --perf-flag
+```
+
+Experiment with world-frame sampling:
+
+```bash
+python -m engine_build.main experiment --regime stable --world-frame-flag --plot-dev
+```
+
+Verification and validation:
+
+```bash
+python -m engine_build.main verify --suite all
+python -m engine_build.main validate --suite all
+```

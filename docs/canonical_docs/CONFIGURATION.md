@@ -1,33 +1,38 @@
 # Configuration
 
-## Purpose
+## Status
 
-This document describes the current configuration model used by the engine, runner, and CLI.
+This document describes the live configuration model on March 23, 2026.
 
-The authoritative pipeline is:
+The authoritative path is:
 
 ```text
-RegimeSpec -> compile_regime() -> CompiledRegime -> Engine / World / Agent
+RegimeSpec
+-> compile_regime()
+-> CompiledRegime
+-> Engine / World / Agent / Runner
 ```
 
-Configuration lives in `engine_build/regimes/`. There is no active legacy `core/config.py` runtime layer.
+Configuration lives in `engine_build/regimes/`. There is no active `core/config.py` runtime layer.
 
-## Configuration Model
+## Authoring Layer: `RegimeSpec`
 
-### Authoring layer: `RegimeSpec`
+`engine_build/regimes/spec.py` defines the human-authored inputs.
 
-`RegimeSpec` is the human-authored input. It contains:
+```python
+RegimeSpec(
+    energy_spec=EnergySpec(...),
+    resources_spec=ResourceSpec(...),
+    landscape_spec=LandscapeSpec(...),
+    reproduction_spec=ReproductionSpec(...),
+    population_spec=PopulationSpec(...),
+    max_energy=100,
+    max_resource_level=80,
+    world_size=400,
+)
+```
 
-- `energy_spec: EnergySpec`
-- `resources_spec: ResourceSpec`
-- `landscape_spec: LandscapeSpec`
-- `reproduction_spec: ReproductionSpec`
-- `population_spec: PopulationSpec`
-- `max_energy: int = 100`
-- `max_resource_level: int = 80`
-- `world_size: int = 400`
-
-Subsystem fields:
+Subsystem dataclasses:
 
 - `EnergySpec(beta, gamma, harvest_fraction, alpha=0.6, initial_energy_low_ratio=0.3, initial_energy_high_ratio=0.6)`
 - `ReproductionSpec(probability=0.25, probability_change_condition=0.5)`
@@ -35,28 +40,36 @@ Subsystem fields:
 - `LandscapeSpec(correlation, contrast, floor)`
 - `PopulationSpec(max_agent_count, initial_agent_count, max_age)`
 
-All current spec and compiled config dataclasses are frozen.
+All of these dataclasses are currently frozen.
 
-### Runtime layer: `CompiledRegime`
+## Runtime Layer: `CompiledRegime`
 
-`compile_regime()` converts a `RegimeSpec` into runtime parameters:
+`engine_build/regimes/compiled.py` defines the compiled runtime shape:
 
-- `EnergyParams(max_energy, energy_init_range, max_harvest, movement_cost, reproduction_threshold, reproduction_cost)`
-- `ResourceParams(max_resource_level, regen_rate)`
-- `ReproductionParams(probability, probability_change_condition)`
-- `PopulationParams(max_agent_count, initial_agent_count, max_age)`
-- `WorldParams(world_width, world_height)`
-- `LandscapeParams(correlation, contrast, floor)`
+- `EnergyParams`
+- `ReproductionParams`
+- `ResourceParams`
+- `PopulationParams`
+- `WorldParams`
+- `LandscapeParams`
 
 ## Compilation Rules
 
-The compiler in `engine_build/regimes/compiler.py` applies the following rules:
+`engine_build/regimes/compiler.py` is the single place where the ratio math is compiled into runtime integers.
+
+For anchors:
+
+- `E_max = max_energy`
+- `R_max = max_resource_level`
+- `W = world_size`
+
+Current rules:
 
 | Runtime field | Current rule |
 |---|---|
 | `max_harvest` | `min(max_energy, max(1, round(harvest_fraction * max_resource_level)))` |
 | `movement_cost` | `min(max_energy, max_harvest, max(1, round(alpha * max_harvest)))` |
-| `reproduction_threshold` | `min(max_energy, max(movement_cost, round(gamma * movement_cost)))` |
+| `reproduction_threshold` | `min(max_energy, max(max(1, round(gamma * movement_cost)), movement_cost))` |
 | `reproduction_cost` | `min(reproduction_threshold, max(1, round(beta * reproduction_threshold)))` |
 | `energy_init_range` | `(max(1, round(low_ratio * max_energy)), max(low, round(high_ratio * max_energy)))` |
 | `regen_rate` | `max(1, round(regen_fraction * max_resource_level))` |
@@ -64,89 +77,101 @@ The compiler in `engine_build/regimes/compiler.py` applies the following rules:
 
 Important implementation notes:
 
-- `max_energy` is a compilation anchor and initialization bound. The runtime does not currently clamp `agent.energy_level` to it.
-- `world_size` is treated as a square-world anchor. Non-perfect squares are rounded, not rejected.
+- `round()` is Python's built-in rounding, so midpoint values use banker's rounding
+- `world_size` is treated as a square-world anchor, not a strict area invariant
+- non-perfect squares are rounded to a side length; the realized world area is then `side * side`
+- `max_energy` is an anchor and initialization bound, not a runtime clamp on `energy_level`
 
-## Current Shared Defaults
+## Shared Baseline Defaults
 
-These values are shared by the checked-in named regimes unless a regime overrides them:
-
-| Field | Current value | Notes |
-|---|---:|---|
-| `max_energy` | `100` | Energy-system anchor |
-| `max_resource_level` | `80` | Resource-system anchor |
-| `world_size` | `400` | Compiles to a `20 x 20` toroidal grid |
-| `alpha` | `0.6` | Movement-cost ratio |
-| `initial_energy_low_ratio` | `0.3` | Lower bound for initial energy draw |
-| `initial_energy_high_ratio` | `0.6` | Upper bound for initial energy draw |
-| `probability` | `0.25` | Default reproduction probability |
-| `probability_change_condition` | `0.5` | Alternate reproduction probability used by the RNG-isolation check |
-| `correlation` | `0.055` | Used to derive fertility smoothing kernel size |
-| `contrast` | `1.0` | Present in config, not currently applied in world generation |
-| `floor` | `0.0` | Present in config, not currently applied in world generation |
-| `max_agent_count` | `1000` | Hard population cap |
-| `initial_agent_count` | `10` | Founder count |
-| `max_age` | `100` | Age-based death threshold |
-
-## Stable Baseline
-
-The default baseline regime is `stable`. Its compiled runtime values are:
+The checked-in regimes share these defaults unless overridden:
 
 | Field | Value |
 |---|---:|
-| `world_width` | `20` |
-| `world_height` | `20` |
-| `energy_init_range` | `(30, 60)` |
-| `max_harvest` | `28` |
-| `movement_cost` | `17` |
-| `reproduction_threshold` | `100` |
-| `reproduction_cost` | `80` |
-| `regen_rate` | `8` |
+| `max_energy` | `100` |
+| `max_resource_level` | `80` |
+| `world_size` | `400` |
+| `alpha` | `0.6` |
+| `initial_energy_low_ratio` | `0.3` |
+| `initial_energy_high_ratio` | `0.6` |
+| `probability` | `0.25` |
+| `probability_change_condition` | `0.5` |
+| `correlation` | `0.055` |
+| `contrast` | `1.0` |
+| `floor` | `0.0` |
+| `max_agent_count` | `1000` |
+| `initial_agent_count` | `10` |
+| `max_age` | `100` |
+
+With the current defaults, `world_size=400` compiles to a `20 x 20` toroidal world.
 
 ## Named Regimes
 
-The current registry defines six named regimes:
+The live registry defines six regimes:
 
-| Regime | Key compiled values | Intent |
+| Regime | Compiled highlights | Intent |
 |---|---|---|
-| `stable` | `regen_rate=8`, `threshold=100`, `repro_cost=80` | Baseline bounded regime |
-| `fragile` | `regen_rate=8`, `threshold=100`, `repro_cost=100` | Reproduction becomes maximally expensive |
-| `extinction` | `regen_rate=2`, `threshold=85`, `repro_cost=85` | Low regeneration with costly reproduction |
-| `collapse` | `regen_rate=2`, `threshold=42`, `repro_cost=42` | Low regeneration with earlier but still fully draining reproduction |
-| `saturated` | `max_harvest=4`, `movement_cost=2`, `threshold=2`, `repro_cost=2` | Extremely cheap survival and reproduction pressure toward capacity |
-| `abundant` | `regen_rate=10`, `threshold=17`, `repro_cost=2` | Easy reproduction and faster regrowth |
+| `stable` | `regen_rate=8`, `max_harvest=28`, `movement_cost=17`, `threshold=100`, `repro_cost=80` | bounded baseline |
+| `fragile` | `regen_rate=8`, `max_harvest=28`, `movement_cost=17`, `threshold=100`, `repro_cost=100` | expensive reproduction stress case |
+| `extinction` | `regen_rate=2`, `max_harvest=32`, `movement_cost=19`, `threshold=100`, `repro_cost=100` | low-regeneration failure pressure |
+| `collapse` | `regen_rate=2`, `max_harvest=28`, `movement_cost=17`, `threshold=42`, `repro_cost=42` | lower-threshold collapse case |
+| `saturated` | `regen_rate=8`, `max_harvest=4`, `movement_cost=2`, `threshold=2`, `repro_cost=2` | high-occupancy / cap-pressure case |
+| `abundant` | `regen_rate=10`, `max_harvest=28`, `movement_cost=17`, `threshold=17`, `repro_cost=2` | permissive growth regime |
 
 ## Landscape Behavior
 
-Landscape generation currently uses:
+Landscape generation currently uses only the correlation field directly.
+
+`engine_build/core/world.py` computes:
 
 ```text
-kernel_size = max(3, round(correlation * world_width))
+raw_kernel = correlation * world_width
+kernel_size = max(3, round(raw_kernel))
+if kernel_size is even: kernel_size += 1
 ```
 
-If the kernel is even, it is incremented to keep it odd. The world then smooths raw noise on a toroidal grid.
+The world then smooths random noise across the torus and scales the result by `max_resource_level`.
 
-Current limitation: `contrast` and `floor` are carried through the config layer but are not yet used by `World._generate_fertility_fields()`.
+Current limitation:
 
-## Runtime Controls
+- `contrast` and `floor` are preserved in config objects but are not applied during fertility generation
 
-Execution defaults in `engine_build/execution/default.py` are:
+## Runtime Defaults
+
+Shared defaults in `engine_build/execution/default.py` are:
 
 - `DEFAULT_MASTER_SEED = 20250302`
 - `EXPERIMENT_DEFAULTS = {"ticks": 1000, "runs": 10}`
-- `VALIDATION_DEFAULTS = {"ticks": 300, "runs": 2}`
+- `VALIDATION_DEFAULTS = {"ticks": 1000, "runs": 10}`
 
-Current CLI examples:
+That validation default changed from earlier March drafts. Any documentation still referring to `300` ticks and `2` runs is stale.
+
+## CLI Surface
+
+Current main-path commands:
 
 ```bash
 python -m engine_build.main experiment --regime stable
 python -m engine_build.main experiment --regime stable --seed 42 --runs 5 --ticks 500
 python -m engine_build.main verify --suite determinism
+python -m engine_build.main validate --suite contracts
 ```
+
+Experiment request flags also include:
+
+- `--plot`
+- `--plot-dev`
+- `--perf-flag`
+- `--world-frame-flag`
+- `--tail-fraction`
+
+Current limitation:
+
+- `ExperimentRequest.tail_fraction` exists, but `run_experiment_mode()` does not currently pass it into `AnalysisConfig`, so the experiment lane still analyzes the final `25%` of each run
 
 ## Recommended Usage
 
-For normal runs and tests:
+Canonical path from name to runtime config:
 
 ```python
 from engine_build.regimes.registry import get_regime_spec
@@ -155,4 +180,4 @@ from engine_build.regimes.compiler import compile_regime
 regime = compile_regime(get_regime_spec("stable"))
 ```
 
-That is the current canonical path from named regime to runtime configuration.
+That is the current baseline configuration flow for experiments, verification, and validation.

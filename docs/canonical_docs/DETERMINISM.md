@@ -1,22 +1,23 @@
 # Determinism
 
-## Purpose
-
-This document defines the determinism contract implemented by the current engine.
-
 ## Contract
 
-For a fixed:
+On March 23, 2026, the engine's determinism contract is:
+
+For fixed:
 
 - run seed or batch seed
 - compiled regime
-- execution flags that affect runtime state (`change_condition`, `perf_flag`)
+- runtime flags and conditions that affect state
 - code version
 - Python and NumPy runtime
 
-the engine is expected to produce the same canonical state trajectory and the same snapshot continuation behavior.
+the simulator is expected to produce:
 
-The codebase also expects different seeds to diverge under the same regime.
+- the same canonical state trajectory
+- the same snapshot continuation behavior
+
+Different seeds are expected to diverge.
 
 ## Canonical Equality
 
@@ -28,21 +29,46 @@ sha256(get_state_bytes(engine))
 
 `Engine.__eq__()` delegates to `get_state_hash()`.
 
-The current canonical schema is `SCHEMA_VERSION = 2` in `engine_build/core/state_schema.py`. It includes:
+The canonical schema is `SCHEMA_VERSION = 2` in `engine_build/core/state_schema.py`.
 
-- engine tick and structural counters
-- execution flags and rule-environment values
-- world dimensions, fertility, resources, and world RNG state
-- all agents sorted by ID for serialization
-- each agent's position, energy, age, alive flag, offspring count, and RNG states
+Current serialized state includes:
 
-Important: canonical equality is stricter than "same ecological outcome". It includes runtime flags and RNG state, not just visible world state.
+- schema version
+- `change_condition`
+- `world.tick`
+- current agent count
+- `next_agent_id`
+- `max_age`
+- `perf_flag`
+- `collect_world_view`
+- compiled rule-environment values used by the runtime
+- world dimensions
+- `max_harvest`
+- `resource_regen_rate`
+- resource array
+- fertility array
+- world RNG state
+- every agent sorted by ID, including:
+  - `id`
+  - 2D position
+  - energy
+  - age
+  - alive flag
+  - offspring count
+  - move RNG state
+  - repro RNG state
+  - energy RNG state
+
+Important nuance:
+
+- canonical equality is stricter than "same ecological outcome"
+- it includes runtime flags and RNG state, not just visible population behavior
 
 ## How Determinism Is Enforced
 
-### Stable step pipeline
+### Stable phase order
 
-`Engine.step()` always executes the same phase order:
+`Engine.step()` always executes:
 
 ```text
 movement -> interaction -> biology -> commit -> tick += 1
@@ -53,76 +79,92 @@ movement -> interaction -> biology -> commit -> tick += 1
 `commit_phase()` always applies:
 
 ```text
-deaths -> births -> world resource regrowth
+queued deaths -> committed births -> world regrowth
 ```
 
-Births are capacity-limited after queued deaths are counted, and agent IDs are allocated monotonically through `next_agent_id`.
+Births are sliced by remaining capacity before any newborn is materialized.
 
 ### Stable traversal semantics
 
-The live simulation does not sort agents every tick. Runtime traversal currently depends on:
+The hot path does not sort agents each tick.
 
-- Python's stable dictionary insertion order
-- deterministic append order inside each phase
-- deterministic encounter order for local harvest sharing
+Current runtime stability comes from:
 
-Canonical hashing then sorts agents by ID so that equality checks do not depend on dictionary layout.
+- Python's insertion-ordered dictionaries
+- deterministic mutation order
+- deterministic append order inside occupancy buckets
+
+Canonical serialization then sorts agents by ID before hashing.
 
 ### RNG isolation
 
-Randomness is partitioned across independent domains:
+Randomness is partitioned into separate streams:
 
 - `world.rng_world`
 - `agent.move_rng`
 - `agent.repro_rng`
 - `agent.energy_rng`
 
-This prevents movement, reproduction, and initialization draws from polluting each other.
+This prevents movement, reproduction, world generation, and initial energy draws from perturbing each other.
+
+### Monotonic identity allocation
+
+`next_agent_id` only increments and committed births are the only place new IDs are allocated.
 
 ### Snapshot continuation
 
-`Engine.get_snapshot()` and `Engine.from_snapshot()` preserve:
+Snapshots preserve the runtime state needed for continuation:
 
-- compiled regime data
-- structural counters
+- compiled config
 - world arrays
-- world and agent RNG bit-generator state
-- master seed metadata needed by the current runtime path
-
-Continuation equivalence is tested directly in the verification suite.
+- world RNG state
+- per-agent RNG states
+- structural counters
+- enough `SeedSequence` metadata to reconstruct `master_ss`
 
 ## Verification Coverage
 
-The current CLI entry point for determinism-oriented checks is:
+Current verification CLI:
 
 ```bash
-python -m engine_build.main verify --suite <determinism|rng|snapshots|invariants|all>
+python -m engine_build.main verify --suite <all|determinism|invariants|rng|snapshots>
 ```
 
 Primary checked-in tests:
 
 - `tests/verification/test_determinism.py`
-  - `test_same_seed_determinism`
-  - `test_snapshot_equivalence`
-  - `test_seed_sensitivity`
+  - same-seed determinism
+  - snapshot equivalence
+  - seed sensitivity
 - `tests/verification/test_rng_isolation.py`
-  - `test_movement_rng_isolated_from_reproduction`
+  - movement RNG remains stable when reproduction policy changes
 - `tests/verification/test_snapshots.py`
-  - round-trip, world restore, agent restore, RNG restore, and continuation checks
+  - snapshot shape
+  - config roundtrip
+  - world restore
+  - agent restore
+  - RNG restore
+  - continuation after restore
 - `tests/verification/test_invariants.py`
-  - spatial bounds, resource bounds, and monotonic ID allocation
+  - spatial bounds
+  - resource bounds
+  - monotonic ID allocation
+
+The full repository test run passed on March 23, 2026 in the project virtual environment.
 
 ## Current Limits
 
-- Reproducibility is a same-code, same-runtime guarantee. Changes in Python, NumPy, or PCG64 behavior can change hashes.
-- Snapshot restoration rebuilds `master_ss` from `entropy`, `spawn_key`, and `pool_size`, but it does not restore NumPy's internal child counter. This is acceptable for the current engine because post-initialization logic no longer depends on repeated `master_ss.spawn()` calls.
-- The canonical hash captures runtime state, not the original `RegimeSpec` source text.
+- Reproducibility is a same-code, same-runtime guarantee. Python, NumPy, or PCG64 changes may change hashes.
+- Snapshot restoration reconstructs `master_ss` from metadata and does not preserve NumPy's internal child counter. This is acceptable in the current engine because the runtime no longer depends on repeated `master_ss.spawn()` calls after world initialization.
+- `change_condition` is part of the runtime model and the canonical hash, but it is not exposed through the current user-facing CLI.
+- Snapshot objects store `world_frame_flag`, but `engine_from_snapshot()` currently forces `collect_world_view = False` after reconstruction. That is a real implementation quirk and should be treated as a provisional edge of the snapshot surface.
+- Canonical hashing captures runtime state, not the original `RegimeSpec` source text.
 
 ## Practical Guidance
 
-For deterministic runs:
+For deterministic comparisons:
 
 - use explicit seeds
 - compile regimes through `compile_regime(get_regime_spec(...))`
-- compare canonical hashes when testing equivalence
-- use the verification CLI as the authoritative regression check
+- compare canonical hashes rather than only aggregate outcomes
+- use the verification CLI or full pytest run as the regression gate

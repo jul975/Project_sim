@@ -1,23 +1,21 @@
 # Ecosystem Engine Architecture
 
-## Purpose
+## Status
 
-The Ecosystem Engine is a deterministic multi-agent simulation platform for controlled ecological experiments.
+This document describes the implementation that is actually checked in on March 23, 2026.
 
-The architecture is optimized for:
+Current baseline:
 
-- deterministic replay,
-- explicit subsystem boundaries,
-- snapshot/restore continuation,
-- reproducible batch experimentation,
-- and staged extension toward richer spatial interactions.
-
-This document describes the **current implementation**, not a future target design.
+- pre-Stage III / pre-`v0.3` freeze candidate
+- package version `0.3.0a0`
+- deterministic 2D toroidal ecology simulator
+- CLI and menu both route into the same typed request and dispatch layer
+- full local test run in the project virtual environment passed on March 23, 2026: `31 passed`
 
 ## High-Level Structure
 
 ```text
-CLI args / menu
+CLI args or terminal menu
 -> typed request objects
 -> dispatcher
 -> execution lane
@@ -26,73 +24,70 @@ Execution lanes:
 - experiment
 - verification
 - validation
-- fertility/dev plotting
-
-Experiment lane:
-regime spec
--> compile_regime()
--> Runner
--> Engine
--> SimulationMetrics
--> batch analytics
--> summary / classification / reporting
 ```
+
+The public entrypoint is `engine_build.main`.
+
+Current command surface:
+
+- `python -m engine_build.main experiment ...`
+- `python -m engine_build.main verify ...`
+- `python -m engine_build.main validate ...`
+- `python -m engine_build.main menu`
+
+There is no live `fertility` request or fertility execution lane in the current CLI.
 
 ## Runtime Core
 
 ### Regime compilation
 
-Configuration is not owned by a legacy `core/config.py` layer.
+Configuration is authored in `engine_build/regimes/spec.py`, registered in `engine_build/regimes/registry.py`, and compiled in `engine_build/regimes/compiler.py`.
 
-The current path is:
+Authoritative path:
 
 ```text
-engine_build/regimes/spec.py
--> engine_build/regimes/registry.py
--> engine_build/regimes/compiler.py
+RegimeSpec
+-> compile_regime()
 -> CompiledRegime
--> Engine / World / Agent
+-> Engine / World / Agent / Runner
 ```
 
-The compiler converts anchors and ecological ratios into runtime parameters such as:
+The named regime registry currently exposes:
 
-- `max_harvest`
-- `movement_cost`
-- `reproduction_threshold`
-- `reproduction_cost`
-- `regen_rate`
-- `world_width`
-- `world_height`
+- `stable`
+- `fragile`
+- `abundant`
+- `saturated`
+- `collapse`
+- `extinction`
 
-### Engine (`core/engineP4.py`)
+### Engine
 
-`Engine` owns:
+`engine_build/core/engine.py` owns:
 
-- the root `SeedSequence` (`master_ss`)
-- compiled regime parameters
-- the `World`
-- live agents as `dict[id -> Agent]`
-- the deterministic tick pipeline
-- birth/death commit logic
-- canonical hash generation
-- snapshot/restore entry points
-
-Important engine state:
-
+- the run-level `SeedSequence` (`master_ss`)
+- one spawned world seed for `World`
+- the compiled regime
+- the live `World`
+- the live `agents: dict[int, Agent]`
 - `next_agent_id`
 - `max_agent_count`
 - `max_age`
-- `reproduction_probability`
-- `perf_flag`
-- `collect_world_view`
+- the effective `reproduction_probability`
+- instrumentation flags:
+  - `perf_flag`
+  - `collect_world_view`
 
-The engine currently creates newborns by deriving compact deterministic identity words, not by storing older seed-lineage scaffolding directly on each agent.
+Important current behavior:
 
-### World (`core/world.py`)
+- founders are created immediately at engine construction
+- newborns are created only during commit
+- deaths commit before births
+- `Engine.step()` chooses a fast path or an instrumented path depending on flags
 
-`World` is a 2D toroidal grid.
+### World
 
-It owns:
+`engine_build/core/world.py` implements a 2D toroidal grid with:
 
 - `fertility[y, x]`
 - `resources[y, x]`
@@ -105,21 +100,21 @@ It owns:
 
 Current responsibilities:
 
-- generate a spatially smoothed fertility field at initialization,
-- harvest resources from occupied cells,
-- regrow resources in place each tick,
-- wrap positions on a 2D torus.
+- generate the fertility landscape once at initialization
+- keep resources bounded by fertility
+- harvest resources deterministically for all agents on a cell
+- regrow resources in place after commit
+- wrap positions on a torus
 
-Current topology:
+Landscape generation currently uses a smoothed random field derived from `landscape_params.correlation`.
 
-```text
-(x + dx) mod world_width
-(y + dy) mod world_height
-```
+Current limitation:
 
-### Agent (`core/agent.py`)
+- `contrast` and `floor` are carried through the regime model but are not yet applied inside fertility generation
 
-Current agent state is intentionally compact.
+### Agent
+
+`engine_build/core/agent.py` keeps the runtime agent intentionally small.
 
 Each agent owns:
 
@@ -134,316 +129,164 @@ Each agent owns:
 - `repro_rng`
 - `energy_rng`
 
-Current initialization is split into:
+Identity is no longer a stored `SeedSequence` lineage tree. The current engine derives RNGs from compact deterministic `identity_words`.
 
-- `_init_identity()`
-- `_init_rngs()`
-- `_init_state()`
+### Transition layer
 
-The current deterministic identity model works through `AgentSetup.identity_words`.
+`engine_build/core/transitions.py` separates evaluation from structural mutation.
 
-Three domain-specific RNGs are derived from those identity words using domain tags:
-
-- movement
-- reproduction
-- energy
-
-Current lifecycle actions:
-
-- movement with energy cost
-- resource harvest
-- reproduction gate and stochastic reproduction
-- aging and age death
-
-### Transition context (`core/transitions.py`)
-
-The step pipeline is mediated through `TransitionContext`, which holds per-tick transition state:
+`TransitionContext` holds:
 
 - `occupied_positions`
 - `post_harvest_alive`
 - `pending_deaths_by_cause`
 - `reproducing_agents`
 
-This allows the engine to evaluate transitions first and commit structural mutation afterward.
+Current death buckets:
 
-### Runner and metrics (`runner/regime_runner.py`)
+- `age_deaths`
+- `metabolic_deaths`
+- `post_harvest_starvation`
+- `post_reproduction_death`
 
-`Runner` owns orchestration, not ecological logic.
+### Runner and analytics
+
+`engine_build/runner/regime_runner.py` owns orchestration, not ecological logic.
 
 Responsibilities:
 
-- batch-seed spawning from a master seed
-- per-run engine construction
-- tick-loop execution
-- metrics recording through `SimulationMetrics`
-- optional phase profiling aggregation
+- derive per-run `SeedSequence` objects from a batch seed
+- build engines
+- run tick loops
+- record `SimulationMetrics`
+- optionally aggregate profiling data
 
-The runner returns:
+The experiment lane then analyzes those runs through:
 
-- `RunArtifacts`
-- `BatchRunResults`
-
-This keeps `Engine.step()` free of analytics policy.
+```text
+Runner
+-> BatchRunResults
+-> analyze_batch()
+-> summarise_regime()
+-> classify_regime()
+-> report / optional plots
+```
 
 ## Tick Pipeline
 
-The current authoritative step order is:
+The authoritative runtime order is:
 
 ```text
-1. movement_phase()
-2. interaction_phase()
-3. biology_phase()
-4. commit_phase()
-5. world.tick += 1
+movement
+-> interaction
+-> biology
+-> commit
+-> world.tick += 1
 ```
 
-### 1. Movement phase
-
-For each agent in dictionary iteration order:
-
-- reject already-dead agents into the age-death bucket
-- apply movement cost
-- sample a 4-neighbor movement direction
-- update and wrap position
-- mark metabolic death if energy falls to zero or below
-- register surviving agents into `occupied_positions`
-
-Outputs:
-
-- age deaths
-- metabolic deaths
-- occupancy map for interaction
-
-### 2. Interaction phase
-
-For each occupied cell:
-
-- harvest resources from the world
-- distribute harvest deterministically across local agents
-- separate post-harvest survivors from starvation deaths
-
-Outputs:
-
-- post-harvest starvation deaths
-- `post_harvest_alive`
-
-### 3. Biology phase
-
-For each post-harvest survivor:
-
-- test reproduction threshold
-- draw reproduction event
-- enqueue reproducing agents
-- mark post-reproduction death when energy is exhausted
-- otherwise age the agent
-
-Outputs:
-
-- reproducing agents
-- post-reproduction death bucket
-
-### 4. Commit phase
-
-The engine then:
-
-- totals pending deaths
-- computes effective population after queued deaths
-- limits births by remaining capacity
-- deletes dead agents
-- creates newborn agents
-- regrows world resources
-
-Important current rule:
-
-- deaths commit before births
-
-This preserves hard population-cap enforcement without undershoot.
+The details are documented in `docs/canonical_docs/SIMULATION_PIPELINE.md`.
 
 ## Determinism Model
 
-Determinism is a core architectural constraint.
+Determinism is still a hard project constraint.
 
-The current contract is:
+The live code enforces:
 
-- same seed + same config + same code -> same state trajectory
-- different seeds -> diverging trajectories
-- RNG domains are isolated by subsystem ownership
-- snapshots restore continuation-equivalent state
+- fixed phase order
+- stable Python dictionary encounter order in the runtime loop
+- separate RNG streams for world, movement, reproduction, and initial energy
+- canonical state hashing through `engine_build/core/state_schema.py`
+- snapshot/restore continuation through `engine_build/core/snapshots.py`
 
-### RNG ownership
+Important nuance:
 
-Current RNG ownership is:
+- runtime traversal is not sorted every tick
+- canonical hashing sorts agents by ID for serialization
+- world-view packaging also sorts by ID before exporting arrays
 
-- engine root seed sequence: `master_ss`
-- world RNG: `rng_world`
-- per-agent RNGs:
-  - `move_rng`
-  - `repro_rng`
-  - `energy_rng`
+## Observability
 
-Child identity is derived from:
+### Profiling
 
-- run entropy
-- child entropy produced by parent reproduction RNG
-- parent ID
-- parent offspring count
+When `perf_flag=True`, `Engine.step()` records:
 
-This is the current replacement for the older heavier seed-lineage-per-agent approach.
+- movement time
+- interaction time
+- biology time
+- commit time
 
-## State, Snapshot, and Equivalence
+Commit profiling is split into:
 
-### Canonical state hash
+- setup
+- deaths
+- births
+- resource regrowth
 
-Canonical equivalence is defined as:
+### World frames
 
-```text
-sha256(get_state_bytes(engine))
-```
+When `world_frame_flag=True`, `Engine.step()` builds a `WorldView` sample every 10 ticks.
 
-The schema is currently `SCHEMA_VERSION = 2`.
+The sampled frame contains:
 
-### State schema (`core/state_schema.py`)
+- sorted agent positions
+- sorted agent energies
+- a copy of the resource grid
 
-The canonical byte representation includes:
+This feeds the optional world-frame analytics path. It is useful, but still secondary to the core experiment lane.
 
-- schema version
-- change-condition flag
-- engine tick and structural counters
-- rule environment parameters
-- world dimensions and resource model
-- world RNG state
-- fertility and resource arrays
-- agents sorted by ID
-- per-agent:
-  - ID
-  - 2D position
-  - energy
-  - age
-  - alive flag
-  - offspring count
-  - movement RNG state
-  - reproduction RNG state
-  - energy RNG state
+## CLI and Execution Surface
 
-### Snapshot layer (`core/snapshots.py`)
-
-Snapshots persist the live runtime state needed for continuation:
-
-- engine shell state
-- compiled config
-- world arrays and RNG state
-- per-agent runtime state and RNG states
-
-`Engine.from_snapshot()` reconstructs a running engine and validates reconstruction in debug mode by rebuilding and comparing snapshots.
-
-## Observability and Performance
-
-The engine supports an explicit profiling mode.
-
-When `perf_flag` is enabled:
-
-- `Engine._step_profiled()` records phase timing for:
-  - movement
-  - interaction
-  - biology
-  - commit
-- `Engine._commit_profiled()` records commit subphase timing for:
-  - setup
-  - deaths
-  - births
-  - resource regrowth
-
-The runner aggregates those into `PhaseProfile`, and batch analytics/reporting can summarize them for experiment output.
-
-Current performance reality:
-
-- births remain the dominant hotspot in high-growth regimes
-- movement is the next visible hotspot
-- movement currently scales roughly linearly with agent count
-
-## Frontend and Execution Surface
-
-### Main entrypoint (`main.py`)
-
-`engine_build.main` currently selects between:
-
-- menu mode
-- parser-driven CLI mode
-
-Then it dispatches typed request objects into execution lanes.
-
-### Request/dispatch model
-
-The current CLI design centers on typed request objects:
+The typed request layer currently consists of:
 
 - `ExperimentRequest`
 - `VerificationRequest`
 - `ValidationRequest`
-- `FertilityRequest`
 
-`dispatch.py` routes them to:
+`engine_build/cli/dispatch.py` routes them to:
 
 - `run_experiment_mode()`
 - `run_verification_mode()`
 - `run_validation_mode()`
-- fertility/dev plotting workflow
 
-### Verification vs validation
+Current reality:
 
-The codebase now distinguishes:
+- the experiment lane is the main operational path
+- the verification and validation lanes shell into checked-in pytest suites
+- the old fertility/dev-lane documentation is stale against the current tree
 
-- **verification**
-  - determinism, invariants, RNG isolation, snapshots, regime separation
-- **validation**
-  - behavioral / contract-style regime checks
+## Verified Current State
 
-This is the right conceptual split, even though the validation lane is still being aligned.
+As of March 23, 2026:
 
-## Current Boundaries and Known Drift
+- the 2D topology is live across engine state, hashing, and snapshots
+- the request -> dispatch -> execution-lane structure is live
+- verification and validation are both wired through the CLI
+- the full local pytest run passed in the project virtual environment
 
-The architecture is stronger than earlier in March, but some boundaries are still being normalized.
+## Known Freeze-Relevant Limits
 
-### Stable current boundaries
+- Stage III interaction rules are not implemented yet
+- there are no explicit agent-agent mechanics beyond shared-cell harvesting and population-cap competition
+- `contrast` and `floor` remain unused in world generation
+- the experiment request exposes `tail_fraction`, but `run_experiment_mode()` currently does not forward it into `AnalysisConfig`, so experiment analysis still uses the default `0.25`
+- snapshot objects store `world_frame_flag`, but `engine_from_snapshot()` currently forces `collect_world_view = False` after reconstruction
+- world-frame analytics and dev plotting are useful support tools, not yet the most polished public surface
 
-- 2D toroidal world model
-- deterministic engine core
-- snapshot/restore pipeline
-- request -> dispatch -> execution-lane pattern
-- separate verification and validation concepts
+## Scope Boundary
 
-### Known drift / incomplete areas
+Implemented and stable enough for a pre-Stage III baseline:
 
-- `run_validation.py` still expects older suite names than the current validation request/parser layer exposes
-- the fertility/dev plotting lane is still provisional and does not fully consume the `FertilityRequest`
-- spatial analytics are behind the 2D engine
-- explicit agent-agent interaction rules are not yet implemented
-- landscape `contrast` and `floor` exist in the regime interface but are not yet used in fertility generation
-
-## Current Scope
-
-Implemented:
-
-- 2D toroidal space
-- resource-coupled survival and reproduction
-- deterministic batch experimentation
-- canonical state hashing
+- deterministic 2D world
+- batch experimentation
+- canonical hashing
 - snapshot continuation
-- phase profiling
-- verification/validation folder split
-- request-based CLI architecture
+- pytest-backed verification and validation lanes
+- regime compilation and classification
 
-Not yet implemented:
+Not yet implemented or not yet frozen:
 
-- explicit crowding / collision / local competition rules
-- trait heterogeneity and inheritance
-- mature spatial fingerprint metrics
-- fully stabilized public CLI surface
-
-## Related Documents
-
-- `docs/canonical_docs/CONFIGURATION.md`
-- `docs/canonical_docs/DETERMINISM.md`
-- `docs/canonical_docs/EXPERIMENTS.md`
-- `docs/canonical_docs/MATHEMATICAL_MODEL.md`
-- `docs/canonical_docs/RNG_ARCHITECTURE.md`
-- `docs/canonical_docs/SIMULATION_PIPELINE.md`
+- explicit crowding / collision rules
+- trait variation and inheritance
+- mature Stage III interaction semantics
+- full use of the landscape `contrast` and `floor` controls
+- fully wired custom tail-fraction control in the experiment CLI
