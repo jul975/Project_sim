@@ -1,56 +1,64 @@
-﻿# Mathematical Model
+# Mathematical Model
 
-## Purpose
+## Status
 
-This document defines the mathematical model of the current system (Stage II / `beta0.2`) as implemented in `engine_build/core/*`.
+This document describes the model currently implemented on March 23, 2026.
 
-The simulation is a discrete-time transition system:
+The simulator is a discrete-time stochastic transition system:
 
 $$
 S_{t+1} = T(S_t)
 $$
 
-with reproducible stochasticity under fixed `(seed, config, code version, runtime)`.
+with reproducible trajectories under fixed seed, compiled regime, code, and runtime.
 
 ## 1. State
 
-Let the world size be $W$ (`world_size`) with 1D toroidal topology:
+Let the world dimensions be:
+
+- $W_x =$ `world_width`
+- $W_y =$ `world_height`
+
+with 2D toroidal wrapping:
 
 $$
-\mathrm{wrap}(x) = x \bmod W
+\mathrm{wrap}(x, y) = (x \bmod W_x,\ y \bmod W_y)
 $$
 
-Global state at tick $t$:
+Global state at tick $t$ is:
 
 $$
-S_t = \Big(F, R_t, \{(x_i(t), E_i(t), a_i(t), \ell_i(t))\}_{i \in \mathcal{I}_t}, \text{next\_id}\Big)
+S_t = \Big(F,\ R_t,\ \mathcal{A}_t,\ \text{next\_id}\Big)
+$$
+where:
+
+- $F \in \mathbb{Z}_{\ge 0}^{W_y \times W_x}$ is the static fertility field
+- $R_t \in \mathbb{Z}_{\ge 0}^{W_y \times W_x}$ is the resource field
+- $\mathcal{A}_t$ is the live agent map
+- `next_id` is the next committed child ID
+
+Resource bounds:
+
+$$
+0 \le R_t(y, x) \le F(y, x)
 $$
 
-Where:
+Each live agent stores:
 
-- $F \in \{0,\dots,R_{\max}-1\}^{W}$: fertility/capacity field (static after init)
-- $R_t \in \mathbb{Z}_{\ge 0}^{W}$: resource field, bounded by
+- position $(x_i(t), y_i(t))$
+- energy $E_i(t)$
+- age $a_i(t)$
+- alive flag $\ell_i(t)$
+- offspring count $o_i(t)$
 
-$$
-0 \le R_t(x) \le F(x), \quad \forall x
-$$
-
-Agent variables:
-
-- $x_i(t)$: position
-- $E_i(t)$: energy
-- $a_i(t)$: age
-- $\ell_i(t) \in \{0,1\}$: alive flag
-
-Agents are processed in ascending ID order.
+Runtime processing order is dictionary encounter order, not a per-tick sort.
 
 ## 2. Parameters
 
 ### 2.1 World and population
 
-- $W$ = `world_size`
 - $R_{\max}$ = `max_resource_level`
-- $r$ = `resource_regen_rate`
+- $r$ = `regen_rate`
 - $H_{\max}$ = `max_harvest`
 - $N_0$ = `initial_agent_count`
 - $N_{\max}$ = `max_agent_count`
@@ -58,100 +66,186 @@ Agents are processed in ascending ID order.
 
 ### 2.2 Reproduction probability
 
-- $p_0$ = `reproduction_probability`
-- $p_1$ = `reproduction_probability_change_condition`
+Each engine uses one active reproduction probability:
 
-Each agent receives fixed $p \in \{p_0, p_1\}$ at construction, selected by `change_condition`.
+$$
+p \in \{p_0, p_1\}
+$$
 
-### 2.3 Energy parameterization (ratio-derived)
+where:
 
-Ratios: $\alpha$ (metabolic pressure), $\beta$ (reproductive depletion), $\gamma$ (maturity scale).
+- $p_0 =$ `probability`
+- $p_1 =$ `probability_change_condition`
 
-Derived runtime values:
+The current CLI uses $p_0$. The alternate value is used by internal tests that flip `change_condition=True`.
+
+### 2.3 Derived energy parameters
+
+Using anchors $E_{\max}$ and $R_{\max}$ plus ratios $\alpha$, $\beta$, $\gamma$, and $h$:
 
 $$
 \begin{aligned}
-c_m &= \lfloor \alpha H_{\max} \rfloor \\
-\theta &= \lfloor \gamma c_m \rfloor \\
-c_r &= \lfloor \beta \theta \rfloor
+H_{\max} &= \min\left(E_{\max}, \max\left(1, \mathrm{round}(hR_{\max})\right)\right) \\
+c_m &= \min\left(E_{\max}, H_{\max}, \max\left(1, \mathrm{round}(\alpha H_{\max})\right)\right) \\
+\theta &= \min\left(E_{\max}, \max\left(c_m, \max\left(1, \mathrm{round}(\gamma c_m)\right)\right)\right) \\
+c_r &= \min\left(\theta, \max\left(1, \mathrm{round}(\beta \theta)\right)\right)
 \end{aligned}
 $$
 
-(using Python `int(...)` truncation).
+Where:
+
+- $c_m$ is movement cost
+- $\theta$ is reproduction threshold
+- $c_r$ is reproduction cost
+
+Initial-energy bounds:
+
+$$
+\begin{aligned}
+E_{\min} &= \max(1, \mathrm{round}(\rho_{\min} E_{\max})) \\
+E_{\max}^{\mathrm{init}} &= \max(E_{\min}, \mathrm{round}(\rho_{\max} E_{\max}))
+\end{aligned}
+$$
+
+The runtime samples energy with NumPy `integers(low, high)`, so the upper bound is exclusive.
 
 ## 3. Initialization
 
 ### 3.1 World
 
+The world first samples random noise:
+
 $$
-F(x) \sim \mathrm{Unif}\{0,\dots,R_{\max}-1\}, \qquad R_0(x)=F(x)
+U(y, x) \sim \mathrm{Uniform}[0, 1)
+$$
+
+Then it smooths that field with an odd toroidal averaging kernel:
+
+$$
+k = \max(3, \mathrm{round}(\text{correlation} \cdot W_x))
+$$
+
+If $k$ is even, it is incremented to keep it odd.
+
+The final fertility field is:
+
+$$
+F(y, x) = \left\lfloor R_{\max} \cdot \mathrm{smooth}(U)(y, x) \right\rfloor
+$$
+
+Resources start at fertility:
+
+$$
+R_0 = F
 $$
 
 ### 3.2 Initial agents
 
-For each $i \in \{0,\dots,N_0-1\}$:
+For each founder $i \in \{0,\dots,N_0-1\}$:
 
 $$
 \begin{aligned}
-x_i(0) &\sim \mathrm{Unif}\{0,\dots,W-1\} \\
-E_i(0) &\sim \mathrm{Unif}\{E_{\min},\dots,E_{\max}-1\} \\
-a_i(0) &= 0, \quad \ell_i(0)=1
+x_i(0), y_i(0) &\sim \mathrm{UniformInt}(0, W_x - 1) \\
+E_i(0) &\sim \mathrm{UniformInt}(E_{\min}, E_{\max}^{\mathrm{init}} - 1) \\
+a_i(0) &= 0 \\
+\ell_i(0) &= 1 \\
+o_i(0) &= 0
 \end{aligned}
 $$
 
-with `(E_min, E_max) = energy_init_range`.
+The current registry only emits square worlds, so the shared bound for both coordinates is valid in practice.
 
 ## 4. Tick Operator
 
-The implemented operator decomposes as:
+The implemented operator is:
 
 $$
-T = G \circ C \circ U
+T = \Pi \circ B \circ H \circ M
 $$
 
-- $U$: ordered per-agent evaluation (no structural mutation)
-- $C$: commit phase (deaths then births, cap-aware)
-- $G$: world regrowth
+where:
 
-## 5. Per-Agent Evaluation $U$
+- $M$ = movement phase
+- $H$ = interaction / harvest phase
+- $B$ = biology phase
+- $\Pi$ = commit phase
 
-For each agent in sorted order:
+followed by `tick += 1`.
 
-### 5.1 Alive gate
+## 5. Movement Phase
 
-If $\ell_i = 0$, queue old-age removal and skip further updates.
-
-### 5.2 Movement and metabolic check
-
-Sample $\Delta x_i \in \{-1,+1\}$:
+For each live agent in encounter order:
 
 $$
 E_i \leftarrow E_i - c_m
 $$
 
-$$
-x_i \leftarrow \mathrm{wrap}(x_i + \Delta x_i)
-$$
-
-If $E_i \le 0$: set $\ell_i \leftarrow 0$, queue metabolic-starvation death, continue to next agent.
-
-### 5.3 Harvest
+Sample one cardinal move:
 
 $$
-h_i = \min(R(x_i), H_{\max})
+(\Delta x_i, \Delta y_i) \in \{(-1,0),(1,0),(0,-1),(0,1)\}
 $$
 
+Then:
+
 $$
-R(x_i) \leftarrow R(x_i) - h_i
+(x_i, y_i) \leftarrow \mathrm{wrap}(x_i + \Delta x_i,\ y_i + \Delta y_i)
 $$
+
+If:
+
+$$
+E_i \le 0
+$$
+
+the agent is marked dead and queued in the metabolic-death bucket.
+
+Agents already carrying $\ell_i = 0$ at phase entry are queued in the age-death bucket without moving.
+
+## 6. Interaction / Harvest Phase
+
+Let a cell have:
+
+- $n$ local agents
+- available resources $R$
+
+Current total harvest:
+
+$$
+H = \min(R,\ nH_{\max})
+$$
+
+Each local agent receives:
+
+$$
+\left\lfloor \frac{H}{n} \right\rfloor
+$$
+
+and the first:
+
+$$
+H \bmod n
+$$
+
+agents in local encounter order receive one extra unit.
+
+Cell resources update to:
+
+$$
+R' = R - H
+$$
+
+Each recipient updates:
 
 $$
 E_i \leftarrow E_i + h_i
 $$
 
-This creates implicit competition through update order when multiple agents share a cell.
+Agents with $E_i \le 0$ after this phase are queued into `post_harvest_starvation`, though under the current rules that bucket is usually empty.
 
-### 5.4 Reproduction gate and stochastic event
+## 7. Biology Phase
+
+For each post-harvest survivor:
 
 Eligibility:
 
@@ -159,7 +253,13 @@ $$
 E_i \ge \theta
 $$
 
-If eligible, draw $u_i \sim \mathrm{Unif}(0,1)$ and reproduce iff:
+If eligible, sample:
+
+$$
+u_i \sim \mathrm{Uniform}[0, 1)
+$$
+
+and reproduce when:
 
 $$
 u_i < p
@@ -171,77 +271,106 @@ $$
 E_i \leftarrow E_i - c_r
 $$
 
-If $E_i \le 0$: set $\ell_i \leftarrow 0$, queue post-reproduction death, skip aging.
+and the parent is appended to the reproduction queue.
 
-### 5.5 Aging (if not short-circuited)
+If reproduction leaves:
+
+$$
+E_i \le 0
+$$
+
+the parent is also queued in `post_reproduction_death`.
+
+Current aging rule:
 
 $$
 a_i \leftarrow a_i + 1
 $$
 
+is applied to every post-harvest survivor, including successful reproducers.
+
+If:
+
 $$
-a_i \ge A_{\max} \Rightarrow \ell_i \leftarrow 0
+a_i \ge A_{\max}
 $$
 
-## 6. Commit Phase $C$ (Deaths Then Births)
+then:
+
+$$
+\ell_i \leftarrow 0
+$$
+
+Removal of age-dead agents occurs on the next tick's movement phase.
+
+## 8. Commit Phase
 
 Let:
 
-- $D_t$: total queued deaths in tick $t$
-- $B_t^{\mathrm{raw}}$: successful reproduction events in tick $t$
-- $N_t$: pre-commit population
+- $N_t$ be the pre-commit population
+- $D_t$ be total queued deaths
+- $B_t^{\text{raw}}$ be successful reproduction events
 
-Effective post-death population:
-
-$$
-N_t^{\mathrm{eff}} = N_t - D_t
-$$
-
-Available capacity:
+The engine computes:
 
 $$
-\mathrm{cap}_t = N_{\max} - N_t^{\mathrm{eff}}
+N_t^{\text{eff}} = N_t - D_t
 $$
 
-Committed births:
+and:
 
 $$
-B_t = \min(B_t^{\mathrm{raw}}, \mathrm{cap}_t)
+\mathrm{cap}_t = N_{\max} - N_t^{\text{eff}}
 $$
 
-Death commit removes queued IDs. Birth commit creates children for the first $B_t$ queued reproducers.
-
-For child $j$ of parent $i$:
+Committed births are:
 
 $$
-x_j \leftarrow x_i, \quad a_j \leftarrow 0, \quad \ell_j \leftarrow 1
+B_t = \min(B_t^{\text{raw}}, \mathrm{cap}_t)
 $$
 
+Current commit order:
+
+1. delete all queued dead agents
+2. create the first $B_t$ queued children
+3. regrow world resources
+
+For a committed child $j$ of parent $i$:
+
 $$
-E_j(0) \sim \mathrm{Unif}\{E_{\min},\dots,E_{\max}-1\}
+\begin{aligned}
+(x_j, y_j) &\leftarrow (x_i, y_i) \\
+a_j &\leftarrow 0 \\
+\ell_j &\leftarrow 1 \\
+o_j &\leftarrow 0 \\
+E_j(0) &\sim \mathrm{UniformInt}(E_{\min}, E_{\max}^{\mathrm{init}} - 1)
+\end{aligned}
 $$
 
-## 7. Regrowth Operator $G$
+The parent's offspring counter increments only when the birth is actually committed.
 
-After commits:
+## 9. Regrowth
+
+After commit:
 
 $$
-R_{t+1}(x) = \min(F(x), R_t'(x) + r)
+R_{t+1}(y, x) = \min(F(y, x),\ R_t'(y, x) + r)
 $$
 
 where $R_t'$ is the post-harvest, post-commit resource field.
 
-## 8. System Loop
+## 10. Model Boundary
 
-The ecological feedback loop is:
+Implemented now:
 
-$$
-R \rightarrow h \rightarrow E \rightarrow (\text{birth/death}) \rightarrow N \rightarrow R
-$$
+- 2D toroidal movement
+- deterministic shared-cell harvest
+- energy-coupled reproduction
+- hard population cap
+- age, metabolic, and post-reproduction death paths
 
-## 9. Implementation Notes
+Not yet implemented:
 
-- Reproduction is event-based (successes), not guaranteed by eligibility.
-- Child position is explicitly overwritten to parent position at commit time.
-- `post_harvest_starvation` exists as a death bucket in code, but under current update rules is effectively unreachable because energy does not decrease in harvest and metabolic death is resolved earlier.
-- Determinism depends on stable environment/runtime in addition to seed/config/code.
+- explicit collision or crowding rules
+- trait inheritance
+- direct use of landscape `contrast` and `floor`

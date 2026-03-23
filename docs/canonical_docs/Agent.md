@@ -1,30 +1,41 @@
 # Agent
 
-## Purpose
+## Status
 
-This document describes the current `Agent` implementation in the engine.
+This document describes the current `Agent` implementation in `engine_build/core/agent.py` as of March 23, 2026.
 
-It is an implementation reference, not a future design note. The agent model is intentionally compact and built to support deterministic execution, snapshot restore, and batch experimentation.
+The agent model is deliberately compact and exists to support:
 
-## Overview
+- deterministic execution
+- snapshot restore
+- reproducible batch runs
+- a clean pre-Stage III baseline
 
-An agent represents one live organism in the simulation. The class lives in `engine_build/core/agent.py` and is owned by `Engine`.
+## Responsibilities
 
-The current agent is responsible for:
+An agent owns local organism state and agent-local randomness.
 
-- local state: position, energy, age, alive flag
-- deterministic identity within the run
-- domain-specific RNG ownership
-- movement
-- harvest application
-- reproduction decisions
-- age progression
+Current responsibilities:
 
-The agent does not own batch orchestration, regime compilation, or world-level resource logic.
+- hold position, energy, age, alive state, and offspring count
+- derive and own movement / reproduction / energy RNGs
+- perform movement
+- accept harvested energy
+- perform reproduction checks
+- age itself
 
-## Agent State
+The agent does not own:
 
-Each agent currently stores:
+- regime compilation
+- world resource logic
+- batch orchestration
+- structural population mutation
+
+Birth and death commits are owned by `Engine`.
+
+## Stored State
+
+Each live agent currently stores:
 
 - `id`
 - `engine`
@@ -37,15 +48,15 @@ Each agent currently stores:
 - `repro_rng`
 - `energy_rng`
 
-Important notes:
+Notes:
 
 - `position` is a 2D `(x, y)` tuple
-- `offspring_count` is part of deterministic child identity
-- RNG streams are separate by concern
+- `offspring_count` participates in deterministic child identity
+- RNG streams are intentionally separate by concern
 
 ## Initialization
 
-Agent construction is split into three internal steps:
+Construction is split into:
 
 - `_init_identity()`
 - `_init_rngs()`
@@ -53,31 +64,27 @@ Agent construction is split into three internal steps:
 
 ### Identity model
 
-The current engine no longer stores a full per-agent `SeedSequence` lineage object. Instead, each agent is created from deterministic `identity_words`.
+The current engine no longer stores a `SeedSequence` lineage object on each agent.
 
-Founders use:
+Identity words are:
 
-```text
-(run_entropy, founder_id)
-```
+- founder: `(run_entropy, founder_id)`
+- child: `(run_entropy, child_entropy, parent_id, parent.offspring_count)`
 
-Children use:
+Those identity words are built by:
 
-```text
-(run_entropy, child_entropy, parent_id, parent.offspring_count)
-```
-
-This identity is produced by `Engine.get_first_agent_setup()` and `Engine.get_child_setup()`.
+- `Engine.get_first_agent_setup()`
+- `Engine.get_child_setup()`
 
 ### RNG setup
 
-Each agent derives three independent `PCG64` generators from its `identity_words` plus fixed domain tags:
+Each agent derives three independent `PCG64` generators:
 
 - movement: `identity_words + (1,)`
 - reproduction: `identity_words + (2,)`
 - energy: `identity_words + (3,)`
 
-This isolates stochastic concerns and is one of the core determinism mechanisms in the project.
+This is one of the core determinism mechanisms in the project.
 
 ### Initial state
 
@@ -85,78 +92,54 @@ At creation:
 
 - founders sample their initial position from `move_rng`
 - newborns inherit the parent position directly
-- `alive` is set to `True`
-- `age` starts at `0`
-- `offspring_count` starts at `0`
-- `energy_level` is sampled from `energy_init_range` using `energy_rng`
+- `alive = True`
+- `age = 0`
+- `offspring_count = 0`
+- `energy_level` is sampled from `energy_init_range` with `energy_rng`
 
-The initial energy draw uses NumPy `integers(low, high)`, so the upper bound is exclusive.
+The energy draw uses `np.random.Generator.integers(low, high)`, so the upper bound is exclusive.
 
-## Configuration Dependencies
-
-The agent consumes compiled runtime parameters from `CompiledRegime` through its owning engine.
-
-Relevant inputs:
-
-- `EnergyParams.energy_init_range`
-- `EnergyParams.movement_cost`
-- `EnergyParams.reproduction_threshold`
-- `EnergyParams.reproduction_cost`
-- `PopulationParams.max_age`
-- `PopulationParams.max_agent_count`
-- `WorldParams.world_width`
-- `WorldParams.world_height`
-- `Engine.reproduction_probability`
-
-The ratio math that defines these values lives in `engine_build/regimes/compiler.py`, not in the agent class.
-
-## Tick Behavior
-
-The agent participates in the engine's phase-structured tick pipeline:
-
-```text
-movement -> interaction -> biology -> commit
-```
+## Runtime Behavior
 
 ### Movement
 
-`move_agent()` performs the following steps:
+`move_agent()` applies:
 
 1. subtract `movement_cost`
-2. sample one of four cardinal moves
+2. sample one cardinal move
 3. update position
-4. wrap position on the torus
-5. mark the agent dead if energy is now `<= 0`
+4. wrap on the torus
+5. if energy is now `<= 0`, set `alive = False` and report failure
 
-The current move set is:
+Current move set:
 
 ```text
 (-1, 0), (1, 0), (0, -1), (0, 1)
 ```
 
-Movement is always axis-aligned and one cell per tick.
-
 ### Harvest
 
-Agents do not decide harvest amounts themselves. The world distributes cell resources deterministically among all occupants of a position, then calls:
+Harvest distribution is computed by `World.harvest()`.
+
+The agent-side method:
 
 ```text
 agent.harvest_resources(harvest)
 ```
 
-This simply adds the harvested amount to `energy_level`.
+simply adds the harvested value to `energy_level`.
 
 ### Reproduction
 
-Reproduction is a two-step check:
+Reproduction is split across two methods:
 
-1. `can_reproduce()` requires:
+- `can_reproduce()` checks:
 
 ```text
 energy_level >= reproduction_threshold
 ```
 
-1. `does_reproduce()` draws from `repro_rng` and succeeds when:
+- `does_reproduce()` draws:
 
 ```text
 repro_rng.random() < engine.reproduction_probability
@@ -165,10 +148,9 @@ repro_rng.random() < engine.reproduction_probability
 On success:
 
 - `reproduction_cost` is subtracted immediately from the parent
-- the parent is queued in `TransitionContext.reproducing_agents`
-- child creation happens later in `Engine.commit_phase()`
+- the parent is later queued by the biology phase for commit-time birth creation
 
-Child entropy is generated by:
+Child entropy is produced by:
 
 ```text
 parent.repro_rng.bit_generator.random_raw()
@@ -176,46 +158,53 @@ parent.repro_rng.bit_generator.random_raw()
 
 ### Aging
 
-Agents age through `age_agent()`:
+`age_agent()` applies:
 
 - `age += 1`
 - if `age >= max_age`, set `alive = False`
 
-Current behavior detail:
+Important current behavior:
 
-- agents only age on ticks where they do not reproduce successfully
-- an agent marked dead by age is removed on the next tick's movement/commit cycle, not immediately in the same biology phase
+- post-harvest survivors always age during the biology phase
+- successful reproducers still age in the same tick
+- agents queued for `post_reproduction_death` also still pass through `age_agent()` in the current implementation
 
-## Births And Deaths
+## Birth and Death Semantics
 
-The agent class marks or enables state transitions, but structural mutation is owned by the engine.
+The agent class only marks or enables transitions. `Engine` performs structural mutation.
 
 ### Death paths
 
 The current runtime distinguishes:
 
+- age death
 - metabolic death after movement cost
-- age death for agents already marked `alive = False` at the start of a tick
-- post-reproduction death if reproduction cost pushes energy to `<= 0`
+- post-harvest starvation
+- post-reproduction death
+
+Important timing detail:
+
+- age-based death is flagged by `age_agent()`
+- removal happens on the next tick, when movement phase sees `alive == False`
 
 ### Birth path
 
-When a reproducing parent is committed:
+When a queued parent is committed:
 
 - the engine creates a newborn at `next_agent_id`
-- the newborn starts at the parent position
-- the parent's `offspring_count` is incremented
-- `next_agent_id` is incremented
+- the child starts at the parent position
+- the parent's `offspring_count` increments
+- `next_agent_id` increments
 
-Births are capacity-limited by `max_agent_count` after queued deaths are counted.
+Births are capacity-limited after queued deaths are counted.
 
-## Determinism And Snapshots
+## Snapshot and Canonical State
 
-The agent is part of the engine's canonical state and snapshot system.
+The agent is part of both canonical hashing and the snapshot layer.
 
 ### Canonical hashing
 
-State serialization includes, for each agent:
+State serialization includes:
 
 - `id`
 - `position`
@@ -227,46 +216,40 @@ State serialization includes, for each agent:
 - `repro_rng` state
 - `energy_rng` state
 
-Agents are serialized in ID order for canonical hashing.
+Agents are serialized in ID order for hashing.
 
 ### Snapshot restore
 
 `AgentSnapshot` stores:
 
 - `id`
-- `agent_spawn_count` (`offspring_count` at runtime)
+- `agent_spawn_count`
 - `position`
 - `energy_level`
 - `alive`
 - `age`
-- RNG bit-generator states for movement, reproduction, and energy
+- movement RNG state
+- reproduction RNG state
+- energy RNG state
 
-`Agent.from_snapshot()` restores the live agent directly from this state.
+`Agent.from_snapshot()` restores the live agent directly from that data.
 
-## Invariants
+## Current Invariants
 
-The current agent invariants include:
+The current implementation asserts:
 
 - `id >= 0`
-- engine reference is present
-- `position` is inside world bounds
+- the engine reference is present
+- position is within world bounds
 - `age >= 0`
 - `energy_level >= 0` unless the agent is dead
 - all three RNGs are valid NumPy generators
 
-These invariants are checked during restoration and through the broader verification suite.
+Broader engine-level invariants are checked in the verification suite.
 
-## Current Limits
+## Freeze-Relevant Limits
 
-- There are no explicit agent-agent interaction rules yet beyond shared-cell harvesting and birth competition through the population cap.
-- Successful reproduction currently skips aging for that tick.
-- Newborns inherit the parent position instead of sampling a new spawn location.
-- `max_energy` exists in the compiled regime, but agent energy is not currently clamped to it at runtime.
-- Local harvest order depends on stable runtime traversal order, not an explicit per-cell ID sort.
-
-## Related Documents
-
-- `docs/canonical_docs/CONFIGURATION.md`
-- `docs/canonical_docs/DETERMINISM.md`
-- `docs/canonical_docs/RNG_ARCHITECTURE.md`
-- `docs/canonical_docs/SIMULATION_PIPELINE.md`
+- there are no explicit agent-agent interaction rules yet beyond shared-cell harvest and competition through the global population cap
+- `max_energy` is not used as a runtime clamp on `energy_level`
+- local harvest order depends on stable encounter order, not an explicit per-cell sort
+- agents do not yet carry traits or inheritance state
