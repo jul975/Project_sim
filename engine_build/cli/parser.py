@@ -13,9 +13,6 @@ from engine_build.cli.requests import (
     VerificationRequest
 )
 
-# NOTE:
-# fertility/dev plotting remains intentionally off the public parser surface.
-# Keep the request builder for compatibility with legacy imports from main.py.
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -181,7 +178,3 @@ def build_validation_request(args: argparse.Namespace) -> ValidationRequest:
     )
 
 
-# Compatibility stub for main.py import.
-# Not wired into the public parser surface anymore.
-def build_fertility_request(args: argparse.Namespace) -> FertilityRequest:
-    return FertilityRequest(seed=getattr(args, "seed", None))
