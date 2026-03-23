@@ -1,443 +1,163 @@
-# Performance Refactor Report  
-## Ecosystem Emergent Behavior Simulator — Pre–Stage III Assessment
+# Performance Status Report
 
-## 1. Overview
+## Pre-Stage III Assessment (March 23, 2026)
 
-This report summarizes the performance problems encountered during the transition to the 2D world / tighter energy-coupling architecture, the structural changes introduced to resolve them, and the measured impact of those changes.
+## Executive Summary
 
-The refactor was triggered by a severe runtime pathology in long-horizon `abundant` regime runs. What initially appeared to be a possible broad algorithmic scaling issue was traced more precisely to an extremely expensive **birth materialization path** inside the commit phase, compounded by unnecessary per-step reporting overhead and an engine structure that had become too rigid for further subsystem expansion.
+The performance crisis that appeared during the 2D transition has been resolved.
 
-The resulting rewrite was substantial, but justified. It improved both:
+The important project-state conclusion is no longer "the simulator is too slow to iterate on." It is now:
 
-- **runtime performance**
-- **architectural clarity and extensibility**
+> the simulator is fast enough to treat as a pre-Stage III freeze baseline, even though the birth path is still the main optimization frontier in growth-heavy regimes.
 
-The current codebase is significantly better positioned for:
+The current engine is not fully optimized, but it is no longer blocked by the catastrophic abundant-run slowdown that previously made long-horizon work impractical.
 
-- regime classification as command-level entry points
-- pytest-based regime validation
-- lightweight plotting / quick visual confirmation
-- occupancy metric reintroduction
-- a stable pre–Stage III freeze
+## Historical Problem
 
----
+During the 2D world / tighter energy-coupling transition, long-horizon `abundant` runs became prohibitively slow.
 
-## 2. Problem Statement
+Documented reference benchmark from the refactor work:
 
-After introducing the 2D world and tighter energy coupling, long-horizon runs in the `abundant` regime became prohibitively slow.
+```text
+python -m engine_build.main experiment --regime abundant --runs 1 --ticks 5000
+```
 
-### Legacy benchmark
-Command:
-`python -m engine_build.main experiment --regime abundant --runs 1 --ticks 5000`
+Legacy reference result:
 
-Output:
-- **Batch duration:** `1682.87s`
-- **Final population:** `428`
-- **Tail mean population:** `417.346`
+- batch duration: `1682.87s`
+- final population: `428`
+- tail mean population: `417.346`
 
-This placed a single 5000-tick abundant run at roughly **28 minutes**, which was too expensive for iterative development, batch mapping, or future validation workflows.
+That placed a single 5000-tick abundant run at roughly 28 minutes, which was too expensive for normal development and validation work.
 
-At that point, this was no longer a cosmetic optimization concern. The cost of simulation had become large enough to block practical extension of the system.
+## Root Cause
 
----
+The main issue was not a single broad quadratic algorithm across the whole engine.
 
-## 3. Root Cause Analysis
+The main issue was:
 
-## 3.1 Immediate hotspot
-
-Earlier profiling showed that the dominant hotspot was the **birth path inside commit**.
-
-The critical legacy path was:
-
-- `Engine.commit_phase()`
-- `Engine.create_new_agent()`
-- `Agent.reproduce()`
-- `Agent.__init__()`
-
-Earlier measurements showed:
-
-- `commit_births = 246.466s`
-- total batch time `= 254.445s`
-- birth commit cost `= 96.86%` of total runtime
-- birth commit cost `= 99.65%` of commit time
-
-This established that the catastrophic slowdown was not spread evenly across the simulation loop. It was concentrated in committed births.
-
----
-
-## 3.2 Legacy structural cause
-
-The old engine handled newborn creation through a very heavy general-purpose path.
-
-For each committed child, the legacy code effectively did the following:
-
-1. derive a child `SeedSequence`
-2. reconstruct lineage through spawn-key logic
-3. create a full `Agent`
-4. inside `Agent.__init__`, spawn three child sequences
-5. construct three NumPy RNG objects
-6. randomly initialize position
-7. randomly initialize energy
-8. then overwrite the child position with the parent position
-
-That meant the engine paid for:
-
-- lineage reconstruction
-- multiple RNG initializations
-- generic constructor logic
-- wasted random position initialization
-
-for every child birth.
-
-In abundant long-horizon runs, this became the dominant cost center.
-
----
-
-## 3.3 Clarifying the scaling issue
-
-The runtime pathology initially resembled a possible `O(n²)` failure. In practice, the evidence suggests a more specific interpretation:
-
-The dominant issue was **not primarily a global quadratic algorithm**.
-
-It was:
-
-- **high birth volume**
+- high birth volume
 - multiplied by
-- **very expensive per-birth construction cost**
+- a very expensive per-birth construction path
 
-So the practical problem was closer to:
+The older newborn path paid for too much generic setup work:
 
-`O(total_births) × very large constant factor`
+- heavier seed-lineage reconstruction
+- multiple RNG initializations per newborn
+- generic constructor behavior that founders and newborns did not actually need equally
+- random child-position initialization that was immediately overwritten by the parent position
 
-rather than a single obvious quadratic loop dominating the whole engine.
+In practice, the slowdown was "too many expensive births," not "everything in the tick loop is broken."
 
-That distinction matters because it explains why a focused redesign of child creation produced such large gains.
+## What Changed
 
----
+The refactor improved both performance and architectural shape.
 
-## 4. Key Structural Problems in the Legacy Design
+### 1. Compact child identity derivation
 
-## 4.1 Heavy newborn construction
-Births used a broad generic initialization path instead of a specialized newborn materialization path.
-
-## 4.2 Wasted initialization work
-Children were given a random position during initialization and then immediately reassigned to the parent’s position.
-
-## 4.3 Always-on world-view construction
-The engine built world-view packaging on every step, including:
-
-- sorted agent lists
-- position arrays
-- energy arrays
-- copied resource grids
-
-This was useful for debugging and metrics, but too expensive to keep permanently in the hot path.
-
-## 4.4 Repeated deterministic sorting
-Deterministic sorting was used repeatedly in places such as:
-
-- movement processing
-- world-view construction
-- local harvest resolution
-
-These were not the main cause of the catastrophic slowdown, but they were meaningful recurring costs.
-
-## 4.5 Insufficient observability
-The old system could tell that runs were slow, but not with enough internal resolution to isolate and optimize the correct layer cleanly.
-
----
-
-## 5. Implemented Changes
-
-The refactor addressed both performance and structural clarity.
-
-## 5.1 Birth identity derivation redesign
-The largest change was replacing the older heavy `SeedSequence`-spawn birth path with a lighter deterministic identity derivation scheme based on compact identity words.
-
-Instead of reconstructing newborn lineage via repeated `SeedSequence.spawn(...)` logic, the current design derives child identity from a fixed deterministic tuple such as:
+The older heavy `SeedSequence.spawn()` lineage path was replaced with deterministic identity words built from:
 
 - run entropy
-- child entropy sampled from parent reproduction RNG
-- parent id
-- offspring count
+- child entropy from the parent's reproduction RNG
+- parent ID
+- parent offspring count
 
-This preserves deterministic identity while avoiding the heavier legacy lineage machinery.
+This preserved deterministic identity while making newborn materialization much cheaper.
 
-### Impact
-- drastically reduces per-birth setup cost
-- makes identity derivation explicit
-- simplifies the reproduction path
-- better matches the engine’s real deterministic requirements
+### 2. Direct newborn positioning
 
----
+Newborns are now initialized directly at the parent position instead of sampling and then overwriting a random position.
 
-## 5.2 Direct newborn positional initialization
-The new birth path initializes newborns directly at the parent position.
+### 3. Cleaner agent initialization
 
-This removes the earlier waste where a random child position was generated only to be overwritten immediately.
+Agent setup is split more clearly into:
 
-### Impact
-- removes unnecessary RNG work
-- removes wasted initialization logic
-- simplifies child creation semantics
+- identity
+- RNG setup
+- state initialization
 
----
+This helps both runtime cost and maintainability.
 
-## 5.3 Agent initialization decomposition
-Agent setup is now more explicitly separated into identity / RNG / state concerns.
+### 4. Optional world-frame collection
 
-This is a structural improvement even beyond performance.
+World-view packaging is no longer always built in the hot path. It is now explicitly optional.
 
-### Impact
-- easier reasoning about initialization
-- easier profiling
-- easier future extension
-- cleaner distinction between founders and newborns
+### 5. In-place resource regrowth
 
----
+Resource regrowth now uses in-place NumPy operations instead of allocating replacement arrays each tick.
 
-## 5.4 Optional world-view collection
-World-view generation is no longer always active in the hot path.
+### 6. Better phase profiling
 
-It can now be selectively enabled rather than being built every step by default.
-
-### Impact
-- removes expensive packaging work from default experiment runs
-- preserves the ability to inspect state when needed
-- improves separation between simulation and observability
-
----
-
-## 5.5 In-place resource regrowth
-Resource updates were changed to use in-place NumPy operations instead of allocating replacement arrays each tick.
-
-### Impact
-- lower allocation overhead
-- lower memory churn
-- cleaner long-horizon performance behavior
-
----
-
-## 5.6 Reduced deterministic sorting overhead
-Some sorting costs were removed or reduced, especially in local harvest resolution.
-
-### Impact
-- less repeated overhead in hot loops
-- improved step throughput
-- better use of already-deterministic iteration order where safe
-
----
-
-## 5.7 Engine-level profiling and phase observability
-The refactor introduced explicit profiling for:
+The engine now measures:
 
 - movement
 - interaction
 - biology
 - commit
 
-and commit subprofiling for:
+and commit subphases:
 
 - setup
 - deaths
 - births
 - resource regrowth
 
-### Impact
-- performance bottlenecks are now measurable
-- optimization can be targeted rather than speculative
-- the engine is more maintainable and diagnosable
+## Documented Reference Impact
 
----
+The checked-in performance notes already capture the core result of the refactor.
 
-## 6. Measured Impact
+Reference comparison:
 
-## 6.1 Benchmark comparison
+| Case | Batch duration | Final population | Tail mean population |
+|---|---:|---:|---:|
+| Legacy abundant (`gamma = 1`) | `1682.87s` | `428` | `417.346` |
+| Refactored abundant (`gamma = 1`) | `19.47s` | `429` | `416.742` |
+| Refactored abundant (`gamma = 0.1`) | `43.78s` | `429` | `416.742` |
 
-### Legacy abundant run (`gamma = 1`)
-- **Batch duration:** `1682.87s`
-- **Final population:** `428`
-- **Tail mean population:** `417.346`
+Interpretation:
 
-### Current abundant run (`gamma = 1`)
-- **Batch duration:** `19.47s`
-- **Final population:** `429`
-- **Tail mean population:** `416.742`
+- the severe structural slowdown was removed
+- the macroscopic regime behavior stayed broadly similar
+- the performance gains came from implementation improvements rather than a major behavioral rewrite
 
-### Current abundant run (`gamma = 0.1`)
-- **Batch duration:** `43.78s`
-- **Final population:** `429`
-- **Tail mean population:** `416.742`
+## Current Interpretation
 
----
+As of March 23, 2026:
 
-## 6.2 Performance gains
+- performance is no longer blocking documentation, validation, or normal batch experimentation
+- births remain the dominant hotspot in abundant-like runs
+- movement is the next visible cost center
+- the current engine shape is good enough to carry into the freeze boundary
 
-### Comparable case (`gamma = 1`)
-Legacy → current:
-- `1682.87s → 19.47s`
-- **~86.4× speedup**
+That is a much healthier position than the earlier March state.
 
-### Alternate current benchmark
-Legacy → current (`43.78s`):
-- `1682.87s → 43.78s`
-- **~38.4× speedup**
+## Remaining Performance Debt
 
-These are not marginal gains. They represent the removal of a severe structural performance defect.
+### Births still dominate high-growth runs
 
----
+This is not an emergency anymore, but it is still the clearest optimization frontier if more work becomes necessary.
 
-## 6.3 Behavioral stability
+### Deep birth-subprofile detail is still limited
 
-Despite the runtime improvements, the macroscopic regime behavior remained broadly stable:
+The highest-level timings are useful. The deepest birth-path breakdown is still not rich enough to fully explain every remaining millisecond.
 
-- final population stayed effectively unchanged
-- tail mean population stayed effectively unchanged
-- extinction rate unchanged
-- cap-hit rate unchanged
-- birth/death ratio unchanged
-- time-series variability stayed similar
+### World-frame and plotting paths remain secondary
 
-This suggests the performance gains came primarily from implementation improvements rather than from qualitative simulation drift.
+The optional observability surfaces are useful, but they are not yet the most polished or most performance-focused part of the project.
 
----
+### No new benchmark rerun was captured for this doc refresh
 
-## 6.4 Current phase profile (`gamma = 1` run)
+This report uses the documented reference benchmarks already checked into the repository. The project-state conclusion still holds: the crisis is resolved and the engine is freezeable.
 
-### Batch phase profile
-- movement: `3.460s`
-- interaction: `1.027s`
-- biology: `0.645s`
-- commit: `14.269s`
+## Freeze Readiness Conclusion
 
-### Commit breakdown
-- setup: `0.014s`
-- deaths: `0.245s`
-- births: `13.924s`
-- resource regrowth: `0.066s`
+The performance story is now good enough for a `v0.2.5` pre-Stage III freeze.
 
-### Interpretation
-The birth path is still the dominant hotspot, but its absolute cost has been reduced dramatically.
+That does **not** mean performance work is over forever.
 
-This is an important result:
+It means:
 
-The refactor did **not** move the bottleneck elsewhere.  
-It successfully reduced the cost of the true bottleneck.
-
----
-
-## 7. Architectural Impact
-
-The refactor improved more than raw speed.
-
-## 7.1 Clearer phase structure
-The engine is now much easier to reason about as an explicit sequence of:
-
-- movement
-- interaction
-- biology
-- commit
-
-This is the correct shape for a simulation core intended to grow.
-
-## 7.2 Better separation of execution and analytics
-Metrics, summaries, phase profiles, and plotting concerns are increasingly separated from the core simulation path.
-
-That is essential for future validation and regime classification work.
-
-## 7.3 Improved Stage III readiness
-The current architecture is much more suitable for:
-
-- occupancy metrics
-- richer local interaction measurements
-- classified regimes as stable CLI entry points
-- pytest-based regime validation
-- future subsystem growth without rebreaking the loop
-
----
-
-## 8. Remaining Technical Debt
-
-The performance crisis is resolved, but the pre–Stage III freeze still requires cleanup.
-
-## 8.1 Births remain the dominant runtime cost
-The birth path is much cheaper than before, but still dominates total runtime in abundant runs.
-
-This is no longer an emergency, but it remains the main performance frontier if future optimization becomes necessary.
-
-## 8.2 Fine-grained birth subprofile is not yet trustworthy
-Current output shows:
-- `seed_creation = 0.000`
-- `agent_creation = 0.000`
-- `dict_insertion = 0.000`
-
-while total birth cost remains large.
-
-This means the deepest birth-subphase instrumentation is not yet accurately wired or resolved enough to explain the remaining cost.
-
-## 8.3 Plotting path needs alignment with world-view collection
-The lightweight plotting option still needs cleanup and better integration with optional world-view collection.
-
-## 8.4 Occupancy metrics need reimplementation
-These are still missing and need to be restored before the pre–Stage III freeze if they are part of the intended validation / visualization workflow.
-
-## 8.5 CLI / `main.py` cleanup remains
-The experiment surface is close, but still needs cleanup to become a stable command-level interface for classified regimes.
-
-## 8.6 Regime validation suite must be aligned with current registry
-The pytest validation system should reflect the current regime names and current empirical outputs, not older assumptions.
-
-## 8.7 Documentation lags the codebase
-The architecture and performance story have changed significantly. Docs should be updated before freezing this version.
-
----
-
-## 9. Assessment of the Rewrite
-
-This rewrite was justified.
-
-The 2D world and closer energy coupling exposed structural weaknesses that would have made further expansion increasingly inefficient and difficult to validate. The old architecture could still execute, but it was not well shaped for sustained growth.
-
-The refactor solved that by:
-
-- specializing the most expensive path
-- restoring a clean phase structure
-- improving performance observability
-- reducing hot-path reporting overhead
-- making the engine viable again for long-horizon experimentation
-
-This should be understood not as wasted time, but as a necessary architectural reset.
-
----
-
-## 10. Recommended Pre–Stage III Freeze Checklist
-
-Before freezing the pre–Stage III version, the highest-value remaining tasks are:
-
-1. clean `main.py` and stabilize regime command entry points  
-2. update lightweight plotting and align it with optional world-view collection  
-3. reintroduce occupancy metrics  
-4. finalize classified regimes as user-facing commands  
-5. migrate regime validation into the pytest module  
-6. update documentation to reflect the current architecture and performance improvements  
-7. freeze the version as the stable pre–Stage III baseline  
-
----
-
-## 11. Final Conclusion
-
-The performance issue that emerged after the 2D-world / energy-coupling transition was severe enough that it had to be addressed before Stage III.
-
-That intervention succeeded.
-
-The current engine is:
-
-- **dramatically faster**
-- **architecturally clearer**
-- **more observable**
-- **more suitable for validation**
-- **much closer to a proper expansion base**
-
-The key technical result is that abundant 5000-tick runs improved from **1682.87s** to **19.47s** in the comparable `gamma=1` case while preserving essentially the same macroscopic regime behavior.
-
-That makes the present snapshot a strong candidate for a **pre–Stage III freeze**, once the remaining cleanup, plotting, occupancy metrics, validation alignment, and documentation updates are completed.
+- the worst regression has been fixed
+- the remaining hotspots are known
+- the simulator is usable for the next stage of design work
+- performance is now an optimization topic, not a blocking crisis
