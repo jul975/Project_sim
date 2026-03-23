@@ -2,6 +2,23 @@
 
 Deterministic multi-agent ecology simulator for reproducible experiments on a 2D toroidal resource landscape.
 
+## Conceptual view
+
+The simulator is a **discrete-time stochastic state-transition system**.
+
+At each tick, it takes the current global state, applies a fixed update schedule, consumes controlled randomness, and produces the next state.
+
+$$S_{t+1} = F(S_t, \xi_t; \theta)$$
+
+Where:
+
+- $S_t$ = full simulator state at time $t$
+- $\xi_t$ = stochastic input at tick $t$
+- $\theta$ = parameter set / regime configuration
+- $F$ = simulator transition operator
+
+## Current state
+
 As of March 23, 2026, the repository is at package version `0.3.0a0` and represents the current pre-Stage III / pre-`v0.3` freeze candidate. The 2D engine transition is live, determinism is still a hard constraint, and the main public surface is a small CLI for experiments plus suite-based verification and validation.
 
 ## Pre-Stage III Freeze Snapshot
@@ -48,8 +65,8 @@ Current defaults from `engine_build/execution/default.py`:
 ## Quickstart
 
 ```bash
-git clone https://github.com/jul975/Project_sim.git
-cd Project_sim
+git clone https://github.com/jul975/FestinaLente.git
+cd FestinaLente
 python -m venv .venv
 ```
 
