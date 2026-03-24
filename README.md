@@ -23,7 +23,7 @@ This project tries to emulate such behavior in a simple ecosystem with two speci
 ## Dynamic overview
 
 **Figure 1.** Place-holder dynamics visuals
-![Alt text](docs/images/place_h_dynamics.png)
+![Alt text](docs/video/placholder_dynamics.gif)
 
 In it's current state, the simulator creates a 2d world where each cell has a certain fertility level.
 
