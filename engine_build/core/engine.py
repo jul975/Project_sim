@@ -352,6 +352,7 @@ class Engine:
         resources = self.world.resources.copy()
 
         return WorldView(
+            tick=self.world.tick,
             positions=positions,
             energies=energies,
             resources=resources
