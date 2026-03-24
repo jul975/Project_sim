@@ -56,3 +56,10 @@ class ValidationRequest:
     pytest_args: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True)
+class DynamicRunRequest:
+    regime: RegimeName
+    seed: int | None = None
+    ticks: int | None = None
+
+

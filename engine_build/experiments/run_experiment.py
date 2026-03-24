@@ -12,6 +12,8 @@ from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.compiled import CompiledRegime
 
+from engine_build.cli.requests import ExperimentRequest
+
 from engine_build.analytics.regime_summery import (
     summarise_regime,
     classify_regime,
@@ -24,7 +26,7 @@ from engine_build.analytics.batch_analytics import AnalysisConfig
 
 
 
-def run_experiment_mode(request) -> int:
+def run_experiment_mode(request : ExperimentRequest) -> int:
     regime_spec = get_regime_spec(request.regime)
     regime_config : CompiledRegime = compile_regime(regime_spec)
     print_experiment_spec(regime_spec)
