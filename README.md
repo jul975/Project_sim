@@ -22,8 +22,18 @@ This project tries to emulate such behavior in a simple ecosystem with two speci
 
 ## Dynamic overview
 
-**Figure 1.** Place-holder dynamics visuals
-![Alt text](docs/video/updated_dynamics24.gif)
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <strong>Figure 1.</strong> Place-holder stable dynamics visuals<br/>
+      <img src="docs/video/updated_dynamics24.gif" alt="Place-holder stable dynamics visuals" width="100%" />
+    </td>
+    <td align="center" width="50%">
+      <strong>Figure 2.</strong> Place-holder collapse dynamics visuals<br/>
+      <img src="docs/video/COLLAPSE_GIF.gif" alt="Place-holder collapse dynamics visuals" width="100%" />
+    </td>
+  </tr>
+</table>
 
 In it's current state, the simulator creates a 2d world where each cell has a certain fertility level.
 
