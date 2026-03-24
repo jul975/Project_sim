@@ -1,8 +1,14 @@
 # Ecosystem Emergent Behavior Simulator
 
-Deterministic multi-agent ecology simulator for reproducible experiments on a 2D toroidal resource landscape.
+![Alt text](docs/images/birds_geo.png)
+
+Emergent Behavior is the apparent result of simple rules being followed by individuals in a system, leading to complex and often unpredictable patterns at the level of the group.
+
+This project tries to emulate such behavior in a simple ecosystem with two species, prey and predators. The goal is to study the behavior of the system and how it changes when we modify the rules of the game.
 
 ## Conceptual view
+
+Deterministic multi-agent ecology simulator for reproducible experiments on a 2D toroidal resource landscape.
 
 The simulator is a **discrete-time stochastic state-transition system**.
 
