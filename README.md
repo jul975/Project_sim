@@ -1,10 +1,33 @@
-# Ecosystem Emergent Behavior Simulator
 
+# Festina Lente
+
+**Festina Lente** or "make haste slowly" was one of the favorite motto's of Caesar Augustus.
+
+It's a reminder that in order to make progress, we need to take our time to build a solid foundation, in order to move forward more steadily. Keeping momentum without loosing scope and direction.
+
+## Ecosystem Emergent Behavior Simulator
+
+**Figure 1.** Emergent behavior in a flock of birds.
 ![Alt text](docs/images/birds_geo.png)
 
 Emergent Behavior is the apparent result of simple rules being followed by individuals in a system, leading to complex and often unpredictable patterns at the level of the group.
 
+Like a flock of birds flying together in a seemingly coordinated manner, even though each bird is only following simple rules of avoiding collisions and staying close to neighbors.
+
+Every level of our complex world can be seen as a result of emergent behavior. From simple rules of physics, we get chemistry, from simple rules of chemistry we get biology, and from simple rules of biology we get behavior of animals, and so on...
+
+Once you conceptualize this phenomenon, you'll start to see it everywhere. From the traffic patterns in cities, to the price of goods in the economy, to the behavior of people in social media.
+
 This project tries to emulate such behavior in a simple ecosystem with two species, prey and predators. The goal is to study the behavior of the system and how it changes when we modify the rules of the game.
+
+## Dynamic overview
+
+**Figure 1.** Place-holder dynamics visuals
+![Alt text](docs/images/place_h_dynamics.png)
+
+In it's current state, the simulator creates a 2d world where each cell has a certain fertility level.
+
+The fertility level determines how much resources the cell can regenerate each turn. The resources are harvested by the agents. The agents move around the world, harvest resources, reproduce and die. The agents age and die of old age. The agents die of starvation if they don't have enough energy. The agents die of reproduction if they use all their energy to reproduce.
 
 ## Conceptual view
 
