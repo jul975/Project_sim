@@ -13,12 +13,7 @@ from engine_build.runner.regime_runner import RunArtifacts, Runner
 """
 Mesa-style discrete-space animation for the ecosystem ABM.
 
-Key differences from the older dynamic plot:
-- the agent-space panel uses cell-centered coordinates
-- the axis bounds are [-0.5, width-0.5] / [-0.5, height-0.5]
-- resource/space layers use origin="lower"
-- optional dotted grid lines mimic Mesa's orthogonal grid rendering
-- occupied cells can be aggregated so multi-occupancy remains visible
+This version renders agent occupancy as a density matrix instead of circles.
 
 Controls:
 - space: pause / resume
@@ -27,6 +22,52 @@ Controls:
 """
 
 WORLD_VIEW_CAPTURE_EVERY = 10
+
+
+def _occupancy_matrix(
+    positions: np.ndarray,
+    width: int,
+    height: int,
+) -> np.ndarray:
+    """
+    Convert agent positions (x, y) into a density matrix shaped (height, width),
+    where density[y, x] = number of agents in that cell.
+    """
+    if positions.size == 0:
+        return np.zeros((height, width), dtype=np.int32)
+
+    linear_idx = positions[:, 1] * width + positions[:, 0]
+    counts = np.bincount(linear_idx, minlength=width * height)
+    return counts.reshape(height, width)
+
+
+def _masked_occupancy_matrix(
+    positions: np.ndarray,
+    width: int,
+    height: int,
+) -> np.ma.MaskedArray:
+    density = _occupancy_matrix(positions, width, height)
+    return np.ma.masked_where(density == 0, density)
+
+
+def _max_occupancy(
+    frames: list[WorldView],
+    width: int,
+    height: int,
+) -> int:
+    max_occ = 1
+
+    for frame in frames:
+        positions = frame.positions
+        if positions.size == 0:
+            continue
+
+        linear_idx = positions[:, 1] * width + positions[:, 0]
+        counts = np.bincount(linear_idx, minlength=width * height)
+        frame_max = int(counts.max()) if counts.size else 0
+        max_occ = max(max_occ, frame_max)
+
+    return max_occ
 
 
 def _require_world_view(metrics: SimulationMetrics) -> list[WorldView]:
@@ -38,16 +79,13 @@ def _require_world_view(metrics: SimulationMetrics) -> list[WorldView]:
     return metrics.world_view
 
 
-
 def _sample_ticks(metrics: SimulationMetrics, capture_every: int) -> np.ndarray:
     sample_ticks = np.arange(0, len(metrics.population), capture_every, dtype=int)
     return sample_ticks[: len(metrics.world_view)]
 
 
-
 def _resource_extent(width: int, height: int) -> tuple[float, float, float, float]:
     return (-0.5, width - 0.5, -0.5, height - 0.5)
-
 
 
 def _set_grid_axis(
@@ -72,64 +110,13 @@ def _set_grid_axis(
 
     if draw_grid:
         for x in np.arange(-0.5, width, 1.0):
-            ax.axvline(x, color="gray", linestyle=":", linewidth=0.4, alpha=0.35, zorder=2)
+            ax.axvline(
+                x, color="gray", linestyle=":", linewidth=0.4, alpha=0.35, zorder=2
+            )
         for y in np.arange(-0.5, height, 1.0):
-            ax.axhline(y, color="gray", linestyle=":", linewidth=0.4, alpha=0.35, zorder=2)
-
-
-
-def _aggregate_cell_view(
-    positions: np.ndarray,
-    energies: np.ndarray,
-    width: int,
-    height: int,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Aggregate agents by occupied cell.
-
-    Returns:
-        occupied_positions: (n_occupied, 2) int array with [x, y]
-        mean_energy: (n_occupied,) float array
-        cell_counts: (n_occupied,) int array
-    """
-    if positions.size == 0:
-        return (
-            np.empty((0, 2), dtype=np.int32),
-            np.empty((0,), dtype=float),
-            np.empty((0,), dtype=np.int32),
-        )
-
-    linear_idx = positions[:, 1] * width + positions[:, 0]
-    unique_idx, inverse, counts = np.unique(linear_idx, return_inverse=True, return_counts=True)
-    energy_sums = np.bincount(inverse, weights=energies.astype(float), minlength=len(unique_idx))
-    mean_energy = energy_sums / counts
-
-    xs = unique_idx % width
-    ys = unique_idx // width
-    occupied_positions = np.column_stack((xs, ys)).astype(np.int32, copy=False)
-    return occupied_positions, mean_energy, counts.astype(np.int32, copy=False)
-
-
-
-def _mesa_marker_sizes(width: int, height: int, counts: np.ndarray, *, scale_with_count: bool) -> np.ndarray:
-    if counts.size == 0:
-        return np.asarray([], dtype=float)
-
-    base_size = (180 / max(width, height)) ** 2
-    if not scale_with_count:
-        return np.full(counts.shape, base_size, dtype=float)
-
-    # Non-linear scaling keeps crowding visible without exploding marker area.
-    return base_size * (1.0 + 0.85 * np.sqrt(np.maximum(counts - 1, 0)))
-
-
-
-def _max_energy(frames: list[WorldView]) -> int:
-    max_energy = max(
-        (int(frame.energies.max()) if frame.energies.size else 0 for frame in frames),
-        default=0,
-    )
-    return max(1, max_energy)
-
+            ax.axhline(
+                y, color="gray", linestyle=":", linewidth=0.4, alpha=0.35, zorder=2
+            )
 
 
 def animate_world(
@@ -138,29 +125,21 @@ def animate_world(
     max_resource_level: int,
     *,
     capture_every: int = WORLD_VIEW_CAPTURE_EVERY,
-    trail_length: int = 4,
     fps: int = 20,
     draw_grid: bool = True,
-    aggregate_cells: bool = True,
-    overlay_resources_in_space: bool = True,
+    overlay_resources_in_space: bool = False,
     overlay_fertility_in_space: bool = False,
+    density_alpha: float = 0.95,
 ) -> animation.FuncAnimation:
-    """Animate sampled world-view frames using a Mesa-like grid-space style.
+    """
+    Animate sampled world-view frames using a matrix-colored density plot
+    instead of plotting agent circles.
 
-    Args:
-        metrics: Per-run metrics containing optional world_view snapshots.
-        fertility: Static fertility field shaped (height, width).
-        max_resource_level: Resource upper bound for colormap normalization.
-        capture_every: World-view sampling interval in ticks.
-        trail_length: Number of previous sampled frames to retain as faint occupancy trails.
-        fps: Playback speed.
-        draw_grid: Whether to draw dotted grid lines in the space panel.
-        aggregate_cells: If True, merge all agents in the same cell into a single marker.
-            This is recommended because the model permits multi-occupancy and raw Mesa-style
-            overplotting would hide stacks.
-        overlay_resources_in_space: Draw the dynamic resource field underneath the agent markers.
-        overlay_fertility_in_space: Draw the fertility field underneath the agent markers.
-            Use this instead of resource overlay if you want a static background.
+    The space panel renders:
+    - optional fertility/resource background
+    - occupancy density matrix via imshow
+
+    density[y, x] = number of agents at cell (x, y)
     """
     frames = _require_world_view(metrics)
 
@@ -168,12 +147,12 @@ def animate_world(
     extent = _resource_extent(width, height)
     n_frames = len(frames)
     sampled_ticks = _sample_ticks(metrics, capture_every)
+
     population = np.asarray(metrics.population, dtype=int)
     all_ticks = np.arange(len(population), dtype=int)
     sampled_population = population[sampled_ticks]
 
     state = {"paused": False, "fps": fps, "frame": 0}
-    position_history: list[np.ndarray] = []
 
     fig, axes = plt.subplots(2, 2, figsize=(13, 10))
     ax_fertility = axes[0, 0]
@@ -181,6 +160,9 @@ def animate_world(
     ax_space = axes[1, 0]
     ax_population = axes[1, 1]
 
+    # --------------------------------------------------
+    # Fertility panel
+    # --------------------------------------------------
     fertility_img = ax_fertility.imshow(
         fertility,
         origin="lower",
@@ -188,11 +170,15 @@ def animate_world(
         vmin=0,
         vmax=max_resource_level,
         interpolation="nearest",
+        cmap="Greens",
     )
     ax_fertility.set_title("Fertility")
     _set_grid_axis(ax_fertility, width=width, height=height, draw_grid=False)
     fig.colorbar(fertility_img, ax=ax_fertility, label="Fertility")
 
+    # --------------------------------------------------
+    # Resource panel
+    # --------------------------------------------------
     resource_img = ax_resources.imshow(
         frames[0].resources,
         origin="lower",
@@ -200,122 +186,108 @@ def animate_world(
         vmin=0,
         vmax=max_resource_level,
         interpolation="nearest",
+        cmap="viridis",
     )
     ax_resources.set_title("Resources")
     _set_grid_axis(ax_resources, width=width, height=height, draw_grid=False)
     fig.colorbar(resource_img, ax=ax_resources, label="Resources")
 
-    energy_norm = Normalize(vmin=0, vmax=_max_energy(frames))
-    colorbar_mappable = plt.cm.ScalarMappable(norm=energy_norm, cmap="plasma")
-    colorbar_mappable.set_array([])
-    fig.colorbar(colorbar_mappable, ax=ax_space, label="Agent Energy")
+    # --------------------------------------------------
+    # Space density panel
+    # --------------------------------------------------
+    _set_grid_axis(
+        ax_space,
+        width=width,
+        height=height,
+        draw_grid=draw_grid,
+        background="black",
+    )
 
+    space_background_img = None
+
+    if overlay_fertility_in_space:
+        space_background_img = ax_space.imshow(
+            fertility,
+            origin="lower",
+            extent=extent,
+            vmin=0,
+            vmax=max_resource_level,
+            cmap="Greens",
+            interpolation="nearest",
+            alpha=0.35,
+            zorder=0,
+        )
+    elif overlay_resources_in_space:
+        space_background_img = ax_space.imshow(
+            frames[0].resources,
+            origin="lower",
+            extent=extent,
+            vmin=0,
+            vmax=max_resource_level,
+            cmap="viridis",
+            interpolation="nearest",
+            alpha=0.60,
+            zorder=0,
+        )
+
+    density0 = _masked_occupancy_matrix(frames[0].positions, width, height)
+
+    # Normalize against max per-cell occupancy, not total population.
+    density_vmax = _max_occupancy(frames, width, height)
+    density_norm = Normalize(vmin=1, vmax=density_vmax)
+
+    density_cmap = plt.cm.magma.copy()
+    density_cmap.set_bad((0, 0, 0, 0))  # transparent masked cells
+
+    space_density_img = ax_space.imshow(
+        density0,
+        origin="lower",
+        extent=extent,
+        cmap=density_cmap,
+        norm=density_norm,
+        interpolation="nearest",
+        alpha=density_alpha,
+        zorder=3,
+    )
+
+    fig.colorbar(space_density_img, ax=ax_space, label="Agents per Cell")
+    ax_space.set_title(
+        f"Space Density | Tick {int(sampled_ticks[0])} | Pop {int(sampled_population[0])}"
+    )
+
+    # --------------------------------------------------
+    # Population dynamics panel
+    # --------------------------------------------------
     ax_population.set_title("Population Dynamics")
     ax_population.set_xlim(0, max(1, len(population) - 1))
     ax_population.set_ylim(0, max(1, int(population.max())) * 1.1)
     ax_population.set_xlabel("Tick")
     ax_population.set_ylabel("Population")
+
     population_line, = ax_population.plot([], [], color="black", lw=2)
     time_marker = ax_population.axvline(0, color="red", linestyle="--")
 
-    def draw_space_frame(frame_index: int):
+    # --------------------------------------------------
+    # Update
+    # --------------------------------------------------
+    def update(frame_index: int):
+        state["frame"] = frame_index
+
         current_frame = frames[frame_index]
-        positions = current_frame.positions
-        energies = current_frame.energies
         current_tick = int(sampled_ticks[frame_index])
         current_population = int(sampled_population[frame_index])
 
-        ax_space.clear()
-        _set_grid_axis(ax_space, width=width, height=height, draw_grid=draw_grid, background="black")
-
-        if overlay_fertility_in_space:
-            ax_space.imshow(
-                fertility,
-                origin="lower",
-                extent=extent,
-                vmin=0,
-                vmax=max_resource_level,
-                cmap="Greens",
-                interpolation="nearest",
-                alpha=0.35,
-                zorder=0,
-            )
-
-        if overlay_resources_in_space:
-            ax_space.imshow(
-                current_frame.resources,
-                origin="lower",
-                extent=extent,
-                vmin=0,
-                vmax=max_resource_level,
-                cmap="viridis",
-                interpolation="nearest",
-                alpha=0.75,
-                zorder=0,
-            )
-
-        position_history.append(positions.copy())
-        if len(position_history) > trail_length:
-            position_history.pop(0)
-
-        # Faint occupancy trails: cloud of previous occupied positions.
-        for trail_age, trail_positions in enumerate(position_history[:-1]):
-            if trail_positions.size == 0:
-                continue
-            ax_space.scatter(
-                trail_positions[:, 0],
-                trail_positions[:, 1],
-                s=(110 / max(width, height)) ** 2,
-                marker="o",
-                c="white",
-                alpha=0.08 + 0.08 * trail_age,
-                linewidths=0,
-                zorder=3,
-            )
-
-        if aggregate_cells:
-            plot_positions, plot_energies, cell_counts = _aggregate_cell_view(
-                positions, energies, width, height
-            )
-            sizes = _mesa_marker_sizes(width, height, cell_counts, scale_with_count=True)
-            size_label = f"Occupied {len(plot_positions)} | Agents {current_population}"
-        else:
-            plot_positions = positions
-            plot_energies = energies.astype(float, copy=False)
-            cell_counts = np.ones(len(plot_positions), dtype=np.int32)
-            sizes = _mesa_marker_sizes(width, height, cell_counts, scale_with_count=False)
-            size_label = f"Agents {current_population}"
-
-        if plot_positions.size == 0:
-            xs = np.asarray([], dtype=float)
-            ys = np.asarray([], dtype=float)
-        else:
-            xs = plot_positions[:, 0]
-            ys = plot_positions[:, 1]
-
-        scatter = ax_space.scatter(
-            xs,
-            ys,
-            c=plot_energies,
-            cmap="plasma",
-            norm=energy_norm,
-            s=sizes,
-            marker="o",
-            edgecolors="black",
-            linewidths=0.25,
-            alpha=0.95,
-            zorder=4,
-        )
-        ax_space.set_title(f"Space | Tick {current_tick} | {size_label}")
-        return scatter
-
-    def update(frame_index: int):
-        state["frame"] = frame_index
-        current_frame = frames[frame_index]
-        current_tick = int(sampled_ticks[frame_index])
-
         resource_img.set_data(current_frame.resources)
-        scatter = draw_space_frame(frame_index)
+
+        if space_background_img is not None and overlay_resources_in_space:
+            space_background_img.set_data(current_frame.resources)
+
+        density = _masked_occupancy_matrix(current_frame.positions, width, height)
+        space_density_img.set_data(density)
+
+        ax_space.set_title(
+            f"Space Density | Tick {current_tick} | Pop {current_population}"
+        )
 
         population_line.set_data(
             all_ticks[: current_tick + 1],
@@ -323,7 +295,12 @@ def animate_world(
         )
         time_marker.set_xdata([current_tick])
 
-        return resource_img, scatter, population_line, time_marker
+        return (
+            resource_img,
+            space_density_img,
+            population_line,
+            time_marker,
+        )
 
     ani = animation.FuncAnimation(
         fig,
@@ -333,6 +310,9 @@ def animate_world(
         blit=False,
     )
 
+    # --------------------------------------------------
+    # Controls
+    # --------------------------------------------------
     def apply_fps() -> None:
         ani.event_source.interval = int(1000 / state["fps"])
         fig.canvas.draw_idle()
@@ -373,17 +353,15 @@ def animate_world(
     return ani
 
 
-
 def animate_run(
     run_results: RunArtifacts,
     *,
     capture_every: int = WORLD_VIEW_CAPTURE_EVERY,
-    trail_length: int = 4,
     fps: int = 20,
     draw_grid: bool = True,
-    aggregate_cells: bool = True,
-    overlay_resources_in_space: bool = True,
+    overlay_resources_in_space: bool = False,
     overlay_fertility_in_space: bool = False,
+    density_alpha: float = 0.95,
 ) -> animation.FuncAnimation:
     if run_results.metrics is None:
         raise ValueError("run_results.metrics is None")
@@ -395,14 +373,12 @@ def animate_run(
         fertility=run_results.engine_final.world.fertility,
         max_resource_level=run_results.engine_final.resource_params.max_resource_level,
         capture_every=capture_every,
-        trail_length=trail_length,
         fps=fps,
         draw_grid=draw_grid,
-        aggregate_cells=aggregate_cells,
         overlay_resources_in_space=overlay_resources_in_space,
         overlay_fertility_in_space=overlay_fertility_in_space,
+        density_alpha=density_alpha,
     )
-
 
 
 def main() -> None:
