@@ -79,11 +79,28 @@ Checked on March 23, 2026 in the project `.venv`:
 The live regime registry is:
 
 - `stable`
+
+    ![stable](docs/images/STABLE.png)
+
 - `fragile`
+
+    ![fragile](docs/images/FRAGILE.png)
+
 - `abundant`
+
+    ![abundant](docs/images/ABUNDANT.png)
+
 - `saturated`
+
+    ![saturated](docs/images/SATURATED.png)
+
 - `collapse`
+
+    ![collapse](docs/images/COLLAPSE.png)
+
 - `extinction`
+
+    ![extinction](docs/images/EXTINCTION.png)
 
 Current defaults from `engine_build/execution/default.py`:
 
