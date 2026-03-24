@@ -10,7 +10,8 @@ from engine_build.cli.spec import (
 from engine_build.cli.requests import (
     ExperimentRequest,
     ValidationRequest,
-    VerificationRequest
+    VerificationRequest,
+    DynamicRunRequest
 )
 
 
@@ -143,8 +144,40 @@ def build_parser() -> argparse.ArgumentParser:
         help="Extra raw pytest argument. Repeatable.",
     )
 
-    return parser
 
+    dynamic = subparsers.add_parser(
+        "dynamic",
+        help="Run dynamic simulation.",
+    )
+    dynamic.add_argument(
+        "--regime",
+        required=True,
+        choices=REGIME_OPTIONS,
+        help="Named regime to run.",
+    )
+    dynamic.add_argument(
+        "--seed",
+        type=int,
+        default=None,
+        help="Base seed for deterministic execution.",
+    )
+    dynamic.add_argument(
+        "--ticks",
+        type=int,
+        default=None,
+        help="Number of ticks to run.",
+    )
+
+    return parser
+# -------------------------
+
+
+def build_dynamic_run_request(args: argparse.Namespace) -> DynamicRunRequest:
+    return DynamicRunRequest(
+        regime=args.regime,
+        seed=args.seed,
+        ticks=args.ticks,
+    )
 
 def build_experiment_request(args: argparse.Namespace) -> ExperimentRequest:
     return ExperimentRequest(

@@ -6,6 +6,7 @@ from engine_build.cli.requests import (
     ExperimentRequest,
     VerificationRequest,
     ValidationRequest,
+    DynamicRunRequest,
 )
 from engine_build.cli.spec import (
     REGIME_OPTIONS,
@@ -13,7 +14,7 @@ from engine_build.cli.spec import (
     validation_suite_choices,
 )
 
-MenuRequest = ExperimentRequest | VerificationRequest | ValidationRequest | None
+MenuRequest = ExperimentRequest | VerificationRequest | ValidationRequest | DynamicRunRequest | None
 
 
 def run_menu() -> MenuRequest:
@@ -24,7 +25,8 @@ def run_menu() -> MenuRequest:
         print("1. Run experiment")
         print("2. Run verification suite")
         print("3. Run validation suite")
-        print("4. Exit")
+        print("4. Run dynamic simulation")
+        print("5. Exit")
 
         choice = input("\nSelect option: ").strip()
 
@@ -35,6 +37,8 @@ def run_menu() -> MenuRequest:
         if choice == "3":
             return _build_validation_request()
         if choice == "4":
+            return _build_dynamic_run_request()
+        if choice == "5":
             return None
 
         print("Invalid choice.")
@@ -118,6 +122,27 @@ def _build_validation_request() -> ValidationRequest:
         suite=suite,
         verbose=verbose,
         fail_fast=fail_fast,
+    )
+
+
+def _build_dynamic_run_request() -> DynamicRunRequest:
+    print("\n--- Dynamic Run Setup ---")
+    regime = _choose_from_list("Select regime", REGIME_OPTIONS)
+    seed = _optional_int("Seed")
+    ticks = _optional_int("Ticks", allow_zero=False)
+
+    print("\nDynamic run summary:")
+    print(f"  regime : {regime}")
+    print(f"  seed   : {seed}")
+    print(f"  ticks  : {ticks}")
+
+    if not _yes_no("Run dynamic simulation?", default=True):
+        return _build_dynamic_run_request()
+
+    return DynamicRunRequest(
+        regime=regime,
+        seed=seed,
+        ticks=ticks,
     )
 
 

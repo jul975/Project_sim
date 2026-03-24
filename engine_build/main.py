@@ -40,6 +40,7 @@ from engine_build.cli.parser import (
     build_experiment_request,
     build_verification_request,
     build_validation_request,
+    build_dynamic_run_request,
 )
 
 
@@ -63,6 +64,8 @@ def main(argv: list[str] | None = None) -> int:
         request = build_verification_request(args)
     elif args.command == "validate":
         request = build_validation_request(args)
+    elif args.command == "dynamic":
+        request = build_dynamic_run_request(args)
     else:
         parser.error(f"Unknown command: {args.command}")
         return 2
