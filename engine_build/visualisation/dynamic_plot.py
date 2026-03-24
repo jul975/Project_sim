@@ -3,9 +3,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 from collections import Counter
 
-from engine_build.metrics.world_frames import WorldFrames
-from engine_build.regimes.registry import get_regime_config
-from engine_build.runner.regime_runner import BatchRunner
+from engine_build.core.step_results import WorldView
+from engine_build.regimes.compiled import CompiledRegime
+from engine_build.runner.regime_runner import Runner
+from engine_build.regimes.registry import get_regime_spec
+from engine_build.regimes.compiler import compile_regime
+from engine_build.runner.regime_runner import RunArtifacts
 
 
 """
@@ -22,13 +25,13 @@ population dynamics
 
 
 def animate_world(
-    frames: WorldFrames,
+    frames: list[WorldView],
     fertility: np.ndarray,
     max_resource_level: int,
 ) -> None:
 
-    resources = frames.resources
-    energies = frames.run_agent_energies
+    resources = [frame.resources for frame in frames]
+    energies = [frame.energies for frame in frames]
 
     trail_length = 4
     position_history = []
@@ -277,18 +280,19 @@ def animate_world(
 
 def main():
 
-    regime_config = get_regime_config("stable")
+    regime_spec = get_regime_spec("stable")
+    regime_config : CompiledRegime = compile_regime(regime_spec)
 
     seed = np.random.SeedSequence(42)
 
-    runner = BatchRunner(regime_config, n_runs=1, ticks=1000)
+    runner = Runner(regime_config, n_runs=1)
 
-    engine, metrics, frames = runner.run_single(seed, ticks=1000)
+    run_results : RunArtifacts = runner.run_single(seed, ticks=1000)
 
     animate_world(
-        frames,
-        engine.world.fertility,
-        engine.config.max_resource_level,
+        run_results.metrics.world_view,
+        run_results.engine_final.world.fertility,
+        regime_config.resource_params.max_resource_level,
     )
 
 
