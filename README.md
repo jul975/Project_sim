@@ -1,4 +1,3 @@
-
 # Festina Lente
 
 **Festina Lente** or "make haste slowly" was one of the favorite motto's of Caesar Augustus.
@@ -24,20 +23,51 @@ This project tries to emulate such behavior in a simple ecosystem with two speci
 
 <table align="center">
   <tr>
-    <td align="center" width="50%">
+    <td align="center" width="48%">
       <strong>Figure 1.</strong> Place-holder stable dynamics visuals<br/>
       <img src="docs/video/updated_dynamics24.gif" alt="Place-holder stable dynamics visuals" width="100%" />
     </td>
-    <td align="center" width="50%">
+    <td align="center" width="48%">
       <strong>Figure 2.</strong> Place-holder collapse dynamics visuals<br/>
       <img src="docs/video/COLLAPSE_GIF.gif" alt="Place-holder collapse dynamics visuals" width="100%" />
     </td>
   </tr>
 </table>
 
-In it's current state, the simulator creates a 2d world where each cell has a certain fertility level.
+In it's current state, the simulator creates a 2d world where each world field has a certain fertility level. The fertility level determines how much resources the cell can regenerate each turn. The resources are harvested by the agents.
 
-The fertility level determines how much resources the cell can regenerate each turn. The resources are harvested by the agents. The agents move around the world, harvest resources, reproduce and die. The agents age and die of old age. The agents die of starvation if they don't have enough energy. The agents die of reproduction if they use all their energy to reproduce.
+The system runs for a given amount of 'ticks', where each tick represents a unit of time or 'change', controlled and orchestrated by the engine.
+
+The engine makes a 'step' in time for each tick. Where a step can be formalized as the Transition operator T.
+
+The T operator takes the current state of the system and applies a set of rules to determine the next state. The rules are applied in a specific order, which is defined by the engine. The order is as follows:
+
+1. Movement Phase
+
+    - Agents die of old age.
+    - Agents move to a neighboring cell.
+    - Agents pay the metabolic cost of movement.
+    - if agent energy level <= 0, agent dies of metabolic starvation.
+
+2. Interaction Phase
+
+    - Spatial index is updated.
+    - Agents harvest resources from local field, sharing the harvest according to the number of agents in the local field.
+    - Agents die of starvation if they don't have enough energy.
+
+3. Biology Phase
+
+    - Agents reproduce with a certain probability.
+    - if agent energy level <= 0, agent dies of reproduction.
+    - Agents age.
+
+4. Commit phase
+
+    - Births are committed.
+    - Deaths are committed.
+    - Resources regrow according to fertility.
+
+The T operator is deterministic, meaning that given the same initial state, it will always produce the same output. This is achieved by using a pseudo-random number generator (PRNG) that is initialized with a seed value. The seed value is the only source of randomness in the system.
 
 ## Conceptual view
 
