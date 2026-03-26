@@ -13,35 +13,7 @@ from typing import Dict
 from engine_build.core.step_results import WorldView
 import time
 """
-    'the runner should own orchestration and lifecycle, not interpretation.'
-CAVE:
-        No math.
-        No policy.
-        No regime logic.
-        No state.
-        Just orchestration.
-
-
-        input: config, seeds, ticks
-        output: structured result object
-
-        (master_seed)
-              ↓
-        SeedSequence
-            ↓ spawn(n)
-        ┌────┬────┬────┬────┬────┐
-        SS0  SS1  SS2  SS3  SS4
-        └────┴────┴────┴────┴────┘
-            ↓     ↓     ↓     ↓
-        run  run  run  run  run
-
-        on engine level we have:
-            SS2
-              ↓ spawn(...)
-            world_ss
-            move_ss
-            repro_ss
-            energy_ss
+ 
 
 
 """

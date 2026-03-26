@@ -34,7 +34,28 @@ This project tries to emulate such behavior in a simple ecosystem with two speci
   </tr>
 </table>
 
-In it's current state, the simulator creates a 2d world where each world field has a certain fertility level. The fertility level determines how much resources the cell can regenerate each turn. The resources are harvested by the agents.
+In it's current state, the simulator creates a 2d world where each world field has a certain fertility level. The fertility level determines how much resources the resource field can regenerate each turn.
+
+Each tick, the agents move, harvest resources, reproduce and/or dies. Agents have a certain energy level, . The energy level is depleted each turn and is replenished by harvesting resources. If the energy level reaches zero, the agent dies.
+
+## Conceptual view
+
+Deterministic multi-agent ecology simulator for reproducible experiments on a 2D toroidal resource landscape.
+
+The simulator is a **discrete-time stochastic state-transition system**.
+
+At each tick, it takes the current global state, applies a fixed update schedule, consumes controlled randomness, and produces the next state.
+
+$$S_{t+1} = F(S_t, \xi_t; \theta)$$
+
+Where:
+
+- $S_t$ = full simulator state at time $t$
+- $\xi_t$ = stochastic input at tick $t$
+- $\theta$ = parameter set / regime configuration
+- $F$ = simulator transition operator
+
+---
 
 The system runs for a given amount of 'ticks', where each tick represents a unit of time or 'change', controlled and orchestrated by the engine.
 
@@ -68,23 +89,6 @@ The T operator takes the current state of the system and applies a set of rules 
     - Resources regrow according to fertility.
 
 The T operator is deterministic, meaning that given the same initial state, it will always produce the same output. This is achieved by using a pseudo-random number generator (PRNG) that is initialized with a seed value. The seed value is the only source of randomness in the system.
-
-## Conceptual view
-
-Deterministic multi-agent ecology simulator for reproducible experiments on a 2D toroidal resource landscape.
-
-The simulator is a **discrete-time stochastic state-transition system**.
-
-At each tick, it takes the current global state, applies a fixed update schedule, consumes controlled randomness, and produces the next state.
-
-$$S_{t+1} = F(S_t, \xi_t; \theta)$$
-
-Where:
-
-- $S_t$ = full simulator state at time $t$
-- $\xi_t$ = stochastic input at tick $t$
-- $\theta$ = parameter set / regime configuration
-- $F$ = simulator transition operator
 
 ## Current state
 
