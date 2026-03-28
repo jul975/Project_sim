@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from .regime_classification import RegimeClass
-from .batch_analytics import BatchAnalysis
+from ..classification.regime_classification import RegimeClass
+from ..batch_analytics import BatchAnalysis
 import numpy as np
-from .fingerprint import AggregatedFingerprint
+from ..fingerprint.fingerprint import AggregatedFingerprint
 
 
 @dataclass(frozen=True)

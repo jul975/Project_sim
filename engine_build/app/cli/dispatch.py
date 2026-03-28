@@ -10,7 +10,7 @@ from engine_build.cli.requests import (
     ValidationRequest,
     DynamicRunRequest,
 )
-from engine_build.experiments.run_experiment import run_experiment_mode
+from engine_build.app.services.experiment_service import run_experiment_mode
 from engine_build.verification.run_verification import run_verification_mode
 from engine_build.validation.run_validation import run_validation_mode
 from engine_build.run_dynamicaly.run_dynamic_single import run_dynamic_mode
