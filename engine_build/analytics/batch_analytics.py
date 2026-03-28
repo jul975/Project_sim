@@ -13,14 +13,14 @@ from typing import Dict
 from engine_build.runner.regime_runner import BatchRunResults
 
 
-from engine_build.analytics.fingerprint import get_fingerprints, get_aggregate_fingerprints
-from engine_build.analytics.performance import aggregate_phase_profile
+from engine_build.analytics.fingerprint.fingerprint import get_fingerprints, get_aggregate_fingerprints
+from engine_build.analytics.performance.performance import aggregate_phase_profile
 
 
-from engine_build.analytics.fingerprint import AggregatedFingerprint, Fingerprint
+from engine_build.analytics.fingerprint.fingerprint import AggregatedFingerprint, Fingerprint
 import numpy as np
 
-from engine_build.analytics.performance import BatchPhaseProfile
+from engine_build.analytics.performance.performance import BatchPhaseProfile
 
 
 from engine_build.analytics.world_frames_analytics import analyze_batch_world_frames , BatchWorldFrameAnalysis
