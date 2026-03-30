@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from engine_build.app.execution_context.context import ExecutionContext
-from engine_build.app.execution_context.features import ExecutionFeatures
-from engine_build.app.execution_context.modes import ExecutionMode
-from engine_build.app.execution_context.suite_registry import (
+from engine_build.app.execution_model.context import ExecutionContext
+from engine_build.app.execution_model.features import ExecutionFeatures
+from engine_build.app.execution_model.modes import ExecutionMode
+from engine_build.app.execution_model.suite_registry import (
     REGIME_OPTIONS,
     VALIDATION_SUITES,
     VERIFICATION_SUITES,

@@ -6,8 +6,8 @@
 
 from __future__ import annotations
 
-from engine_build.app.execution_context.context import ExecutionContext
-from engine_build.app.execution_context.modes import ExecutionMode
+from engine_build.app.execution_model.context import ExecutionContext
+from engine_build.app.execution_model.modes import ExecutionMode
 from engine_build.app.execution.services.experiment_service import run_experiment
 from engine_build.app.execution.services.verification_service import run_verification
 from engine_build.app.execution.services.validation_service import run_validation
