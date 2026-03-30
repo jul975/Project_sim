@@ -3,8 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
-from engine_build.app.execution.features import ExecutionFeatures
-from engine_build.app.execution.modes import ExecutionMode
+from engine_build.app.execution_context.features import ExecutionFeatures
+from engine_build.app.execution_context.modes import ExecutionMode
 
 
 RegimeName = Literal[

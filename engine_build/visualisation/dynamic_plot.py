@@ -8,7 +8,7 @@ from engine_build.metrics.metrics import SimulationMetrics
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
-from engine_build.runner.regime_runner import RunArtifacts, Runner
+from engine_build.runner.batch_runner import RunArtifacts, Runner
 
 
 """

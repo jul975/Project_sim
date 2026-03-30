@@ -6,33 +6,6 @@ from engine_build.analytics.fingerprint.fingerprint import AggregatedFingerprint
 import numpy as np
 
 
-def print_experiment_spec(regime_spec : RegimeSpec) -> None:
-    print("======================================================================")
-    print("======================================================================")
-    print("regime_spec: ")
-    print(f"        energy_sec: ")
-    print(f"                beta: {regime_spec.energy_spec.beta}")
-    print(f"                gamma: {regime_spec.energy_spec.gamma}")
-    print(f"                harvest_fraction: {regime_spec.energy_spec.harvest_fraction}")
-    print(f"        reproduction_spec: ")
-    print(f"                probability: {regime_spec.reproduction_spec.probability}")
-    print(f"                probability_change_condition: {regime_spec.reproduction_spec.probability_change_condition}")
-    print(f"        resources_spec: ")
-    print(f"                regen_fraction: {regime_spec.resources_spec.regen_fraction}")
-    print(f"        landscape_spec: ")
-    print(f"                correlation: {regime_spec.landscape_spec.correlation}")
-    print(f"                contrast: {regime_spec.landscape_spec.contrast}")
-    print(f"                floor: {regime_spec.landscape_spec.floor}")
-    print(f"        population_spec: ")
-    print(f"                max_agent_count: {regime_spec.population_spec.max_agent_count}")
-    print(f"                initial_agent_count: {regime_spec.population_spec.initial_agent_count}")
-    print(f"                max_age: {regime_spec.population_spec.max_age}")
-
-    print("======================================================================")
-   
-    print("======================================================================")
-
-
 
 REPORT_WIDTH = 68
 

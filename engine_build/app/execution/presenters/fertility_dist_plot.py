@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from engine_build.runner.regime_runner import Runner
+from engine_build.runner.batch_runner import Runner
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 

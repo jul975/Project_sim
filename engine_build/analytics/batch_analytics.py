@@ -10,7 +10,7 @@ classify_regime(...)
 from dataclasses import dataclass
 from typing import Dict
 
-from engine_build.runner.regime_runner import BatchRunResults
+from engine_build.runner.batch_runner import BatchRunResults
 
 
 from engine_build.analytics.fingerprint.fingerprint import get_fingerprints, get_aggregate_fingerprints

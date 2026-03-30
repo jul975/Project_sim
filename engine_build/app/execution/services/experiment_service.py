@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from engine_build.analytics.batch_analytics import AnalysisConfig, analyze_batch
-from engine_build.analytics.regime_summary import summarise_regime, classify_regime
-from engine_build.app.execution.context import ExecutionContext
-from engine_build.app.execution.defaults import EXPERIMENT_DEFAULTS
+from engine_build.analytics.summaries.regime_summary import summarise_regime, classify_regime
+from engine_build.app.execution_context.context import ExecutionContext
+from engine_build.app.execution_context.default import EXPERIMENT_DEFAULTS
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.runner.batch_runner import BatchRunner
-from engine_build.app.presentation.experiment_console import (
+from engine_build.app.execution.presenters.console import (
     print_experiment_spec,
     print_summarize_analytics,
 )
@@ -18,6 +18,8 @@ from engine_build.visualisation.plot_run import (
     plot_world_view_samples,
 )
 
+
+# NOTE: Service should own the workflow, not build requests.
 
 def run_experiment(context: ExecutionContext) -> int:
     if context.regime is None:

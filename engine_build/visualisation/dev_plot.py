@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from engine_build.runner.regime_runner import BatchRunResults
+from engine_build.runner.batch_runner import BatchRunResults
 
 
 def plot_development_metrics(batch_results: BatchRunResults, seed: int | None = None) -> None:

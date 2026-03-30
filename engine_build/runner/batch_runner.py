@@ -1,17 +1,19 @@
 from engine_build.core.engine import Engine
-from engine_build.execution.default import DEFAULT_MASTER_SEED
+from engine_build.app.execution.default import DEFAULT_MASTER_SEED
 from engine_build.core.step_results import StepReport
 
 
 from engine_build.regimes.compiled import CompiledRegime
 
-from engine_build.metrics.metrics import SimulationMetrics
+from engine_build.analytics.metrics.metrics import SimulationMetrics
 import numpy as np
-from dataclasses import dataclass
-from typing import Dict
+
 
 from engine_build.core.step_results import WorldView
 import time
+
+from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
+from engine_build.runner.seeds import generate_run_sequences
 """
  
 
@@ -19,47 +21,6 @@ import time
 """
 
 
-
-@dataclass
-class PhaseProfile:
-    movement: float = 0.0
-    interaction: float = 0.0
-    biology: float = 0.0
-    commit: float = 0.0
-
-    commit_setup: float = 0.0
-    commit_deaths: float = 0.0
-    commit_births: float = 0.0
-    commit_resource_regrowth: float = 0.0
-
-
-
-
-
-
- 
-# raw one run results
-@dataclass
-class RunArtifacts:
-    engine_final : Engine | None = None
-    metrics : SimulationMetrics | None = None
-    seed : np.random.SeedSequence | None = None
-    phase_profile : PhaseProfile | None = None
-
-    # world frames optional 
-    # NOTE: world frames part of metrics now (SimulationMetrics.world_view)
-    # world_frames : WorldFrames | None = None
-
-
-# raw batch results
-@dataclass
-class BatchRunResults:
-    runs : Dict[np.int64, RunArtifacts]
-    batch_id : int | None = None
-    regime_config : CompiledRegime | None = None
-    ticks : np.int64 | None = None
-    batch_duration : float | None = None
-    max_agent_count : int | None = None
 
 
 
@@ -91,16 +52,9 @@ def add_perf_to_profile(phase_profile : PhaseProfile, step_report : StepReport) 
 
 
 
-def generate_run_sequences(master_seed: int, n_runs: int) -> list[np.random.SeedSequence]:
-    """ I do NOT return master seed, state mutation must be avoided, 
-        therefore the master seed is used only to generate the run seeds.
-        And NEVER touched again 
-    """
-    ss = np.random.SeedSequence(master_seed)
-    return ss.spawn(n_runs)
 
 
-class Runner:
+class BatchRunner:
     def __init__(
             self, 
             regime_config : CompiledRegime , 
