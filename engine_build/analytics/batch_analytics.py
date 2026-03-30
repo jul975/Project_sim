@@ -35,6 +35,7 @@ class BatchMetadata:
     batch_id: int
     ticks: int
     tail_start: int
+    n_runs: int
     batch_duration: float | None
     max_agent_count: int
     max_resource_level: int
@@ -63,6 +64,7 @@ def build_batch_metadata(batch_results : BatchRunResults, analysis_config : Anal
     return BatchMetadata(
         batch_id=batch_results.batch_id,
         ticks=batch_results.ticks,
+        n_runs=len(batch_results.runs),
         tail_start=tail_start,
         batch_duration=batch_results.batch_duration,
         max_agent_count=batch_results.max_agent_count,

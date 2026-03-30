@@ -94,14 +94,14 @@ def _print_phase_summary(batch_analysis: BatchAnalysis, n_runs: int) -> None:
 
 def print_summarize_analytics(
     batch_analysis: BatchAnalysis,
-    n_runs: int,
-    ticks: int,
+
     regime_class: RegimeClass,
     summary: RegimeSummary,
 ) -> None:
     """Print a concise experiment report."""
 
-  
+    n_runs = batch_analysis.batch_metadata.n_runs
+    ticks = batch_analysis.batch_metadata.ticks
     
 
 
