@@ -3,21 +3,20 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from engine_build.cli.parser import (
+from engine_build.app.cli.parser import (
     build_parser,
-    build_experiment_request,
-    build_verification_request,
-    build_validation_request,
+    build_experiment_context,
+    build_verification_context,
+    build_validation_context,
 )
-from engine_build.cli.requests import (
-    ExperimentRequest,
-    VerificationRequest,
-    ValidationRequest,
-)
-from engine_build.cli.spec import (
+from engine_build.app.execution_context.context import (
+    ExecutionContext
+    )
+
+from engine_build.app.execution_context.suite_registry import (
     REGIME_OPTIONS,
-    verification_suite_choices,
-    validation_suite_choices,
+    VERIFICATION_SUITES,
+    VALIDATION_SUITES,
 )
 
 
@@ -37,9 +36,9 @@ def test_cli_smoke_experiment_request_build():
     parser = build_parser()
     args = parser.parse_args(["experiment", "--regime", "stable"])
 
-    request = build_experiment_request(args)
+    request = build_experiment_context(args)
 
-    assert isinstance(request, ExperimentRequest)
+    assert isinstance(request, ExecutionContext)
     assert request.regime == "stable"
     assert request.runs is None
     assert request.ticks is None
@@ -55,9 +54,9 @@ def test_cli_smoke_verify_request_build():
     parser = build_parser()
     args = parser.parse_args(["verify", "--suite", "determinism"])
 
-    request = build_verification_request(args)
+    request = build_verification_context(args)
 
-    assert isinstance(request, VerificationRequest)
+    assert isinstance(request, ExecutionContext)
     assert request.suite == "determinism"
     assert request.verbose is False
     assert request.fail_fast is False
@@ -68,9 +67,9 @@ def test_cli_smoke_validate_request_build():
     parser = build_parser()
     args = parser.parse_args(["validate", "--suite", "contracts"])
 
-    request = build_validation_request(args)
+    request = build_validation_context(args)
 
-    assert isinstance(request, ValidationRequest)
+    assert isinstance(request, ExecutionContext)
     assert request.suite == "contracts"
     assert request.verbose is False
     assert request.fail_fast is False
@@ -89,14 +88,14 @@ def test_cli_smoke_verify_suite_choices_match_spec():
     parser = build_parser()
     verify_parser = _get_subparser(parser, "verify")
 
-    assert _get_suite_choices(verify_parser) == verification_suite_choices()
+    assert _get_suite_choices(verify_parser) == tuple(VERIFICATION_SUITES.keys())
 
 
 def test_cli_smoke_validate_suite_choices_match_spec():
     parser = build_parser()
     validate_parser = _get_subparser(parser, "validate")
 
-    assert _get_suite_choices(validate_parser) == validation_suite_choices()
+    assert _get_suite_choices(validate_parser) == tuple(VALIDATION_SUITES.keys())
 
 
 def test_cli_smoke_help_runs():

@@ -1,19 +1,19 @@
 # repeated runner logic
 
-from engine_build.runner.batch_runner import Runner
+from engine_build.runner.batch_runner import BatchRunner
 from engine_build.core.engine import Engine
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.analytics.batch_analytics import analyze_batch
-from engine_build.execution.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
+from engine_build.app.execution_context.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from dataclasses import fields
 import numpy as np
 
 
 def run_single(seed: int, regime_config : CompiledRegime, ticks: int) :
     """ runs a single simulation for a given seed and ticks. """
-    runner = Runner(
+    runner = BatchRunner(
         regime_config=regime_config,
         n_runs=1,
         batch_id=seed,
@@ -43,11 +43,11 @@ def run_regime_analysis(regime_name: str):
     regime_spec = get_regime_spec(regime_name)
     regime_config = compile_regime(regime_spec)
 
-    runner = Runner(
+    runner = BatchRunner(
         regime_config=regime_config,
         n_runs=VALIDATION_DEFAULTS["runs"],
         batch_id=DEFAULT_MASTER_SEED,
     )
 
-    batch_results = runner.run_regime_batch(ticks=VALIDATION_DEFAULTS["ticks"])
+    batch_results = runner.run_batch(ticks=VALIDATION_DEFAULTS["ticks"])
     return analyze_batch(batch_results, regime_label=regime_name)
