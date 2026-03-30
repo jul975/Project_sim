@@ -1,200 +1,27 @@
-from __future__ import annotations
+from engine_build.app.execution.context import ExecutionContext
+from engine_build.app.execution.features import ExecutionFeatures
+from engine_build.app.execution.modes import ExecutionMode
 
-import argparse
-
-from engine_build.cli.spec import (
-    REGIME_OPTIONS,
-    validation_suite_choices,
-    verification_suite_choices,
-)
-from engine_build.cli.requests import (
-    ExperimentRequest,
-    ValidationRequest,
-    VerificationRequest,
-    DynamicRunRequest
-)
-
-
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="engine_build.main",
-        description="Ecosystem Emergent Behavior Simulator",
-    )
-
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # -------------------------
-    # experiment
-    # -------------------------
-    experiment = subparsers.add_parser(
-        "experiment",
-        help="Run the experimental simulation pipeline.",
-    )
-    experiment.add_argument(
-        "--regime",
-        required=True,
-        choices=REGIME_OPTIONS,
-        help="Named regime to run.",
-    )
-    experiment.add_argument(
-        "--runs",
-        type=int,
-        default=None,
-        help="Number of runs. Leave unset to use experiment defaults.",
-    )
-    experiment.add_argument(
-        "--ticks",
-        type=int,
-        default=None,
-        help="Number of ticks. Leave unset to use experiment defaults.",
-    )
-    experiment.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Base seed for deterministic execution.",
-    )
-    experiment.add_argument(
-        "--plot",
-        action="store_true",
-        help="Plot batch results.",
-    )
-    experiment.add_argument(
-        "--plot-dev",
-        action="store_true",
-        help="Plot development/debug figures.",
-    )
-    experiment.add_argument(
-        "--perf-flag",
-        action="store_true",
-        help="Enable performance/profiling mode.",
-    )
-    experiment.add_argument(
-        "--world-frame-flag",
-        action="store_true",
-        help="Enable world frame capture.",
-    )
-    experiment.add_argument(
-        "--tail-fraction",
-        type=float,
-        default=0.25,
-        help="Fraction of tail to use for analysis.",
-    )
-
-    # -------------------------
-    # verify
-    # -------------------------
-    verify = subparsers.add_parser(
-        "verify",
-        help="Run verification pytest suites.",
-    )
-    verify.add_argument(
-        "--suite",
-        required=True,
-        choices=verification_suite_choices(),
-        help="Verification suite to run.",
-    )
-    verify.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Run pytest with verbose output.",
-    )
-    verify.add_argument(
-        "--fail-fast",
-        action="store_true",
-        help="Stop on first failure.",
-    )
-    verify.add_argument(
-        "--pytest-arg",
-        action="append",
-        default=[],
-        dest="pytest_args",
-        help="Extra raw pytest argument. Repeatable.",
-    )
-
-    # -------------------------
-    # validate
-    # -------------------------
-    validate = subparsers.add_parser(
-        "validate",
-        help="Run validation pytest suites.",
-    )
-    validate.add_argument(
-        "--suite",
-        required=True,
-        choices=validation_suite_choices(),
-        help="Validation suite to run.",
-    )
-    validate.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Run pytest with verbose output.",
-    )
-    validate.add_argument(
-        "--fail-fast",
-        action="store_true",
-        help="Stop on first failure.",
-    )
-    validate.add_argument(
-        "--pytest-arg",
-        action="append",
-        default=[],
-        dest="pytest_args",
-        help="Extra raw pytest argument. Repeatable.",
-    )
-
-
-    dynamic = subparsers.add_parser(
-        "dynamic",
-        help="Run dynamic simulation.",
-    )
-    dynamic.add_argument(
-        "--regime",
-        required=True,
-        choices=REGIME_OPTIONS,
-        help="Named regime to run.",
-    )
-    dynamic.add_argument(
-        "--seed",
-        type=int,
-        default=None,
-        help="Base seed for deterministic execution.",
-    )
-    dynamic.add_argument(
-        "--ticks",
-        type=int,
-        default=None,
-        help="Number of ticks to run.",
-    )
-
-    return parser
-# -------------------------
-
-
-def build_dynamic_run_request(args: argparse.Namespace) -> DynamicRunRequest:
-    return DynamicRunRequest(
-        regime=args.regime,
-        seed=args.seed,
-        ticks=args.ticks,
-    )
-
-def build_experiment_request(args: argparse.Namespace) -> ExperimentRequest:
-    return ExperimentRequest(
+def build_experiment_context(args) -> ExecutionContext:
+    return ExecutionContext(
+        mode=ExecutionMode.EXPERIMENT,
         regime=args.regime,
         seed=args.seed,
         runs=args.runs,
         ticks=args.ticks,
-        plot=args.plot,
-        plot_dev=args.plot_dev,
-        perf_flag=args.perf_flag,
-        world_frame_flag=args.world_frame_flag,
         tail_fraction=args.tail_fraction,
+        features=ExecutionFeatures(
+            plot=args.plot,
+            plot_dev=args.plot_dev,
+            profile=args.perf_flag,
+            capture_world_frames=args.world_frame_flag,
+        ),
     )
 
 
-def build_verification_request(args: argparse.Namespace) -> VerificationRequest:
-    return VerificationRequest(
+def build_verification_context(args) -> ExecutionContext:
+    return ExecutionContext(
+        mode=ExecutionMode.VERIFICATION,
         suite=args.suite,
         verbose=args.verbose,
         fail_fast=args.fail_fast,
@@ -202,8 +29,9 @@ def build_verification_request(args: argparse.Namespace) -> VerificationRequest:
     )
 
 
-def build_validation_request(args: argparse.Namespace) -> ValidationRequest:
-    return ValidationRequest(
+def build_validation_context(args) -> ExecutionContext:
+    return ExecutionContext(
+        mode=ExecutionMode.VALIDATION,
         suite=args.suite,
         verbose=args.verbose,
         fail_fast=args.fail_fast,
@@ -211,3 +39,11 @@ def build_validation_request(args: argparse.Namespace) -> ValidationRequest:
     )
 
 
+def build_exploration_context(args) -> ExecutionContext:
+    return ExecutionContext(
+        mode=ExecutionMode.EXPLORATION,
+        regime=args.regime,
+        seed=args.seed,
+        ticks=args.ticks,
+        features=ExecutionFeatures(animate=True),
+    )
