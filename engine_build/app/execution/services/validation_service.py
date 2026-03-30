@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from engine_build.app.execution_context.context import ExecutionContext
-from engine_build.app.execution_context.suite_registry import (
+from engine_build.app.execution_model.context import ExecutionContext
+from engine_build.app.execution_model.suite_registry import (
     VALIDATION_SUITES,
     resolve_validation_suite_name,
 )

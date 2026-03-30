@@ -9,11 +9,11 @@ from engine_build.app.cli.parser import (
     build_verification_context,
     build_validation_context,
 )
-from engine_build.app.execution_context.context import (
+from engine_build.app.execution_model.context import (
     ExecutionContext
     )
 
-from engine_build.app.execution_context.suite_registry import (
+from engine_build.app.execution_model.suite_registry import (
     REGIME_OPTIONS,
     VERIFICATION_SUITES,
     VALIDATION_SUITES,
