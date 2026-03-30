@@ -43,10 +43,10 @@ def test_cli_smoke_experiment_request_build():
     assert request.runs is None
     assert request.ticks is None
     assert request.seed is None
-    assert request.plot is False
-    assert request.plot_dev is False
-    assert request.perf_flag is False
-    assert request.world_frame_flag is False
+    assert request.features.plotting is False
+    assert request.features.plot_dev is False
+    assert request.features.profiling is False
+    assert request.features.capture_world_frames is False
     assert request.tail_fraction == 0.25
 
 
