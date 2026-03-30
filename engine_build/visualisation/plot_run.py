@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from engine_build.metrics.metrics import SimulationMetrics
+from engine_build.analytics.metrics.metrics import SimulationMetrics
 from engine_build.core.step_results import WorldView
 
 

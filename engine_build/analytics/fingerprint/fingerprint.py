@@ -1,6 +1,6 @@
 
 import numpy as np
-from engine_build.metrics.metrics import SimulationMetrics
+from engine_build.analytics.metrics.metrics import SimulationMetrics
 from dataclasses import dataclass
 
 

@@ -1,5 +1,5 @@
 from engine_build.core.engine import Engine
-from engine_build.app.execution.default import DEFAULT_MASTER_SEED
+from engine_build.app.execution_context.default import DEFAULT_MASTER_SEED
 from engine_build.core.step_results import StepReport
 
 
@@ -129,7 +129,7 @@ class BatchRunner:
 
 
 #############################################################
-    def run_regime_batch(self, 
+    def run_batch(self, 
                          ticks : np.int64, 
 
                          ) -> BatchRunResults:
