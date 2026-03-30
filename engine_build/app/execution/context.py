@@ -1,15 +1,51 @@
-from dataclasses import dataclass
-from typing import Optional
+from __future__ import annotations
 
-from .modes import ExecutionMode
-from .features import ExecutionFeatures
+from dataclasses import dataclass, field
+from typing import Literal
+
+from engine_build.app.execution.features import ExecutionFeatures
+from engine_build.app.execution.modes import ExecutionMode
+
+
+RegimeName = Literal[
+    "stable",
+    "fragile",
+    "abundant",
+    "saturated",
+    "collapse",
+    "extinction",
+]
+
+VerificationSuite = Literal[
+    "all",
+    "determinism",
+    "invariants",
+    "rng",
+    "snapshots",
+]
+
+ValidationSuite = Literal[
+    "all",
+    "contracts",
+    "separation",
+]
+
 
 @dataclass(frozen=True)
 class ExecutionContext:
     mode: ExecutionMode
-    regime_name: Optional[str] = None
-    seed: Optional[int] = None
-    ticks: Optional[int] = None
-    runs: Optional[int] = None
-    suite: Optional[str] = None
-    features: ExecutionFeatures = ExecutionFeatures()
+
+    regime: RegimeName | None = None
+    suite: VerificationSuite | ValidationSuite | None = None
+
+    seed: int | None = None
+    runs: int | None = None
+    ticks: int | None = None
+
+    tail_fraction: float = 0.25
+
+    verbose: bool = False
+    fail_fast: bool = False
+    pytest_args: tuple[str, ...] = field(default_factory=tuple)
+
+    features: ExecutionFeatures = field(default_factory=ExecutionFeatures)
