@@ -18,6 +18,7 @@ from engine_build.visualisation.plot_run import (
     plot_world_view_samples,
 )
 
+from engine_build.app.execution.execute_service.execute import build_batch_analysis
 
 # NOTE: Service should own the workflow, not build requests.
 
@@ -25,40 +26,17 @@ def run_experiment(context: ExecutionContext) -> int:
     if context.regime is None:
         raise ValueError("Experiment mode requires a regime.")
 
-    regime_spec = get_regime_spec(context.regime)
-    regime_config = compile_regime(regime_spec)
+    
 
-    ticks = context.ticks if context.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
-    runs = context.runs if context.runs is not None else EXPERIMENT_DEFAULTS["runs"]
-
-    print_experiment_spec(regime_spec)
-
-    runner : BatchRunner = BatchRunner(
-        regime_config=regime_config,
-        n_runs=runs,
-        batch_id=context.seed,
-        include_world_frames=context.features.capture_world_frames,
-        include_perf=context.features.profiling,
-    )
-
-    batch_results = runner.run_batch(ticks=ticks)
-
-    batch_analysis = analyze_batch(
-        batch_results,
-        AnalysisConfig(
-            include_perf=context.features.profiling,
-            include_world_frames=context.features.capture_world_frames,
-            regime_label=context.regime,
-        ),
-    )
-
+    batch_analysis = build_batch_analysis(context)
+        
     summary = summarise_regime(batch_analysis)
     regime_class = classify_regime(summary)
 
     print_summarize_analytics(
         batch_analysis=batch_analysis,
-        n_runs=runs,
-        ticks=ticks,
+        
+
         regime_class=regime_class,
         summary=summary,
     )
