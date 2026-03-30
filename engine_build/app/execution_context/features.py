@@ -3,7 +3,7 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class ExecutionFeatures:
     profiling: bool = False
-    world_frames: bool = False
+    capture_world_frames: bool = False
     plotting: bool = False
-    export: bool = False
-    verbose: bool = False
+    plot_dev: bool = False
+    animate: bool = False

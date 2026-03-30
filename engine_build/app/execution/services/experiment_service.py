@@ -37,7 +37,7 @@ def run_experiment(context: ExecutionContext) -> int:
         regime_config=regime_config,
         n_runs=runs,
         batch_id=context.seed,
-        include_world_frames=context.features.world_frames,
+        include_world_frames=context.features.capture_world_frames,
         include_perf=context.features.profiling,
     )
 
@@ -47,7 +47,7 @@ def run_experiment(context: ExecutionContext) -> int:
         batch_results,
         AnalysisConfig(
             include_perf=context.features.profiling,
-            include_world_frames=context.features.world_frames,
+            include_world_frames=context.features.capture_world_frames,
             regime_label=context.regime,
         ),
     )
@@ -66,13 +66,13 @@ def run_experiment(context: ExecutionContext) -> int:
     if context.features.plotting:
         plot_batch_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})
 
-    if context.features.verbose:
+    if context.features.plot_dev:
         first_metrics = batch_results.runs[0].metrics
         if first_metrics is None:
             raise ValueError("Missing metrics for run 0")
         plot_single_run_metrics(first_metrics, run_id=0)
 
-        if context.features.world_frames:
+        if context.features.capture_world_frames:
             plot_world_view_summary(first_metrics)
             plot_world_view_samples(first_metrics)
 

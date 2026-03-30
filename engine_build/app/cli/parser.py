@@ -20,10 +20,11 @@ def build_experiment_context(args) -> ExecutionContext:
         ticks=args.ticks,
         tail_fraction=args.tail_fraction,
         features=ExecutionFeatures(
-            plot=args.plot,
+            plotting=args.plot,
             plot_dev=args.plot_dev,
-            profile=args.perf_flag,
+            profiling=args.perf_flag,
             capture_world_frames=args.world_frame_flag,
+            animate=args.animate,
         ),
     )
 
@@ -82,7 +83,8 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="world_frame_flag",
     )
-    experiment.add_argument("--tail-fraction", type=float, default=0.25)
+    experiment.add_argument("--tail-fraction", type=float, default=0.25),
+    experiment.add_argument("--animate", action="store_true")
 
     # verify
     verify = subparsers.add_parser("verify", help="Run verification suite")
