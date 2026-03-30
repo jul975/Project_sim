@@ -9,7 +9,6 @@ from engine_build.analytics.metrics.metrics import SimulationMetrics
 import numpy as np
 
 
-from engine_build.core.step_results import WorldView
 import time
 
 from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
