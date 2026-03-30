@@ -81,10 +81,11 @@ def _build_experiment_context() -> ExecutionContext:
         seed=seed,
         tail_fraction=tail_fraction,
         features=ExecutionFeatures(
-            plot=plot,
-            plot_dev=plot_dev,
-            profile=profile,
-            capture_world_frames=capture_world_frames,
+            profiling=profile,
+            world_frames=capture_world_frames,
+            plotting=plot,
+            
+            verbose=plot_dev,
         ),
     )
 

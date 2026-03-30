@@ -4,11 +4,11 @@ from matplotlib.colors import Normalize
 import numpy as np
 
 from engine_build.core.step_results import WorldView
-from engine_build.metrics.metrics import SimulationMetrics
+from engine_build.analytics.metrics.metrics import SimulationMetrics
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
-from engine_build.runner.batch_runner import RunArtifacts, Runner
+from engine_build.runner.batch_runner import RunArtifacts, BatchRunner
 
 """
 Mesa-style discrete-space animation for the ecosystem ABM.
@@ -386,7 +386,7 @@ def main() -> None:
     regime_config: CompiledRegime = compile_regime(regime_spec)
 
     seed = np.random.SeedSequence(42)
-    runner = Runner(
+    runner = BatchRunner(
         regime_config,
         n_runs=1,
         include_world_frames=True,

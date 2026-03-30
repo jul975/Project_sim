@@ -33,12 +33,12 @@ def run_experiment(context: ExecutionContext) -> int:
 
     print_experiment_spec(regime_spec)
 
-    runner = BatchRunner(
+    runner : BatchRunner = BatchRunner(
         regime_config=regime_config,
         n_runs=runs,
         batch_id=context.seed,
-        include_world_frames=context.features.capture_world_frames,
-        include_perf=context.features.profile,
+        include_world_frames=context.features.world_frames,
+        include_perf=context.features.profiling,
     )
 
     batch_results = runner.run_batch(ticks=ticks)
@@ -46,8 +46,8 @@ def run_experiment(context: ExecutionContext) -> int:
     batch_analysis = analyze_batch(
         batch_results,
         AnalysisConfig(
-            include_perf=context.features.profile,
-            include_world_frames=context.features.capture_world_frames,
+            include_perf=context.features.profiling,
+            include_world_frames=context.features.world_frames,
             regime_label=context.regime,
         ),
     )
@@ -63,16 +63,16 @@ def run_experiment(context: ExecutionContext) -> int:
         summary=summary,
     )
 
-    if context.features.plot:
+    if context.features.plotting:
         plot_batch_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})
 
-    if context.features.plot_dev:
+    if context.features.verbose:
         first_metrics = batch_results.runs[0].metrics
         if first_metrics is None:
             raise ValueError("Missing metrics for run 0")
         plot_single_run_metrics(first_metrics, run_id=0)
 
-        if context.features.capture_world_frames:
+        if context.features.world_frames:
             plot_world_view_summary(first_metrics)
             plot_world_view_samples(first_metrics)
 
