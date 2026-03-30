@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from engine_build.execution.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
-from engine_build.runner.regime_runner import Runner
+from engine_build.runner.batch_runner import Runner
 from engine_build.analytics.batch_analytics import analyze_batch, AnalysisConfig
 from engine_build.analytics.summaries.regime_summary import summarise_regime, classify_regime
 

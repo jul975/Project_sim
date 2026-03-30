@@ -2,32 +2,29 @@
 
 # bridge, maps request to workflow
 
+# NOTE: Dispatch should only route to services, not build requests.
+
 from __future__ import annotations
 
-from engine_build.cli.requests import (
-    ExperimentRequest,
-    VerificationRequest,
-    ValidationRequest,
-    DynamicRunRequest,
-)
-from engine_build.app.services.experiment_service import run_experiment_mode
-from engine_build.verification.run_verification import run_verification_mode
-from engine_build.validation.run_validation import run_validation_mode
-from engine_build.run_dynamicaly.run_dynamic_single import run_dynamic_mode
+from engine_build.app.execution_context.context import ExecutionContext
+from engine_build.app.execution_context.modes import ExecutionMode
+from engine_build.app.execution.services.experiment_service import run_experiment
+from engine_build.app.execution.services.verification_service import run_verification
+from engine_build.app.execution.services.validation_service import run_validation
+from engine_build.app.execution.services.exploration_service import run_exploration
 
 
-def dispatch(request) -> int:
-    if isinstance(request, ExperimentRequest):
-        return run_experiment_mode(request)
+def dispatch(context: ExecutionContext) -> int:
+    if context.mode is ExecutionMode.EXPERIMENT:
+        return run_experiment(context)
 
-    if isinstance(request, VerificationRequest):
-        return run_verification_mode(request)
+    if context.mode is ExecutionMode.VERIFICATION:
+        return run_verification(context)
 
-    if isinstance(request, ValidationRequest):
-        return run_validation_mode(request)
-    
-    if isinstance(request, DynamicRunRequest):
-        return run_dynamic_mode(request)
+    if context.mode is ExecutionMode.VALIDATION:
+        return run_validation(context)
 
+    if context.mode is ExecutionMode.EXPLORATION:
+        return run_exploration(context)
 
-    raise TypeError(f"Unsupported request type: {type(request)!r}")
+    raise ValueError(f"Unsupported execution mode: {context.mode!r}")

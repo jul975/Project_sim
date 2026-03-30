@@ -1,6 +1,6 @@
 # repeated runner logic
 
-from engine_build.runner.regime_runner import Runner
+from engine_build.runner.batch_runner import Runner
 from engine_build.core.engine import Engine
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.registry import get_regime_spec

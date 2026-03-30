@@ -2,22 +2,19 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from engine_build.cli.requests import (
-    ExperimentRequest,
-    VerificationRequest,
-    ValidationRequest,
-    DynamicRunRequest,
-)
-from engine_build.cli.spec import (
+from engine_build.app.execution_context.context import ExecutionContext
+from engine_build.app.execution_context.features import ExecutionFeatures
+from engine_build.app.execution_context.modes import ExecutionMode
+from engine_build.app.execution_context.suite_registry import (
     REGIME_OPTIONS,
-    verification_suite_choices,
-    validation_suite_choices,
+    VALIDATION_SUITES,
+    VERIFICATION_SUITES,
 )
 
-MenuRequest = ExperimentRequest | VerificationRequest | ValidationRequest | DynamicRunRequest | None
+MenuContext = ExecutionContext | None
 
 
-def run_menu() -> MenuRequest:
+def run_menu() -> MenuContext:
     while True:
         print("\n" + "=" * 50)
         print(" Ecosystem Emergent Behavior Simulator ")
@@ -25,26 +22,26 @@ def run_menu() -> MenuRequest:
         print("1. Run experiment")
         print("2. Run verification suite")
         print("3. Run validation suite")
-        print("4. Run dynamic simulation")
+        print("4. Run exploration / dynamic simulation")
         print("5. Exit")
 
         choice = input("\nSelect option: ").strip()
 
         if choice == "1":
-            return _build_experiment_request()
+            return _build_experiment_context()
         if choice == "2":
-            return _build_verification_request()
+            return _build_verification_context()
         if choice == "3":
-            return _build_validation_request()
+            return _build_validation_context()
         if choice == "4":
-            return _build_dynamic_run_request()
+            return _build_exploration_context()
         if choice == "5":
             return None
 
         print("Invalid choice.")
 
 
-def _build_experiment_request() -> ExperimentRequest:
+def _build_experiment_context() -> ExecutionContext:
     print("\n--- Experiment Setup ---")
     regime = _choose_from_list("Select regime", REGIME_OPTIONS)
     runs = _optional_int("Runs", allow_zero=False)
@@ -52,97 +49,119 @@ def _build_experiment_request() -> ExperimentRequest:
     seed = _optional_int("Seed")
     plot = _yes_no("Plot batch results?", default=False)
     plot_dev = _yes_no("Plot dev figures?", default=False)
-    perf_flag = _yes_no("Enable perf profiling?", default=False)
-    world_frame_flag = _yes_no("Enable world-frame capture?", default=False)
-    tail_fraction = _optional_float("Tail fraction", default=0.25, min_value=0.0, max_value=1.0)
+    profile = _yes_no("Enable perf profiling?", default=False)
+    capture_world_frames = _yes_no("Enable world-frame capture?", default=False)
+    tail_fraction = _optional_float(
+        "Tail fraction",
+        default=0.25,
+        min_value=0.0,
+        max_value=1.0,
+    )
 
     print("\nExperiment summary:")
-    print(f"  regime           : {regime}")
-    print(f"  runs             : {runs}")
-    print(f"  ticks            : {ticks}")
-    print(f"  seed             : {seed}")
-    print(f"  plot             : {plot}")
-    print(f"  plot_dev         : {plot_dev}")
-    print(f"  perf_flag        : {perf_flag}")
-    print(f"  world_frame_flag : {world_frame_flag}")
-    print(f"  tail_fraction    : {tail_fraction}")
+    print(f"  mode                 : {ExecutionMode.EXPERIMENT.name}")
+    print(f"  regime               : {regime}")
+    print(f"  runs                 : {runs}")
+    print(f"  ticks                : {ticks}")
+    print(f"  seed                 : {seed}")
+    print(f"  plot                 : {plot}")
+    print(f"  plot_dev             : {plot_dev}")
+    print(f"  profile              : {profile}")
+    print(f"  capture_world_frames : {capture_world_frames}")
+    print(f"  tail_fraction        : {tail_fraction}")
 
     if not _yes_no("Launch experiment?", default=True):
-        return _build_experiment_request()
+        return _build_experiment_context()
 
-    return ExperimentRequest(
+    return ExecutionContext(
+        mode=ExecutionMode.EXPERIMENT,
         regime=regime,
         runs=runs,
         ticks=ticks,
         seed=seed,
-        plot=plot,
-        plot_dev=plot_dev,
-        perf_flag=perf_flag,
-        world_frame_flag=world_frame_flag,
         tail_fraction=tail_fraction,
+        features=ExecutionFeatures(
+            plot=plot,
+            plot_dev=plot_dev,
+            profile=profile,
+            capture_world_frames=capture_world_frames,
+        ),
     )
 
 
-def _build_verification_request() -> VerificationRequest:
+def _build_verification_context() -> ExecutionContext:
     print("\n--- Verification Setup ---")
-    suite = _choose_from_list("Select verification suite", verification_suite_choices())
+    suite = _choose_from_list(
+        "Select verification suite",
+        tuple(VERIFICATION_SUITES.keys()),
+    )
     verbose = _yes_no("Verbose output?", default=False)
     fail_fast = _yes_no("Fail fast?", default=False)
 
     print("\nVerification summary:")
+    print(f"  mode      : {ExecutionMode.VERIFICATION.name}")
     print(f"  suite     : {suite}")
     print(f"  verbose   : {verbose}")
     print(f"  fail_fast : {fail_fast}")
 
     if not _yes_no("Run verification?", default=True):
-        return _build_verification_request()
+        return _build_verification_context()
 
-    return VerificationRequest(
+    return ExecutionContext(
+        mode=ExecutionMode.VERIFICATION,
         suite=suite,
         verbose=verbose,
         fail_fast=fail_fast,
     )
 
 
-def _build_validation_request() -> ValidationRequest:
+def _build_validation_context() -> ExecutionContext:
     print("\n--- Validation Setup ---")
-    suite = _choose_from_list("Select validation suite", validation_suite_choices())
+    suite = _choose_from_list(
+        "Select validation suite",
+        tuple(VALIDATION_SUITES.keys()),
+    )
     verbose = _yes_no("Verbose output?", default=False)
     fail_fast = _yes_no("Fail fast?", default=False)
 
     print("\nValidation summary:")
+    print(f"  mode      : {ExecutionMode.VALIDATION.name}")
     print(f"  suite     : {suite}")
     print(f"  verbose   : {verbose}")
     print(f"  fail_fast : {fail_fast}")
 
     if not _yes_no("Run validation?", default=True):
-        return _build_validation_request()
+        return _build_validation_context()
 
-    return ValidationRequest(
+    return ExecutionContext(
+        mode=ExecutionMode.VALIDATION,
         suite=suite,
         verbose=verbose,
         fail_fast=fail_fast,
     )
 
 
-def _build_dynamic_run_request() -> DynamicRunRequest:
-    print("\n--- Dynamic Run Setup ---")
+def _build_exploration_context() -> ExecutionContext:
+    print("\n--- Exploration / Dynamic Run Setup ---")
     regime = _choose_from_list("Select regime", REGIME_OPTIONS)
     seed = _optional_int("Seed")
     ticks = _optional_int("Ticks", allow_zero=False)
 
-    print("\nDynamic run summary:")
+    print("\nExploration summary:")
+    print(f"  mode   : {ExecutionMode.EXPLORATION.name}")
     print(f"  regime : {regime}")
     print(f"  seed   : {seed}")
     print(f"  ticks  : {ticks}")
 
-    if not _yes_no("Run dynamic simulation?", default=True):
-        return _build_dynamic_run_request()
+    if not _yes_no("Run exploration?", default=True):
+        return _build_exploration_context()
 
-    return DynamicRunRequest(
+    return ExecutionContext(
+        mode=ExecutionMode.EXPLORATION,
         regime=regime,
         seed=seed,
         ticks=ticks,
+        features=ExecutionFeatures(animate=True),
     )
 
 

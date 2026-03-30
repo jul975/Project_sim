@@ -1,5 +1,5 @@
 
-from engine_build.runner.regime_runner import RunArtifacts
+from engine_build.runner.batch_runner import RunArtifacts
 from typing import Dict
 import numpy as np
 from dataclasses import dataclass, field

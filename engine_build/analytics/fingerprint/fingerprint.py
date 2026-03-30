@@ -4,7 +4,7 @@ from engine_build.metrics.metrics import SimulationMetrics
 from dataclasses import dataclass
 
 
-from engine_build.runner.regime_runner import BatchRunResults, RunArtifacts
+from engine_build.runner.batch_runner import BatchRunResults, RunArtifacts
 from typing import Dict
 
 """
