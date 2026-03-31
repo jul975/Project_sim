@@ -1,7 +1,7 @@
 from dataclasses import dataclass , field
 from typing import TYPE_CHECKING
 
-from .step_results import MovementReport, InteractionReport, BiologyReport
+from .contracts.step_results import MovementReport, InteractionReport, BiologyReport
 
 from typing import List
 

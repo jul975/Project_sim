@@ -15,7 +15,7 @@ from .world import World
 
 
 
-from .step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile, AgentSetup
+from .contracts.step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile, AgentSetup
 
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams

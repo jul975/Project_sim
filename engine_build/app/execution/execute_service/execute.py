@@ -4,7 +4,7 @@ from engine_build.app.execution_model.default import EXPERIMENT_DEFAULTS
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.runner.batch_runner import BatchRunner, BatchRunResults
-from engine_build.analytics.batch_analytics import analyze_batch, AnalysisConfig, BatchAnalysis
+from engine_build.analytics.pipelines.analyze_batch import analyze_batch, AnalysisConfig, BatchAnalysis
 
 from engine_build.app.execution.presenters.console import print_experiment_spec
 

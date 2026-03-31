@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from engine_build.analytics.observation.simulation_metrics import SimulationMetrics
-from engine_build.core.step_results import WorldView
-from engine_build.analytics.batch_analytics import BatchAnalysis
+from engine_build.core.contracts.step_results import WorldView
+from engine_build.analytics.contracts.batch_analysis import BatchAnalysis
 
 
 def _require_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
