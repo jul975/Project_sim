@@ -31,6 +31,15 @@ from dataclasses import dataclass
 """
 @dataclass(frozen=True)
 class EnergyParams:
+    """ Energy related parameters. 
+    Attributes:
+        max_energy: int
+        energy_init_range: tuple[int, int]
+        max_harvest: int
+        movement_cost: int
+        reproduction_threshold: int
+        reproduction_cost: int
+    """
     max_energy: int
     energy_init_range: tuple[int, int]
     
@@ -43,23 +52,49 @@ class EnergyParams:
 
 @dataclass(frozen=True)
 class ReproductionParams:
-    """ Non energy related reproduction parameters. """
+    """ Non energy related reproduction parameters. 
+    Attributes:
+        probability: float
+        probability_change_condition: float
+    """
     probability: float
     probability_change_condition: float
 
 @dataclass(frozen=True)
 class ResourceParams:
+    """ Non energy related resource parameters. 
+    Attributes:
+        max_resource_level: int
+        regen_rate: int
+    """
     max_resource_level: int
     regen_rate: int
 
 @dataclass(frozen=True)
 class LandscapeParams:
+    """ Non energy related landscape parameters. 
+    Attributes:
+        correlation: float
+        contrast: float
+        floor: float
+    
+    NOTE: 
+        -   correlation: float →  kernel_size = max(3, round(correlation * world_width))
+        -   contrast: float →  fertility = floor + contrast * smooth * (max_resource_level - floor)
+        -   floor: float →  fertility = floor + contrast * smooth * (max_resource_level - floor)
+    """
     correlation: float
     contrast: float
     floor: float
 
 @dataclass(frozen=True)
 class PopulationParams:
+    """ Non energy related population parameters. 
+    Attributes:
+        max_agent_count: int
+        initial_agent_count: int
+        max_age: int
+    """
     max_agent_count: int
     initial_agent_count: int
     max_age: int
@@ -73,6 +108,17 @@ class WorldParams:
 
 @dataclass(frozen=True)
 class CompiledRegime:
+    """ CompiledRegime is the result of the compilation of a RegimeSpec.
+        It contains all the parameters needed to initialize an Engine.
+   
+    Attributes:
+        energy_params: EnergyParams
+        resource_params: ResourceParams
+        reproduction_params: ReproductionParams
+        population_params: PopulationParams
+        world_params: WorldParams
+        landscape_params: LandscapeParams
+    """
     # max_energy and max_resource_level inside EnergyParams and ResourceParams for now, logic:
     #   -   max_energy is part of the agents energy system, as such it makes sense to keep it there.
     #   -   max_resource_level is part of the resources system, as such it makes sense to keep it there.
