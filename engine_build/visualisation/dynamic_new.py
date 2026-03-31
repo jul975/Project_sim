@@ -4,7 +4,7 @@ from matplotlib.colors import Normalize
 import numpy as np
 
 from engine_build.core.step_results import WorldView
-from engine_build.analytics.metrics.metrics import SimulationMetrics
+from engine_build.analytics.observation.simulation_metrics import SimulationMetrics
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
