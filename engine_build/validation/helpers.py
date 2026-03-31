@@ -4,7 +4,7 @@ from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, VALIDA
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.runner.batch_runner import BatchRunner
-from engine_build.analytics.batch_analytics import analyze_batch, AnalysisConfig
+from engine_build.analytics.pipelines.analyze_batch import analyze_batch, AnalysisConfig
 from engine_build.analytics.summaries.regime_summary import summarise_regime, classify_regime
 
 
@@ -53,3 +53,7 @@ def run_validation_case(
         summary=summary,
         classified_regime=classified,
     )
+
+
+if __name__ == "__main__":
+    pass

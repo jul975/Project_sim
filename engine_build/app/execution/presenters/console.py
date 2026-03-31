@@ -78,3 +78,8 @@ def present_world_view_plots(batch_results : BatchRunResults):
     first_metrics = batch_results.runs[0].metrics
     plot_world_view_summary(first_metrics)
     plot_world_view_samples(first_metrics)
+
+
+
+if __name__ == "__main__":
+    pass

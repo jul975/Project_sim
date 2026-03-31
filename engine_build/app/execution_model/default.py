@@ -13,3 +13,8 @@ VALIDATION_DEFAULTS = {
     "ticks": 1000,
     "runs": 10,
 }
+
+
+
+if __name__ == "__main__":
+    pass

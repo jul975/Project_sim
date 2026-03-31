@@ -49,3 +49,8 @@ class ExecutionContext:
     pytest_args: tuple[str, ...] = field(default_factory=tuple)
 
     features: ExecutionFeatures = field(default_factory=ExecutionFeatures)
+
+
+
+if __name__ == "__main__":
+    pass

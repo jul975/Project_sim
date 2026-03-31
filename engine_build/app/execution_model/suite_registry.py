@@ -48,3 +48,9 @@ VALIDATION_SUITE_ALIASES: dict[str, str] = {
 
 def resolve_validation_suite_name(name: str) -> str:
     return VALIDATION_SUITE_ALIASES.get(name, name)
+
+
+
+
+if __name__ == "__main__":
+    pass

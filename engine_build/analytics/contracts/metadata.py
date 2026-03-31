@@ -56,3 +56,7 @@ def build_batch_metadata(batch_results : BatchRunResults, analysis_config : Anal
         max_resource_level=batch_results.runs[0].engine_final.world.max_harvest
 
     )
+
+
+if __name__ == "__main__":
+    pass

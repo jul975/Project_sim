@@ -7,3 +7,9 @@ class ExecutionFeatures:
     plotting: bool = False
     plot_dev: bool = False
     animate: bool = False
+
+
+
+
+if __name__ == "__main__":
+    pass

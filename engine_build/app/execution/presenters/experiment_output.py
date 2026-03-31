@@ -150,3 +150,11 @@ def print_summarize_analytics(
     _print_phase_summary(batch_analysis, n_runs)
     print("")
     _rule()
+
+
+
+
+
+
+if __name__ == "__main__":
+    pass

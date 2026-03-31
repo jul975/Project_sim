@@ -35,3 +35,8 @@ class BatchAnalysis:
     batch_world_frames : BatchWorldFrameAnalysis | None = None
     regime_label : str | None = None
 
+
+
+
+if __name__ == "__main__":
+    pass

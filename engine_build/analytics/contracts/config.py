@@ -18,3 +18,10 @@ class AnalysisConfig:
 
     # temp value, 
     regime_label: str | None = None
+
+
+
+
+
+if __name__ == "__main__":
+    pass
