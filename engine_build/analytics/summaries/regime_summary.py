@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from ..classification.regime_classification import RegimeClass
-from ..batch_analytics import BatchAnalysis
-import numpy as np
-from ..fingerprint.fingerprint import AggregatedFingerprint
 
+import numpy as np
+
+from engine_build.analytics.contracts.batch_analysis import BatchAnalysis
+from engine_build.analytics.batch_level.aggregate_fingerprint import AggregatedFingerprint
 
 @dataclass(frozen=True)
 class RegimeSummary:
@@ -21,7 +22,7 @@ class RegimeSummary:
 
         - low_population_rate:              Fraction of time steps at which the population was low.
         - birth_death_ratio:                Mean birth to death ratio over runs.
-        
+
         - mean_time_cv_over_runs:           Mean of the time coefficient of variation over runs.
         - final_population_cv:              Coefficient of variation of the final populations over runs.
         - max_agent_count:                  Maximum agent count of the regime.

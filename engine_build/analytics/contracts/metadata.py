@@ -1,6 +1,8 @@
 
 from dataclasses import dataclass
 
+from engine_build.analytics.contracts.config import AnalysisConfig
+from engine_build.runner.results import BatchRunResults
 
 @dataclass(frozen=True)
 class BatchMetadata:
