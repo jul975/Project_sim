@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 
-from engine_build.analytics.contracts.config import AnalysisConfig
+from engine_build.analytics.contracts.analysis_context import AnalysisContext
 from engine_build.runner.results import BatchRunResults
 
 @dataclass(frozen=True)
@@ -26,14 +26,12 @@ class BatchMetadata:
     max_resource_level: int
 
 
-def resolve_tail_start(total_tics: int, tail_fraction = 0.25) -> int:
-    """ resolve tail start. """
-    return int(total_tics * (1.0 - tail_fraction))
 
 
 
 
-def build_batch_metadata(batch_results : BatchRunResults, analysis_config : AnalysisConfig) -> BatchMetadata:
+
+def build_batch_metadata(batch_results : BatchRunResults, analysis_context : AnalysisContext) -> BatchMetadata:
     """ build batch metadata. """
 
     if batch_results.batch_id is None:
@@ -43,17 +41,16 @@ def build_batch_metadata(batch_results : BatchRunResults, analysis_config : Anal
     if batch_results.batch_duration is None:
         raise ValueError("batch_results.batch_duration is None")
     
-    tail_start = resolve_tail_start(batch_results.ticks, analysis_config.tail_fraction)
     return BatchMetadata(
         batch_id=batch_results.batch_id,
-        ticks=batch_results.ticks,
-        n_runs=len(batch_results.runs),
-        tail_start=tail_start,
+        ticks=analysis_context.total_tics,
+        n_runs=analysis_context.n_runs,
+        tail_start=analysis_context.tail_start,
         batch_duration=batch_results.batch_duration,
-        max_agent_count=batch_results.max_agent_count,
+        max_agent_count=analysis_context.compiled_regime.population_params.max_agent_count,
 
         # NOTE: this is a bit of a hack, assumes all runs in a batch have the same max resource level
-        max_resource_level=batch_results.runs[0].engine_final.world.max_harvest
+        max_resource_level=analysis_context.compiled_regime.resource_params.max_resource_level
 
     )
 

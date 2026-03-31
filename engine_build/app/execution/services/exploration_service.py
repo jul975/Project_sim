@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from engine_build.app.execution_model.context import ExecutionContext
+from engine_build.app.execution_model.execution_context import ExecutionContext
 from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, EXPLORATION_DEFAULTS
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec

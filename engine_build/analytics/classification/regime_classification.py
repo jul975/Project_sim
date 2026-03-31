@@ -53,3 +53,7 @@ def classify_regime(summary: RegimeSummary) -> RegimeClass:
         return RegimeClass.STABLE
 
     return RegimeClass.UNCLASSIFIED
+
+
+if __name__ == "__main__":
+    pass

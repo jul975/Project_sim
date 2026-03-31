@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from engine_build.app.execution_model.context import ExecutionContext
+from engine_build.app.execution_model.execution_context import ExecutionContext
 from engine_build.app.execution_model.suite_registry import (
     VALIDATION_SUITES,
     resolve_validation_suite_name,

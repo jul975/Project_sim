@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from ..classification.regime_classification import RegimeClass
 
 import numpy as np
 

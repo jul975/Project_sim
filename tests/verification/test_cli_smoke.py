@@ -9,7 +9,7 @@ from engine_build.app.cli.parser import (
     build_verification_context,
     build_validation_context,
 )
-from engine_build.app.execution_model.context import (
+from engine_build.app.execution_model.execution_context import (
     ExecutionContext
     )
 
