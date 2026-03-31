@@ -6,7 +6,7 @@ if TYPE_CHECKING:
     from .engine import Engine
     from .snapshots import AgentSnapshot
 
-from .step_results import AgentSetup
+from .contracts.step_results import AgentSetup
 from .snapshots import _agent_from_snapshot
 
 

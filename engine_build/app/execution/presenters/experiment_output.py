@@ -1,8 +1,7 @@
 
-from engine_build.regimes.spec import RegimeSpec
-from engine_build.analytics.batch_analytics import BatchAnalysis
+from engine_build.analytics.contracts.batch_analysis import BatchAnalysis
 from engine_build.analytics.summaries.regime_summary import RegimeSummary, RegimeClass
-from engine_build.analytics.fingerprint.fingerprint import AggregatedFingerprint
+from engine_build.analytics.batch_level.aggregate_fingerprint import AggregatedFingerprint
 import numpy as np
 
 

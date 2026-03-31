@@ -13,7 +13,7 @@ from engine_build.visualisation.plot_run import (
     plot_world_view_summary,
     plot_world_view_samples,
 )
-from engine_build.analytics.batch_analytics import BatchAnalysis
+from engine_build.analytics.contracts.batch_analysis import BatchAnalysis
 
 from engine_build.app.execution.execute_service.execute import build_batch_analysis
 

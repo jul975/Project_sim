@@ -10,7 +10,7 @@ from engine_build.analytics.summaries.regime_summary import (
 )
 from engine_build.runner.results import BatchRunResults
 
-from engine_build.analytics.batch_analytics import BatchAnalysis
+from engine_build.analytics.contracts.batch_analysis import BatchAnalysis
 
 
 from engine_build.regimes.spec import RegimeSpec

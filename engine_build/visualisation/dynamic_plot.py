@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 import numpy as np
 
-from engine_build.core.step_results import WorldView
+from engine_build.core.contracts.step_results import WorldView
 from engine_build.metrics.metrics import SimulationMetrics
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiler import compile_regime

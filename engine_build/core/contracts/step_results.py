@@ -3,27 +3,13 @@
 from dataclasses import dataclass, field
 import numpy as np
 
+from .world_view import WorldView
+from .profiling import CommitProfile, StepProfile
+
 @dataclass(frozen=True)
 class AgentSetup:
     identity_words : tuple[np.int64, ...]
 
-
-@dataclass(frozen=True)
-class CommitProfile:
-
-    setup : float = 0.0
-    deaths : float = 0.0
-    births : float = 0.0
-    resource_regrowth : float = 0.0
-
-
-# temp
-@dataclass(frozen=True)
-class StepProfile:
-    movement: float = 0.0
-    interaction: float = 0.0
-    biology: float = 0.0
-    commit: float = 0.0
 
 
 # NOTE: not holding agent references, only ids.
@@ -45,13 +31,6 @@ class BiologyReport:
     post_reproduction_death_count : int = 0
 
 
-@dataclass(frozen=True)
-class WorldView:
-    tick : int = 0
-    positions : np.ndarray = field(default_factory=np.ndarray)
-    energies : np.ndarray = field(default_factory=np.ndarray)
-    resources : np.ndarray = field(default_factory=np.ndarray)
-    
 
 
 

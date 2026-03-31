@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 import numpy as np
 
-from engine_build.core.step_results import WorldView
+from engine_build.core.contracts.step_results import WorldView
 
 
 
