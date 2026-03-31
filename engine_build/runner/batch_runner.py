@@ -5,7 +5,7 @@ from engine_build.core.step_results import StepReport
 
 from engine_build.regimes.compiled import CompiledRegime
 
-from engine_build.analytics.metrics.metrics import SimulationMetrics
+from engine_build.analytics.observation.simulation_metrics import SimulationMetrics
 import numpy as np
 
 

@@ -3,7 +3,7 @@ from engine_build.app.execution_model.context import ExecutionContext
 from engine_build.app.execution_model.default import EXPERIMENT_DEFAULTS
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
-from engine_build.runner.batch_runner import BatchRunner
+from engine_build.runner.batch_runner import BatchRunner, BatchRunResults
 from engine_build.analytics.batch_analytics import analyze_batch, AnalysisConfig, BatchAnalysis
 
 from engine_build.app.execution.presenters.console import print_experiment_spec
@@ -28,7 +28,7 @@ def build_batch_analysis(context: ExecutionContext) -> BatchAnalysis:
         include_perf=context.features.profiling,
     )
 
-    batch_results = runner.run_batch(ticks=ticks)
+    batch_results : BatchRunResults = runner.run_batch(ticks=ticks)
     
     return analyze_batch(
         batch_results,
