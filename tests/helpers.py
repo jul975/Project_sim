@@ -5,7 +5,7 @@ from engine_build.core.engine import Engine
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
-from engine_build.analytics.batch_analytics import analyze_batch
+from engine_build.analytics.pipelines.analyze_batch import analyze_batch
 from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from dataclasses import fields
 import numpy as np
@@ -51,3 +51,7 @@ def run_regime_analysis(regime_name: str):
 
     batch_results = runner.run_batch(ticks=VALIDATION_DEFAULTS["ticks"])
     return analyze_batch(batch_results, regime_label=regime_name)
+
+
+if __name__ == "__main__":
+    pass

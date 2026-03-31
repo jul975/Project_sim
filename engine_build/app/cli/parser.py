@@ -119,3 +119,8 @@ def build_parser() -> argparse.ArgumentParser:
     dynamic.add_argument("--ticks", type=int)
 
     return parser
+
+
+
+if __name__ == "__main__":
+    pass

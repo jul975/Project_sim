@@ -194,3 +194,9 @@ def analyze_single_run_world_frames( world_frames : list[WorldView], max_resourc
 
         mean_density_resource_correlation=mean_density_resource_correlation
     )
+
+
+
+
+if __name__ == "__main__":
+    pass

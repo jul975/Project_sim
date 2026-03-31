@@ -246,3 +246,8 @@ def _yes_no(prompt: str, default: bool) -> bool:
             return False
 
         print("Please enter y or n.")
+
+
+
+if __name__ == "__main__":
+    pass

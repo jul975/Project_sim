@@ -32,3 +32,8 @@ def run_validation(context: ExecutionContext) -> int:
     print(f"[validation] Running validation suite: {suite_name}")
     result = pytest.main(pytest_args)
     return int(result)
+
+
+
+if __name__ == "__main__":
+    pass

@@ -74,3 +74,6 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
 
 
 
+
+if __name__ == "__main__":
+    pass

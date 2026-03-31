@@ -30,3 +30,7 @@ def run_exploration(context: ExecutionContext) -> int:
     run_result = batch_results.runs[0]
     animate_run(run_result, fps=10)
     return 0
+
+
+if __name__ == "__main__":
+    pass

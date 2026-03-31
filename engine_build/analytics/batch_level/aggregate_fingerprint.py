@@ -90,3 +90,8 @@ def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFi
         batch_near_low_population_rate=batch_near_low_population_rate,
 
     )
+
+
+
+if __name__ == "__main__":
+    pass

@@ -27,3 +27,7 @@ def run_verification(context: ExecutionContext) -> int:
     print(f"[verification] Running verification suite: {context.suite}")
     result = pytest.main(pytest_args)
     return int(result)
+
+
+if __name__ == "__main__":
+    pass

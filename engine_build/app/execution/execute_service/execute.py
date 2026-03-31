@@ -38,3 +38,7 @@ def build_batch_analysis(context: ExecutionContext) -> BatchAnalysis:
             regime_label=context.regime,
         ),
     )
+
+
+if __name__ == "__main__":
+    pass

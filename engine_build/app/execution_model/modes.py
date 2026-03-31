@@ -6,3 +6,9 @@ class ExecutionMode(Enum):
     VERIFICATION = auto()
     EXPLORATION = auto()
     DIAGNOSTIC = auto()
+
+
+
+
+if __name__ == "__main__":
+    pass

@@ -103,3 +103,6 @@ def analyze_batch_world_frames(batch_runs : dict[int, RunArtifacts], max_resourc
     
 
   
+  
+if __name__ == "__main__":
+    pass

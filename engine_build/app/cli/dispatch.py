@@ -28,3 +28,8 @@ def dispatch(context: ExecutionContext) -> int:
         return run_exploration(context)
 
     raise ValueError(f"Unsupported execution mode: {context.mode!r}")
+
+
+
+if __name__ == "__main__":
+    pass

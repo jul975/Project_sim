@@ -58,3 +58,5 @@ def aggregate_phase_profile(batch_runs : Dict[np.int64, RunArtifacts], batch_dur
 
 
     
+if __name__ == "__main__":
+    pass
