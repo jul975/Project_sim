@@ -2,11 +2,8 @@
 from engine_build.app.execution.presenters.experiment_output import print_summarize_analytics
 from engine_build.visualisation.plot_run import plot_batch_metrics, plot_single_run_metrics, plot_world_view_summary, plot_world_view_samples 
 
-from engine_build.analytics.summaries.regime_summary import (
-
-    RegimeSummary,
-    RegimeClass,
-)
+from engine_build.analytics.summaries.regime_summary import RegimeSummary
+from engine_build.analytics.classification.regime_classification import RegimeClass
 
 
 from engine_build.runner.results import BatchRunResults

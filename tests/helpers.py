@@ -9,7 +9,7 @@ from engine_build.analytics.pipelines.analyze_batch import analyze_batch
 from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from dataclasses import fields
 import numpy as np
-from engine_build.analytics.contracts.config import AnalysisConfig
+from engine_build.analytics.contracts.analysis_context import AnalysisContext
 
 
 def run_single(seed: int, regime_config : CompiledRegime, ticks: int) :
@@ -49,7 +49,7 @@ def run_regime_analysis(regime_name: str):
         n_runs=VALIDATION_DEFAULTS["runs"],
         batch_id=DEFAULT_MASTER_SEED,
     )
-    analysis_config = AnalysisConfig(
+    analysis_context = AnalysisContext(
         include_world_frames=True,
         include_perf=True,
         regime_label=regime_name,
@@ -57,7 +57,7 @@ def run_regime_analysis(regime_name: str):
 
 
     batch_results = runner.run_batch(ticks=VALIDATION_DEFAULTS["ticks"])
-    return analyze_batch(batch_results, analysis_config)
+    return analyze_batch(batch_results, analysis_context)
 
 
 if __name__ == "__main__":

@@ -6,52 +6,43 @@ analyze_batch(batch_results, config)
 classify_regime(...)
 
 """
-
-from engine_build.analytics.contracts.config import AnalysisConfig
+from engine_build.analytics.contracts.analysis_context import AnalysisContext
 from engine_build.analytics.contracts.metadata import build_batch_metadata
 from engine_build.analytics.contracts.batch_analysis import BatchAnalysis
-
 from engine_build.runner.batch_runner import BatchRunResults
-
-
 from engine_build.analytics.run_level.fingerprint import get_fingerprints
 from engine_build.analytics.batch_level.aggregate_fingerprint import get_aggregate_fingerprints
-
 from engine_build.analytics.batch_level.aggregate_performance import aggregate_phase_profile
-
-
-
-
-
 from engine_build.analytics.batch_level.aggregate_world_frames import analyze_batch_world_frames
 
 
 
 
 
-def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisConfig) -> BatchAnalysis:
+def analyze_batch(batch_results : BatchRunResults, analysis_context : AnalysisContext) -> BatchAnalysis:
     """ analyze a batch of runs. """
 
     if batch_results.regime_config is None:
         raise ValueError("batch_results.regime_config is None")
     
-    metadata = build_batch_metadata(batch_results, analysis_config)
+    ###########
+    metadata = build_batch_metadata(batch_results, analysis_context)
 
 
-
+    ###########
     run_fingerprints = get_fingerprints(batch_results.runs, metadata.tail_start)
     aggregate_fingerprint = get_aggregate_fingerprints(list(run_fingerprints.values()))
 
 
     
-    if analysis_config.include_perf:
+    if analysis_context.options.include_perf:
         batch_phase_profile = aggregate_phase_profile(batch_results.runs, metadata.batch_duration)
     else:
         batch_phase_profile = None
 
 
     
-    if analysis_config.include_world_frames:
+    if analysis_context.options.include_world_frames:
         batch_world_frames = analyze_batch_world_frames(batch_results.runs, metadata.max_resource_level)
     else:
         batch_world_frames = None    
@@ -68,7 +59,7 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
         
         batch_world_frames = batch_world_frames,
         #
-        regime_label = analysis_config.regime_label
+        regime_label = analysis_context.regime_label
     )
     
 

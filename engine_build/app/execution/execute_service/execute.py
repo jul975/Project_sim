@@ -1,23 +1,25 @@
 
-from engine_build.app.execution_model.context import ExecutionContext
+from engine_build.app.execution_model.execution_context import ExecutionContext
 from engine_build.app.execution_model.default import EXPERIMENT_DEFAULTS
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.runner.batch_runner import BatchRunner, BatchRunResults
-from engine_build.analytics.pipelines.analyze_batch import analyze_batch, AnalysisConfig, BatchAnalysis
-
 from engine_build.app.execution.presenters.console import print_experiment_spec
 
+from engine_build.analytics.contracts.analysis_context import AnalysisContext, AnalysisOptions
 
-def build_batch_analysis(context: ExecutionContext) -> BatchAnalysis:
-    """ build batch, run batch and return analysis from context. """
-# def sep function for building and retuning batch analysis
+
+def build_and_run_batch(context: ExecutionContext) -> tuple[BatchRunResults, AnalysisContext]:
+    """ build batch, run batch and return batch results from context. """
+
+# def sep function for building and retuning batch 
     regime_spec = get_regime_spec(context.regime)
     regime_config = compile_regime(regime_spec)
 
     ticks = context.ticks if context.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
     runs = context.runs if context.runs is not None else EXPERIMENT_DEFAULTS["runs"]
 
+    # NOTE: temp need to move 
     print_experiment_spec(regime_spec)
 
     runner : BatchRunner = BatchRunner(
@@ -29,15 +31,19 @@ def build_batch_analysis(context: ExecutionContext) -> BatchAnalysis:
     )
 
     batch_results : BatchRunResults = runner.run_batch(ticks=ticks)
-    
-    return analyze_batch(
-        batch_results,
-        AnalysisConfig(
+
+    analysis_context = AnalysisContext(
+        n_runs=runs,
+        total_tics=ticks,
+        regime_label=context.regime,
+        compiled_regime=regime_config,
+        options=AnalysisOptions(
             include_perf=context.features.profiling,
             include_world_frames=context.features.capture_world_frames,
-            regime_label=context.regime,
         ),
     )
+    
+    return batch_results, analysis_context
 
 
 if __name__ == "__main__":
