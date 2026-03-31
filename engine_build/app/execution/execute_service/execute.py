@@ -10,6 +10,7 @@ from engine_build.app.execution.presenters.console import print_experiment_spec
 
 
 def build_batch_analysis(context: ExecutionContext) -> BatchAnalysis:
+    """ build batch, run batch and return analysis from context. """
 # def sep function for building and retuning batch analysis
     regime_spec = get_regime_spec(context.regime)
     regime_config = compile_regime(regime_spec)

@@ -7,6 +7,25 @@ from ..fingerprint.fingerprint import AggregatedFingerprint
 
 @dataclass(frozen=True)
 class RegimeSummary:
+    """ Summary of a regime. 
+    
+    Attributes:
+        - final_populations_mean:           Mean of the final populations over runs.
+        - mean_population_over_runs:        Mean of the mean populations over runs.
+
+        - std_mean_population_over_runs:    Standard deviation of the mean populations over runs.
+        - extinction_rate:                  Fraction of runs that went extinct.
+
+        - cap_hit_rate:                     Fraction of time steps at which the carrying capacity was hit.
+        - near_cap_rate:                    Fraction of time steps at which the population was near the carrying capacity.
+
+        - low_population_rate:              Fraction of time steps at which the population was low.
+        - birth_death_ratio:                Mean birth to death ratio over runs.
+        
+        - mean_time_cv_over_runs:           Mean of the time coefficient of variation over runs.
+        - final_population_cv:              Coefficient of variation of the final populations over runs.
+        - max_agent_count:                  Maximum agent count of the regime.
+    """
     final_populations_mean: int
     mean_population_over_runs: float
 
@@ -25,7 +44,17 @@ class RegimeSummary:
 
 
 def summarise_regime(batch_analysis : BatchAnalysis) -> RegimeSummary:
-    """ summarise a regime from a batch analysis. """
+    """ summarise a regime from a batch analysis. 
+    
+    Returns:
+        RegimeSummary
+
+    NOTE: 
+        -   This is a post hoc summary, and should be used for reporting only.
+        -   Classification should be used for regime classification.
+        -   This summary is derived from the aggregate fingerprint, and does not contain all information
+            from the batch analysis.
+    """
     agg : AggregatedFingerprint = batch_analysis.aggregate_fingerprint
     final_populations = agg.final_populations
     mean_final = np.mean(final_populations)

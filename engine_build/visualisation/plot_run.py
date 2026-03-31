@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 
 from engine_build.analytics.metrics.metrics import SimulationMetrics
 from engine_build.core.step_results import WorldView
+from engine_build.analytics.batch_analytics import BatchAnalysis
 
 
 def _require_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
@@ -75,7 +76,7 @@ def _build_density_from_positions(
     return density
 
 
-def plot_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
+def plot_batch_metrics(batch_analysis: BatchAnalysis) -> None:
     """
     Batch-level overview of the updated metric system.
 
@@ -85,13 +86,13 @@ def plot_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
     3) Births ensemble
     4) Deaths ensemble
     """
-    _require_batch_metrics(batch_metrics)
+    _require_batch_metrics(batch_analysis.all_runs)
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 9))
 
     _plot_ensemble_panel(
         axes[0, 0],
-        batch_metrics,
+        batch_analysis.run_fingerprints,
         attr="population",
         title="Population Trajectory (Mean ±1 STD)",
         ylabel="Population",
@@ -99,7 +100,7 @@ def plot_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
 
     _plot_ensemble_panel(
         axes[0, 1],
-        batch_metrics,
+        batch_analysis.run_fingerprints,
         attr="mean_energy",
         title="Mean Energy Trajectory (Sampled Frames)",
         ylabel="Mean Energy",
@@ -107,7 +108,7 @@ def plot_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
 
     _plot_ensemble_panel(
         axes[1, 0],
-        batch_metrics,
+        batch_analysis.run_fingerprints,
         attr="births",
         title="Births Per Tick (Mean ±1 STD)",
         ylabel="Births",
@@ -115,7 +116,7 @@ def plot_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
 
     _plot_ensemble_panel(
         axes[1, 1],
-        batch_metrics,
+        batch_analysis.run_fingerprints,
         attr="deaths",
         title="Deaths Per Tick (Mean ±1 STD)",
         ylabel="Deaths",
