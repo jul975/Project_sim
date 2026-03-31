@@ -5,7 +5,8 @@ from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.runner.batch_runner import BatchRunner
 from engine_build.analytics.pipelines.analyze_batch import analyze_batch, AnalysisConfig
-from engine_build.analytics.summaries.regime_summary import summarise_regime, classify_regime
+from engine_build.analytics.summaries.regime_summary import summarise_regime
+from engine_build.analytics.classification.regime_classification import classify_regime
 
 
 @dataclass(frozen=True)
