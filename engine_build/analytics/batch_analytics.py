@@ -8,8 +8,10 @@ classify_regime(...)
 """
 
 from dataclasses import dataclass
+
 from typing import Dict
 
+from engine_build.runner.results import RunArtifacts
 from engine_build.runner.batch_runner import BatchRunResults
 
 
@@ -82,6 +84,8 @@ def build_batch_metadata(batch_results : BatchRunResults, analysis_config : Anal
 class BatchAnalysis:
     batch_metadata : BatchMetadata
 
+    all_runs : Dict[np.int64, RunArtifacts]
+
     aggregate_fingerprint : AggregatedFingerprint
     run_fingerprints : Dict[np.int64, Fingerprint]
     
@@ -129,6 +133,7 @@ def analyze_batch(batch_results : BatchRunResults, analysis_config : AnalysisCon
     return BatchAnalysis(
         batch_metadata = metadata,
         aggregate_fingerprint = aggregate_fingerprint,
+        all_runs = batch_results.runs,
         
         run_fingerprints = run_fingerprints,
         batch_phase_profile = batch_phase_profile,

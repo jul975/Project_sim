@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-from engine_build.analytics.batch_analytics import AnalysisConfig, analyze_batch
 from engine_build.analytics.summaries.regime_summary import summarise_regime, classify_regime
 from engine_build.app.execution_model.context import ExecutionContext
 from engine_build.app.execution_model.default import EXPERIMENT_DEFAULTS
-from engine_build.regimes.compiler import compile_regime
-from engine_build.regimes.registry import get_regime_spec
-from engine_build.runner.batch_runner import BatchRunner
 from engine_build.app.execution.presenters.console import (
     print_experiment_spec,
     print_summarize_analytics,
@@ -17,10 +13,13 @@ from engine_build.visualisation.plot_run import (
     plot_world_view_summary,
     plot_world_view_samples,
 )
+from engine_build.analytics.batch_analytics import BatchAnalysis
 
 from engine_build.app.execution.execute_service.execute import build_batch_analysis
 
 # NOTE: Service should own the workflow, not build requests.
+
+
 
 def run_experiment(context: ExecutionContext) -> int:
     if context.regime is None:
@@ -28,24 +27,24 @@ def run_experiment(context: ExecutionContext) -> int:
 
     
 
-    batch_analysis = build_batch_analysis(context)
+    batch_analysis : BatchAnalysis = build_batch_analysis(context)
         
     summary = summarise_regime(batch_analysis)
     regime_class = classify_regime(summary)
 
     print_summarize_analytics(
         batch_analysis=batch_analysis,
-        
+
 
         regime_class=regime_class,
         summary=summary,
     )
 
     if context.features.plotting:
-        plot_batch_metrics({i: ra.metrics for i, ra in batch_results.runs.items()})
+        plot_batch_metrics(batch_analysis)
 
     if context.features.plot_dev:
-        first_metrics = batch_results.runs[0].metrics
+        first_metrics = batch_analysis.all_runs[0].metrics
         if first_metrics is None:
             raise ValueError("Missing metrics for run 0")
         plot_single_run_metrics(first_metrics, run_id=0)
