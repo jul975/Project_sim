@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 
-from engine_build.runner.batch_runner import RunArtifacts
+from engine_build.runner.results import RunArtifacts
 from typing import Dict
 import numpy as np
 
