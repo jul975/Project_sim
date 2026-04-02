@@ -11,6 +11,21 @@ def _require_batch_metrics(batch_metrics: dict[int, SimulationMetrics]) -> None:
         raise ValueError("No batch metrics provided.")
 
 
+def _get_batch_metrics(batch_analysis: BatchAnalysis) -> dict[int, SimulationMetrics]:
+    """Extract per-run metrics from batch analysis and validate they exist."""
+    batch_metrics: dict[int, SimulationMetrics] = {}
+
+    for run_id, run_artifacts in batch_analysis.all_runs.items():
+        if run_artifacts.metrics is None:
+            raise ValueError(f"Missing metrics for run {run_id}")
+        batch_metrics[int(run_id)] = run_artifacts.metrics
+
+    if not batch_metrics:
+        raise ValueError("No batch metrics provided.")
+
+    return batch_metrics
+
+
 def _stack_metric(
     batch_metrics: dict[int, SimulationMetrics],
     attr: str,
@@ -40,6 +55,7 @@ def _plot_ensemble_panel(
     attr: str,
     title: str,
     ylabel: str,
+    xlabel: str = "Tick",
     alpha_runs: float = 0.15,
 ) -> None:
     stacked = _stack_metric(batch_metrics, attr)
@@ -52,7 +68,7 @@ def _plot_ensemble_panel(
     ax.fill_between(ticks, mean - std, mean + std, alpha=0.25)
 
     ax.set_title(title)
-    ax.set_xlabel("Tick")
+    ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
 
@@ -86,13 +102,13 @@ def plot_batch_metrics(batch_analysis: BatchAnalysis) -> None:
     3) Births ensemble
     4) Deaths ensemble
     """
-    _require_batch_metrics(batch_analysis.all_runs)
+    batch_metrics = _get_batch_metrics(batch_analysis)
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 9))
 
     _plot_ensemble_panel(
         axes[0, 0],
-        batch_analysis.run_fingerprints,
+        batch_metrics,
         attr="population",
         title="Population Trajectory (Mean ±1 STD)",
         ylabel="Population",
@@ -100,15 +116,16 @@ def plot_batch_metrics(batch_analysis: BatchAnalysis) -> None:
 
     _plot_ensemble_panel(
         axes[0, 1],
-        batch_analysis.run_fingerprints,
+        batch_metrics,
         attr="mean_energy",
         title="Mean Energy Trajectory (Sampled Frames)",
         ylabel="Mean Energy",
+        xlabel="Sample Index",
     )
 
     _plot_ensemble_panel(
         axes[1, 0],
-        batch_analysis.run_fingerprints,
+        batch_metrics,
         attr="births",
         title="Births Per Tick (Mean ±1 STD)",
         ylabel="Births",
@@ -116,7 +133,7 @@ def plot_batch_metrics(batch_analysis: BatchAnalysis) -> None:
 
     _plot_ensemble_panel(
         axes[1, 1],
-        batch_analysis.run_fingerprints,
+        batch_metrics,
         attr="deaths",
         title="Deaths Per Tick (Mean ±1 STD)",
         ylabel="Deaths",

@@ -13,10 +13,9 @@ from engine_build.visualisation.plot_run import (
     plot_world_view_summary,
     plot_world_view_samples,
 )
-from engine_build.runner.results import BatchRunResults
 from engine_build.app.execution.execute_service.execute import build_and_run_batch
 
-from engine_build.analytics.pipelines.analyze_batch import analyze_batch, AnalysisContext, BatchAnalysis
+from engine_build.analytics.pipelines.analyze_batch import analyze_batch, BatchAnalysis
 
 # NOTE: Service should own the workflow, not build requests.
 
