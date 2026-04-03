@@ -38,7 +38,7 @@ def _format_percent(value: float | None) -> str:
 
 
 def _print_metric(label: str, value: str) -> None:
-    print(f"  {label:<30} {value}")
+    print(f"  {label:<30}               {value}")
 
 
 def _print_split_metric(label: str, seconds: float, ratio: float | None, ratio_label: str) -> None:

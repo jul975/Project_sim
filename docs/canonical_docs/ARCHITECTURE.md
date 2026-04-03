@@ -2,28 +2,29 @@
 
 ## Status
 
-This document describes the implementation that is actually checked in on March 23, 2026.
+This document describes the implementation that is actually checked in on April 3, 2026.
 
 Current baseline:
 
-- pre-Stage III / pre-`v0.3` freeze candidate
-- package version `0.3.0a0`
+- Stage III freeze point on `0.3.0a0`
+- `v0.2.5` remains the earlier pre-Stage III freeze artifact
 - deterministic 2D toroidal ecology simulator
-- CLI and menu both route into the same typed request and dispatch layer
-- full local test run in the project virtual environment passed on March 23, 2026: `31 passed`
+- CLI subcommands and the top-level menu both route into the same execution-context and dispatch layer
+- validation currently needs repair before the Stage III freeze line can be called fully green again
 
 ## High-Level Structure
 
 ```text
 CLI args or terminal menu
--> typed request objects
--> dispatcher
--> execution lane
+-> ExecutionContext
+-> dispatch()
+-> service
 
 Execution lanes:
 - experiment
 - verification
 - validation
+- exploration
 ```
 
 The public entrypoint is `engine_build.main`.
@@ -33,9 +34,14 @@ Current command surface:
 - `python -m engine_build.main experiment ...`
 - `python -m engine_build.main verify ...`
 - `python -m engine_build.main validate ...`
+- `python -m engine_build.main dynamic ...`
 - `python -m engine_build.main menu`
 
-There is no live `fertility` request or fertility execution lane in the current CLI.
+Important nuance:
+
+- the parser subcommands are `experiment`, `verify`, `validate`, and `dynamic`
+- `menu` is a top-level shortcut handled directly in `engine_build.main` before `argparse` dispatch
+- there is no live `fertility` request or fertility execution lane in the current CLI
 
 ## Runtime Core
 
@@ -164,7 +170,7 @@ Responsibilities:
 The experiment lane then analyzes those runs through:
 
 ```text
-Runner
+BatchRunner
 -> BatchRunResults
 -> analyze_batch()
 -> summarise_regime()
@@ -236,57 +242,64 @@ This feeds the optional world-frame analytics path. It is useful, but still seco
 
 ## CLI and Execution Surface
 
-The typed request layer currently consists of:
+The typed execution layer currently centers on:
 
-- `ExperimentRequest`
-- `VerificationRequest`
-- `ValidationRequest`
+- `ExecutionContext`
+- `ExecutionFeatures`
+- `ExecutionMode`
 
-`engine_build/cli/dispatch.py` routes them to:
+`engine_build.main` and `engine_build/app/cli/menu.py` both ultimately build an `ExecutionContext`.
 
-- `run_experiment_mode()`
-- `run_verification_mode()`
-- `run_validation_mode()`
+`engine_build/app/cli/dispatch.py` routes that context to:
+
+- `run_experiment()`
+- `run_verification()`
+- `run_validation()`
+- `run_exploration()`
 
 Current reality:
 
-- the experiment lane is the main operational path
+- the experiment lane is still the main operational path
 - the verification and validation lanes shell into checked-in pytest suites
-- the old fertility/dev-lane documentation is stale against the current tree
+- the exploration lane powers the `dynamic` command and runs a single animated batch with world-frame capture enabled
+- older docs referring to `run_experiment_mode()`, `run_verification_mode()`, or `run_validation_mode()` are stale against the current tree
 
 ## Verified Current State
 
-As of March 23, 2026:
+As of April 3, 2026:
 
 - the 2D topology is live across engine state, hashing, and snapshots
-- the request -> dispatch -> execution-lane structure is live
-- verification and validation are both wired through the CLI
-- the full local pytest run passed in the project virtual environment
+- the execution-context -> dispatch -> service structure is live
+- the parser subcommands are `experiment`, `verify`, `validate`, and `dynamic`
+- the top-level `menu` shortcut is also live through `engine_build.main`
+- under the project `.venv`, `python -m engine_build.main --help` succeeds and shows the expected parser surface
 
 ## Known Freeze-Relevant Limits
 
-- Stage III interaction rules are not implemented yet
+- the Stage III freeze point does not mean explicit crowding, collision, or richer local-competition rules are fully implemented
 - there are no explicit agent-agent mechanics beyond shared-cell harvesting and population-cap competition
 - `contrast` and `floor` remain unused in world generation
-- the experiment request exposes `tail_fraction`, but `run_experiment_mode()` currently does not forward it into `AnalysisConfig`, so experiment analysis still uses the default `0.25`
+- the experiment context exposes `tail_fraction`, but `build_and_run_batch()` does not currently pass it into `AnalysisContext`, so experiment analysis still uses the default `0.25`
+- validation currently regressed: `engine_build/validation/helpers.py` constructs `AnalysisContext(regime_label=...)` without the `n_runs` and `total_tics` values required by `analyze_batch()`, so `tests/validation` currently fail before the regime-contract assertions run
 - snapshot objects store `world_frame_flag`, but `engine_from_snapshot()` currently forces `collect_world_view = False` after reconstruction
 - world-frame analytics and dev plotting are useful support tools, not yet the most polished public surface
 
 ## Scope Boundary
 
-Implemented and stable enough for a pre-Stage III baseline:
+Implemented and stable enough for the current Stage III freeze baseline:
 
 - deterministic 2D world
 - batch experimentation
 - canonical hashing
-- snapshot continuation
-- pytest-backed verification and validation lanes
+- snapshot continuation model
+- CLI, menu, dispatch, and exploration paths
 - regime compilation and classification
 
-Not yet implemented or not yet frozen:
+Not yet implemented or not yet hardened:
 
 - explicit crowding / collision rules
 - trait variation and inheritance
-- mature Stage III interaction semantics
+- stronger Stage III interaction invariants and diagnostics
 - full use of the landscape `contrast` and `floor` controls
-- fully wired custom tail-fraction control in the experiment CLI
+- fully wired custom tail-fraction control in experiment analysis
+- repaired validation helper wiring for the contract suites

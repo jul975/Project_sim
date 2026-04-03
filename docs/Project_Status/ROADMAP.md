@@ -2,15 +2,15 @@
 
 ## Purpose
 
-This roadmap defines the staged path from the current deterministic ecology baseline into the planned Stage III, IV, and V work.
+This roadmap defines the staged path from the current Stage III freeze baseline into the follow-on Stage IV and V work.
 
-It is updated to the March 23, 2026 repository state.
+It is updated to the April 3, 2026 repository state.
 
 ## Strategic Goals
 
 1. Preserve deterministic reproducibility as a non-negotiable system invariant.
 2. Increase ecological realism through explicit spatial interaction.
-3. Introduce trait heterogeneity and inheritance only after the Stage III baseline is stable.
+3. Introduce trait heterogeneity and inheritance only after the Stage III line is stable.
 4. Build an analysis and validation stack that supports reproducible experiments rather than ad hoc inspection.
 5. Ship releases that are documented against actual code behavior, not target behavior.
 
@@ -24,15 +24,17 @@ It is updated to the March 23, 2026 repository state.
 
 ### Current checkpoint
 
-- `v0.2.5`: pre-Stage III freeze baseline
+- `0.3.0a0`: Stage III freeze baseline
+- `v0.2.5`: earlier pre-Stage III freeze checkpoint
 
 This checkpoint represents:
 
 - the 2D toroidal engine being live
 - the performance crisis being resolved
 - the deterministic core being stable
-- the experiment / verify / validate CLI lanes being live
-- the docs being refreshed to the current implementation
+- the `experiment`, `verify`, `validate`, `dynamic`, and `menu` command surfaces being live
+- the docs being realigned to the active Stage III freeze framing
+- validation still needing repair before the freeze line can be called fully green again
 
 ### Current capabilities
 
@@ -48,8 +50,15 @@ This checkpoint represents:
   - `collapse`
   - `extinction`
 - batch experimentation and post-hoc regime classification
-- pytest-backed verification and validation
-- optional profiling and world-frame capture
+- pytest-backed verification and validation lanes
+- optional profiling, world-frame capture, and animated exploration
+
+### Current bounded gaps
+
+- local interaction mechanics are still lighter than the longer-term crowding / collision target
+- `tail_fraction` is still not wired into the experiment analysis context
+- snapshot reconstruction still forces `collect_world_view = False`
+- the validation helper path currently fails before regime-contract assertions because it does not populate the `AnalysisContext` fields required by `analyze_batch()`
 
 ## Release Checkpoints
 
@@ -63,42 +72,56 @@ Original Stage II baseline:
 
 ### `v0.2.5`
 
-Pre-Stage III freeze baseline:
+Earlier pre-Stage III freeze baseline:
 
 - 2D topology transition complete
 - refactored birth and identity path
 - request-based CLI surface in place
-- green repository test suite
-- refreshed canonical and status docs
+- refreshed canonical and status docs for the pre-Stage III line
+
+### `0.3.0a0`
+
+Current Stage III freeze line:
+
+- active working line reflected by the updated status and canonical docs
+- deterministic 2D engine, experiment pipeline, and exploration path are live
+- follow-up work is now about hardening, validation repair, and deciding how much additional interaction complexity belongs in this line
 
 Versioning note:
 
-- the roadmap uses `v0.2.5` as the freeze checkpoint label
 - package metadata is currently `0.3.0a0`
+- `v0.2.5` should now be read as the earlier historical freeze checkpoint, not the current one
 
 ### `v0.3`
 
-Target release for completed Stage III interaction work.
+Target stabilized Stage III release after the current freeze-line follow-up work is complete.
 
-## Stage III (`v0.3`) - Explicit Interaction And Spatial Competition
+## Stage III (`0.3.x`) - Active Freeze Line And Hardening
 
 ### Goal
 
-Move from implicit competition through resource sharing and cap pressure to explicit local interaction rules that remain deterministic and testable.
+Hold the current Stage III freeze baseline steady while tightening interaction semantics, diagnostics, and validation into a release-ready line.
 
-### Key deliverables
+### Current Stage III posture
 
-- explicit crowding, collision, or local-competition rules
+- the deterministic 2D engine is already the active baseline
+- the Stage III label is now attached to the live freeze line, not only to future work
+- local interaction remains intentionally lighter than the longer-term target
+
+### Follow-up deliverables
+
+- explicit crowding, collision, or local-competition rules if they remain in scope for this line
 - expanded death and interaction accounting where needed
 - stronger 2D spatial diagnostics
-- clear Stage III invariants and validation expectations
-- a CLI and documentation surface that still stays small and coherent
+- clearer Stage III invariants and validation expectations
+- repaired validation helper and analysis-context wiring so contract suites are usable again
 
-### Exit criteria
+### Exit criteria for a stabilized `v0.3`
 
-- determinism suites remain green after the interaction changes
+- determinism suites remain green after any interaction changes
 - snapshot continuation still holds
-- the stable regime remains meaningfully bounded under the new rules
+- validation suites are green again and reflect the intended regime contracts
+- the stable regime remains meaningfully bounded under the documented rules
 - spatial patterning is measurable with checked-in analytics rather than only by eye
 - updated docs explain the implemented rules clearly
 
@@ -106,7 +129,7 @@ Move from implicit competition through resource sharing and cap pressure to expl
 
 ### Goal
 
-Introduce heterogeneous agents and inheritance after the Stage III interaction layer is stable.
+Introduce heterogeneous agents and inheritance after the Stage III line is stabilized.
 
 ### Key deliverables
 
@@ -153,15 +176,17 @@ These remain in force across all stages:
 
 ## Near-Term Priorities
 
-1. Hold the `v0.2.5` baseline steady while Stage III rules are designed.
-2. Resolve the remaining public-surface quirks:
+1. Hold the Stage III freeze baseline steady while repair work lands.
+2. Repair the validation helper and analysis-context wiring so the contract suites run again.
+3. Resolve the remaining public-surface quirks:
    `tail_fraction` wiring, snapshot world-frame flag behavior, and any final CLI naming decisions.
-3. Extend regime contracts only where the project wants stronger public guarantees before Stage III.
-4. Design and document the Stage III interaction model before implementing it.
+4. Decide whether the current Stage III line stops at the freeze baseline or adds explicit crowding / collision semantics before `v0.3`.
+5. Extend regime contracts only where the project wants stronger public guarantees on the stabilized Stage III line.
 
 ## Version Targets
 
-- `v0.2.5`: pre-Stage III freeze baseline
-- `v0.3`: Stage III complete
+- `v0.2.5`: earlier pre-Stage III freeze baseline
+- `0.3.0a0`: current Stage III freeze line
+- `v0.3`: stabilized Stage III release
 - `v0.4`-`v0.6`: Stage IV iterations
 - `v1.0`: Stage V platform-level maturity
