@@ -35,6 +35,7 @@ def build_and_run_batch(context: ExecutionContext) -> tuple[BatchRunResults, Ana
     analysis_context = AnalysisContext(
         n_runs=runs,
         total_tics=ticks,
+        tail_fraction=context.tail_fraction,
         regime_label=context.regime,
         compiled_regime=regime_config,
         options=AnalysisOptions(
