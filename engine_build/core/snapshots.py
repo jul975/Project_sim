@@ -298,7 +298,8 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
         
         
         # NOTE: TEMP
-        engine_clone.collect_world_view = False
+        engine_clone.collect_world_view = snapshot.world_frame_flag
+        engine_clone.perf_flag = snapshot.perf_flag
 
 
         # assert invariants

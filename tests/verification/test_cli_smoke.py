@@ -9,9 +9,11 @@ from engine_build.app.cli.parser import (
     build_verification_context,
     build_validation_context,
 )
+from engine_build.app.cli.menu import run_menu
 from engine_build.app.execution_model.execution_context import (
     ExecutionContext
     )
+from engine_build.app.execution_model.modes import ExecutionMode
 
 from engine_build.app.execution_model.suite_registry import (
     REGIME_OPTIONS,
@@ -48,6 +50,60 @@ def test_cli_smoke_experiment_request_build():
     assert request.features.profiling is False
     assert request.features.capture_world_frames is False
     assert request.tail_fraction == 0.25
+
+def test_cli_smoke_experiment_tail_fraction_parser_plumbing():
+    parser = build_parser()
+    args = parser.parse_args(
+        ["experiment", "--regime", "stable", "--tail-fraction", "0.5"]
+    )
+
+    request = build_experiment_context(args)
+
+    assert isinstance(request, ExecutionContext)
+    assert request.mode is ExecutionMode.EXPERIMENT
+    assert request.regime == "stable"
+    assert request.runs is None
+    assert request.ticks is None
+    assert request.seed is None
+    assert request.features.plotting is False
+    assert request.features.plot_dev is False
+    assert request.features.profiling is False
+    assert request.features.capture_world_frames is False
+    assert request.tail_fraction == 0.5
+
+
+def test_cli_smoke_experiment_tail_fraction_menu_plumbing(monkeypatch):
+    answers = iter(
+        [
+            "1",
+            "1",
+            "",
+            "",
+            "",
+            "n",
+            "n",
+            "n",
+            "n",
+            "0.5",
+            "y",
+        ]
+    )
+
+    monkeypatch.setattr("builtins.input", lambda _: next(answers))
+
+    context = run_menu()
+
+    assert isinstance(context, ExecutionContext)
+    assert context.mode is ExecutionMode.EXPERIMENT
+    assert context.regime == "stable"
+    assert context.runs is None
+    assert context.ticks is None
+    assert context.seed is None
+    assert context.features.plotting is False
+    assert context.features.plot_dev is False
+    assert context.features.profiling is False
+    assert context.features.capture_world_frames is False
+    assert context.tail_fraction == 0.5
 
 
 def test_cli_smoke_verify_request_build():
