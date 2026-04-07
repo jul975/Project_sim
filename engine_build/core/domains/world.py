@@ -40,7 +40,14 @@ This ratio determines the spatial influence of fertility across the environment.
 
 
 class World:
-    def __init__(self, world_seed : np.int64 , config : CompiledRegime , change_condition=False) -> None:   
+    ''' World obj owns world state:
+            - dimensions and topology (wrap around)
+            - fertility fields : static, defines max resource levels and regrowth rates 
+            - resource fields : current local resource levels
+            - provides harvest and regrowth methods
+    '''
+    def __init__(self, world_seed : np.int64 , config : CompiledRegime , change_condition=False) -> None:  
+        ''' Initializes the world with given parameters and generates fertility fields. '''
         self.tick : np.int64 = 0
 
         self.world_params = config.world_params
