@@ -332,6 +332,7 @@ class Engine:
 
     def build_world_view(self) -> WorldView:
         """ builds world view. """
+        # NOTE: needs to be moved towards a more efficient implementation, currently bottlenecked by python level iteration and object access.
 
         sorted_agents = sorted(self.agents.values(), key=lambda agent: agent.id)
 

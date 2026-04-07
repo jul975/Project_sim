@@ -3,7 +3,7 @@
 from dataclasses import dataclass, field
 import numpy as np
 
-from .world_view import WorldView
+from ...analytics.observation.world_view import WorldView
 from .profiling import CommitProfile, StepProfile
 
 @dataclass(frozen=True)

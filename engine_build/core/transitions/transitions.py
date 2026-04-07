@@ -2,6 +2,7 @@ from dataclasses import dataclass , field
 from typing import TYPE_CHECKING
 
 from ..contracts.step_results import MovementReport, InteractionReport, BiologyReport
+from ..spatial.occupancy_index import OccupancyIndex
 
 from typing import List
 
@@ -33,7 +34,7 @@ class DeathBucket:
 
 @dataclass
 class TransitionContext:
-    occupied_positions : dict[tuple[int, int], list["Agent"]] = field(default_factory=dict)
+    occupied_positions : OccupancyIndex = field(default_factory=OccupancyIndex)
     post_harvest_alive : list["Agent"] = field(default_factory=list)
     pending_deaths_by_cause: dict[str, DeathBucket] = field(default_factory=dict)
     reproducing_agents : list["Agent"] = field(default_factory=list)
@@ -63,7 +64,7 @@ def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext) ->
             metabolic_deaths.agents_ids.append(agent_id)
             continue
 
-        context.occupied_positions.setdefault(agent.position, []).append(agent)
+        context.occupied_positions.add(agent)
 
 
     context.pending_deaths_by_cause["age_deaths"] = age_deaths
@@ -85,7 +86,7 @@ def interaction_phase(context : TransitionContext, world : "World") -> Interacti
 
 
     # H
-    for position, local_agents in occupied_positions.items():
+    for position, local_agents in occupied_positions.occupied_items():
         world.harvest(local_agents, position)
 
         for agent in local_agents:
