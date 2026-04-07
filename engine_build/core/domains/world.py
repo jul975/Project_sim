@@ -3,14 +3,13 @@ from .agent import Agent
 
 from engine_build.regimes.compiled import CompiledRegime
 
-from ..transitions.transitions import DeathBucket
-
 from ..snapshot.snapshots import WorldSnapshot, _world_from_snapshot
 
 
 
 
 """
+NOTE: NEW ! => canonical world-state model, with fertility and resource fields.
 NOTE: 
 => topological helpers, 
     - wrap around logic
