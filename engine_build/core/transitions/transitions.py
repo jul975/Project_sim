@@ -18,6 +18,19 @@ if TYPE_CHECKING:
         # G: world.resolve_agent_aging()
         # Π: commit births/deaths
 
+# NOTE: 
+    # - transition context holds intermediate data during transition phases, should be cleared at the end of each tick. 
+    # - transition reports hold data about the outcomes of each phase, to be used for reporting and analytics.
+
+##############################################################################################
+# Regarding determinism:
+    # - OccupancyIndex is a critical component regarding percervance of determinism, 
+    
+    # - OccupancyIndex gets created by iterating over sorted agents.id, insertion order is
+    # preserved during the tick, and iteration order is deterministic as it relies on the underlying dict order, 
+    # which is deterministic in python 3.7+.
+
+
 ##############################################################################################
 
 
@@ -87,10 +100,11 @@ def interaction_phase(context : TransitionContext, world : "World") -> Interacti
     """
     pending_starvation_death = DeathBucket()
 
-    occupied_positions = context.occupancy
+    occupied_positions : OccupancyIndex = context.occupancy
 
 
     # H
+    # NOTE: loop will need simplification, but for now this is the cleanest way to distribute resources while conserving energy and ensuring deterministic distribution of remainders.
     for position, local_agents in occupied_positions.occupied_items():
         world.harvest(local_agents, position)
 
