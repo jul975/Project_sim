@@ -34,7 +34,12 @@ class DeathBucket:
 
 @dataclass
 class TransitionContext:
-    occupied_positions : OccupancyIndex = field(default_factory=OccupancyIndex)
+    ''' TransitionContext:
+        - holds intermediate data during transition phases
+        - should be cleared at the end of each tick. 
+        
+    ---'''
+    occupancy : OccupancyIndex = field(default_factory=OccupancyIndex)
     post_harvest_alive : list["Agent"] = field(default_factory=list)
     pending_deaths_by_cause: dict[str, DeathBucket] = field(default_factory=dict)
     reproducing_agents : list["Agent"] = field(default_factory=list)
@@ -64,7 +69,7 @@ def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext) ->
             metabolic_deaths.agents_ids.append(agent_id)
             continue
 
-        context.occupied_positions.add(agent)
+        context.occupancy.add(agent)
 
 
     context.pending_deaths_by_cause["age_deaths"] = age_deaths
@@ -82,7 +87,7 @@ def interaction_phase(context : TransitionContext, world : "World") -> Interacti
     """
     pending_starvation_death = DeathBucket()
 
-    occupied_positions = context.occupied_positions
+    occupied_positions = context.occupancy
 
 
     # H
