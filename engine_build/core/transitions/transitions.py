@@ -1,13 +1,13 @@
 from dataclasses import dataclass , field
 from typing import TYPE_CHECKING
 
-from .contracts.step_results import MovementReport, InteractionReport, BiologyReport
+from ..contracts.step_results import MovementReport, InteractionReport, BiologyReport
 
 from typing import List
 
 if TYPE_CHECKING:
-    from .agent import Agent
-    from .world import World    
+    from ..domains.agent import Agent
+    from ..domains.world import World    
 ###############################################################################################
 # Formal agent transition order: =>    T = Π ∘ B ∘ D ∘ H ∘ M ∘ A
 
