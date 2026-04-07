@@ -1,12 +1,12 @@
 
 
 
-from .rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key, serialize_rule_environment , set_int64_pair
+from ..utils.rng_utils import set_int64, set_uint8, serialize_rng_state, serialize_array, serialize_spawn_key, serialize_rule_environment , set_int64_pair
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .engine import Engine
+    from ..engine import Engine
 
 
 """

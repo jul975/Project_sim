@@ -1,10 +1,10 @@
 
 
-from engine_build.core.seed_seq_utils import get_seed_seq_dict
+from engine_build.core.utils.seed_seq_utils import get_seed_seq_dict
 from dataclasses import asdict, dataclass
 from engine_build.regimes.compiled import CompiledRegime, PopulationParams, ReproductionParams
-from engine_build.core.seed_seq_utils import reconstruct_seed_seq
-from engine_build.core.rng_utils import reconstruct_rng
+from engine_build.core.utils.seed_seq_utils import reconstruct_seed_seq
+from engine_build.core.utils.rng_utils import reconstruct_rng
 
 
 from typing import TYPE_CHECKING
@@ -13,9 +13,9 @@ import numpy as np
 
 if TYPE_CHECKING:
     from engine_build.core.engine import Engine
-    from engine_build.core.agent import Agent
+    from engine_build.core.domains.agent import Agent
 
-    from engine_build.core.world import World
+    from engine_build.core.domains.world import World
 
 # NOTE: frozen dataclass do not make internal dicts immutable!!! => gonna need nested dataclasses
 
@@ -238,8 +238,8 @@ def _world_from_snapshot(world_cls, world_snapshot : WorldSnapshot) -> "World":
 
 
 def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
-        from engine_build.core.world import World
-        from engine_build.core.agent import Agent
+        from engine_build.core.domains.world import World
+        from engine_build.core.domains.agent import Agent
 
         
         """ create engine from snapshot. """

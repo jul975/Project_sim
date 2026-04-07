@@ -1,12 +1,12 @@
 import numpy as np
 import hashlib
 
-from .state_schema import get_state_bytes
+from .snapshot.state_schema import get_state_bytes
 
-from .snapshots import engine_to_snapshot, engine_from_snapshot
+from .snapshot.snapshots import engine_to_snapshot, engine_from_snapshot
 
-from .agent import Agent
-from .world import World
+from .domains.agent import Agent
+from .domains.world import World
 
 
 
@@ -20,7 +20,7 @@ from .contracts.step_results import CommitReport, StepReport, WorldView, StepPro
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiled import EnergyParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
 
-from .transitions import TransitionContext, movement_phase, interaction_phase, biology_phase
+from .transitions.transitions import TransitionContext, movement_phase, interaction_phase, biology_phase
 
 
 from typing import TYPE_CHECKING
@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 import time 
 
 if TYPE_CHECKING:
-    from .snapshots import EngineSnapshot
+    from .snapshot.snapshots import EngineSnapshot
 
 
 class Engine:

@@ -3,9 +3,9 @@ from .agent import Agent
 
 from engine_build.regimes.compiled import CompiledRegime
 
-from .transitions import DeathBucket
+from ..transitions.transitions import DeathBucket
 
-from .snapshots import WorldSnapshot, _world_from_snapshot
+from ..snapshot.snapshots import WorldSnapshot, _world_from_snapshot
 
 
 

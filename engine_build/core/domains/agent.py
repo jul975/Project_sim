@@ -3,11 +3,11 @@ import numpy as np
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .engine import Engine
-    from .snapshots import AgentSnapshot
+    from ..engine import Engine
+    from ..snapshot.snapshots import AgentSnapshot
 
-from .contracts.step_results import AgentSetup
-from .snapshots import _agent_from_snapshot
+from ..contracts.step_results import AgentSetup
+from ..snapshot.snapshots import _agent_from_snapshot
 
 
 
