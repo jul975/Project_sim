@@ -2,7 +2,11 @@ from dataclasses import dataclass , field
 from typing import TYPE_CHECKING
 
 from ..contracts.step_results import MovementReport, InteractionReport, BiologyReport
-from ..spatial.occupancy_index import OccupancyIndex
+from ..spatial.occupancy_index import OccupancyIndex, Position
+
+
+from collections.abc import Iterable
+from ..spatial.neighborhood import sample_moves
 
 from typing import List
 
@@ -36,11 +40,19 @@ if TYPE_CHECKING:
 
 @dataclass
 class DeathBucket:
-    """ DeathBucket: holds agent ids container for a given death cause. """
+    """ DeathBucket: 
+        - agent ids container, used as pending death value entry,
+        - key is cause of death that gets defined upstream. """
     agents_ids: List[int] = field(default_factory=list)
     @property
     def count(self) -> int:
         return len(self.agents_ids)
+    
+    @classmethod
+    def fill_bucket_from_ids(cls, agents_ids: List[int]) -> "DeathBucket":
+        """ fill_bucket_from_ids(agents_ids):
+        creates a DeathBucket from a list of agent ids. """
+        return cls(agents_ids=agents_ids)
 
 
 
@@ -62,31 +74,30 @@ class TransitionContext:
 
 
 
-def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext) -> MovementReport:
+def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext, world : "World") -> MovementReport:
     """ movement_phase(agents, world, context):
     """
-
     
-    age_deaths = DeathBucket()
     metabolic_deaths = DeathBucket()
-    current_occupancy = context.occupancy.cells.copy()
-
-
-    for agent_id,  agent in agents.items():
-        # A
-        # age check, if agent is older than max_age, agent.alive = False set on last agent tick 
-        if not agent.alive:
-            age_deaths.agents_ids.append(agent_id)
-            continue
-
-        context.occupancy.add(agent)
+    
+    current_occupancy, age_dead_ids = OccupancyIndex.build_from_agents(agents)
+    age_deaths = DeathBucket.fill_bucket_from_ids(age_dead_ids)
         # M
 
+    occupied_cells : Iterable[tuple[Position, list["Agent"]]] = current_occupancy.occupied_items()
+    for position, local_agents in occupied_cells:
+        # Spatial query based on position 
+        # weight = f(spatial_query_results) => determines movement outcome
 
-        """
-        if not agent.move_agent():
-            metabolic_deaths.agents_ids.append(agent_id)
-            continue"""
+        movement_range = sample_moves(position, world, current_occupancy, resource_weight=1.0, crowding_weight=1.0, temperature=1.0)
+
+        for agent in local_agents:
+            if not agent.move_agent(movement_range.candidates, movement_range.probability):
+                metabolic_deaths.agents_ids.append(agent.id)
+                continue
+            # NOTE: context.occupancy is still empty at this point,
+            context.occupancy.add(agent)  # update occupancy with new position
+
 
         
 

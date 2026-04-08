@@ -275,6 +275,11 @@ class World:
             self.wrap_around((x, y + 1)),  # bottom
             self.wrap_around((x + 1, y + 1)),  # bottom-right
         ]
+    
+    def resources_at(self, position : tuple[np.int64, np.int64]) -> int:
+        """ returns resource level at a given position. """
+        x, y = position
+        return self.resources[y, x]
 
 if __name__ == "__main__":
     pass

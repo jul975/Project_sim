@@ -2,8 +2,11 @@ from dataclasses import dataclass, field
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
+
+
 if TYPE_CHECKING:
     from ..domains.agent import Agent
+
 
 
 @dataclass
@@ -25,6 +28,8 @@ class OccupancyIndex:
     def add(self, agent: "Agent") -> None:
         self.cells.setdefault(agent.position, []).append(agent)
 
+    
+
     def rebuild(self, agents: dict[int, "Agent"]) -> None:
         self.clear()
         for agent in agents.values():
@@ -39,6 +44,21 @@ class OccupancyIndex:
 
     def count_at(self, position: Position) -> int:
         return len(self.cells.get(position, ()))
+    
+    @classmethod
+    def build_from_agents(cls, agents: dict[int, "Agent"]) -> tuple["OccupancyIndex", list[int]]:
+        """ build_from_agents(agents):
+        builds an OccupancyIndex from a given dict of agents, and returns a DeathBucket of dead agents. 
+        """
+        index = cls()
+        dead_agents_ids = []
+        for agent in agents.values():
+            if agent.alive:
+                index.add(agent)
+            else:
+                dead_agents_ids.append(agent.id)
+        
+        return index, dead_agents_ids
     
 
 if __name__ == "__main__":

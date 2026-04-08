@@ -2,28 +2,104 @@
 
 from __future__ import annotations
 
-from engine_build.core.spatial.occupancy_index import OccupancyIndex
-from engine_build.core.domains.world import World
+
+import numpy as np
 
 
-# NOTE: INCOMPLETE!
-def query_local_neighborhood(position, world : "World", occupancy : "OccupancyIndex", mode="von_neumann", include_center=True):
-    """ query_local_neighborhood(position, world, occupancy, mode="von_neumann", include_center=True):
-    returns the neighboring positions and their contents around a given position, based on the specified neighborhood mode.
-    modes:
-    - "von_neumann": returns the 4 orthogonal neighbors (up, down, left, right).
-    - "moore": returns the 8 surrounding neighbors (including diagonals).
-    """
-    if mode == "von_neumann":
-        neighbor_positions = world.von_neumann_neighbors(position)
-    elif mode == "moore":
-        neighbor_positions = world.moore_neighbors(position)
-    else:
-        raise ValueError(f"Invalid neighborhood mode: {mode}")
+
+
+
+
+
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..domains.world import World
+    from engine_build.core.transitions.transitions import Position
+    from engine_build.core.spatial.occupancy_index import OccupancyIndex
+
+
+
+# candidate container 
+@dataclass(slots=True, frozen=True)
+class MoveCandidate:
+    delta: tuple[int, int]
+    position: tuple[int, int]
+    resource_level: int
+    occupancy_count: int
+
+@dataclass(slots=True, frozen=True)
+class MovementRange:
+    candidates: list[MoveCandidate] = field(default_factory=list) 
+    probability : np.ndarray | None = None
+
+# build movement candidates based on passed location
+
+def build_move_candidates(position : "Position", world : "World", occupancy : "OccupancyIndex", include_stay=False):
+    """ build_move_candidates(position, world, occupancy): """
+    x, y = position
+
+    deltas = [
+        (0, -1),
+        (0, 1),
+        (-1, 0),
+        (1, 0),
+    ]
+    if include_stay:
+        deltas.append((0, 0))
+
+    candidates = []
+    for dx, dy in deltas:
+        new_pos = world.wrap_around((x + dx, y + dy))
+        candidates.append(
+            MoveCandidate(
+                delta=(dx, dy),
+                position=new_pos,
+                resource_level=world.resources_at(new_pos),   # adapt to your API
+                occupancy_count=occupancy.count_at(new_pos),
+            )
+        )
+    return candidates
+
+# score candidates 
+
+def score_move_candidates(
+    candidates: list[MoveCandidate],
+    resource_weight: float,
+    crowding_weight: float,
+) -> list[float]:
+    scores = []
+    for c in candidates:
+        score = (
+            resource_weight * c.resource_level
+            - crowding_weight * c.occupancy_count
+        )
+        scores.append(score)
+    return scores
+
+# get prob for each candidate based on score
+
+def softmax_probabilities(scores: list[float], temperature: float = 1.0) -> np.ndarray:
+    arr = np.asarray(scores, dtype=float)
+
+    if temperature <= 0:
+        raise ValueError("temperature must be > 0")
+
+    shifted = arr - arr.max()
+    exps = np.exp(shifted / temperature)
+    return exps / exps.sum()
+
+# sample candidates and prob based on position
+
+def sample_moves(position : "Position", world : "World", occupancy : "OccupancyIndex", resource_weight: float, crowding_weight: float, temperature: float) -> MovementRange:
+    candidates = build_move_candidates(position, world, occupancy)
+    scores = score_move_candidates(candidates, resource_weight, crowding_weight)
+    probs = softmax_probabilities(scores, temperature)
     
-    if include_center:
-        neighbor_positions.append(position)
+    return MovementRange(candidates=candidates, probability=probs)
 
-    neighbor_contents = {pos: occupancy.get(pos) for pos in neighbor_positions}
-    
-    return neighbor_contents
+
+
+if __name__ == "__main__":
+    pass
