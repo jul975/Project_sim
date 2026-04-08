@@ -252,7 +252,29 @@ class World:
     
 
 
+    def von_neumann_neighbors(self, position : tuple[np.int64, np.int64]) -> list[tuple[np.int64, np.int64]]:
+        """ returns von neumann neighbors of a given position. """
+        x, y = position
+        return [
+            self.wrap_around((x, y - 1)),  # up
+            self.wrap_around((x, y + 1)),  # down
+            self.wrap_around((x - 1, y)),  # left
+            self.wrap_around((x + 1, y)),  # right
+        ]
 
+    def moore_neighbors(self, position : tuple[np.int64, np.int64]) -> list[tuple[np.int64, np.int64]]:
+        """ returns moore neighbors of a given position. """
+        x, y = position
+        return [
+            self.wrap_around((x - 1, y - 1)),  # top-left
+            self.wrap_around((x, y - 1)),  # top
+            self.wrap_around((x + 1, y - 1)),  # top-right
+            self.wrap_around((x - 1, y)),  # left
+            self.wrap_around((x + 1, y)),  # right
+            self.wrap_around((x - 1, y + 1)),  # bottom-left
+            self.wrap_around((x, y + 1)),  # bottom
+            self.wrap_around((x + 1, y + 1)),  # bottom-right
+        ]
 
 if __name__ == "__main__":
     pass
