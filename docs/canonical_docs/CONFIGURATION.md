@@ -163,11 +163,7 @@ Experiment request flags also include:
 - `--plot-dev`
 - `--perf-flag`
 - `--world-frame-flag`
-- `--tail-fraction`
-
-Current limitation:
-
-- `ExperimentRequest.tail_fraction` exists, but `run_experiment_mode()` does not currently pass it into `AnalysisConfig`, so the experiment lane still analyzes the final `25%` of each run
+- `--tail-fraction` (default: 0.25, specifies fraction of run used for final metrics analysis)
 
 ## Recommended Usage
 

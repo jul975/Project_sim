@@ -1,4 +1,4 @@
-# Current Project State (April 3, 2026)
+# Current Project State (April 8, 2026)
 
 ## Overview
 
@@ -104,12 +104,14 @@ The engine still centers deterministic replay and continuation:
 
 ### Refactored birth and identity path
 
-The current agent and birth path are materially cleaner than the older seed-lineage-heavy model:
+The current agent and birth path use a flat identity-words architecture:
 
-- children derive from compact identity words
-- newborns start directly at the parent position
-- agent initialization is split into identity, RNG, and state steps
-- birth-path cost is much lower than it was during the worst abundant-run slowdown
+- agents derive from deterministic tuples: `(run_entropy, founder_id)` or `(run_entropy, child_entropy, parent_id, offspring_count)`
+- no per-agent `SeedSequence` lineage tree is stored
+- RNGs are derived from identity + domain tags, not from spawn() mutations
+- newborns inherit parent position directly (no position draw)
+- birth-path overhead is minimal, solving the abundant-run slowdown from earlier iterations
+- detailed design in [RNG_ARCHITECTURE.md](docs/canonical_docs/RNG_ARCHITECTURE.md)
 
 ### Experiment and analytics lane
 
@@ -135,8 +137,7 @@ The current baseline is already being treated as Stage III, but there is still o
 
 ### A few public-surface quirks remain
 
-- `tail_fraction` exists on the experiment request, but `run_experiment_mode()` does not currently pass it into `AnalysisConfig`
-- snapshot restore currently forces `collect_world_view = False` after reconstruction
+- snapshot restore currently forces `collect_world_view = False` after reconstruction (provisional design edge)
 - `landscape_spec.contrast` and `landscape_spec.floor` are carried through config but not yet used in fertility generation
 
 ### Validation is green but still selective

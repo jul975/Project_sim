@@ -157,7 +157,7 @@ The current registry only emits square worlds, so the shared bound for both coor
 
 ## 4. Tick Operator
 
-The implemented operator is:
+The implemented operator executes in strict phase order:
 
 $$
 T = \Pi \circ B \circ H \circ M
@@ -165,143 +165,173 @@ $$
 
 where:
 
-- $M$ = movement phase
-- $H$ = interaction / harvest phase
-- $B$ = biology phase
-- $\Pi$ = commit phase
+- $M$ = movement phase (includes entry-age-check + direction sampling + movement cost + metabolic death check)
+- $H$ = interaction / harvest phase (deterministic resource distribution)
+- $B$ = biology phase (reproduction eligibility + Bernoulli draw + reproduction cost + aging)
+- $\Pi$ = commit phase (death removals + birth creation + resource regrowth)
 
-followed by `tick += 1`.
+followed by `tick := tick + 1`.
 
 ## 5. Movement Phase
 
-For each live agent in encounter order:
+This phase handles:
+1. Age-based death qualification
+2. Direction sampling and movement
+3. Movement cost and metabolic death
+
+### 5.1 Age Entry Check
+
+Before any movement, remove agents that have aged fully:
+
+For each agent $i$ with $\ell_i = 1$ (alive from previous tick):
+
+$$
+\text{if } a_i \ge A_{\max} \text{ at entry: queue } i \text{ for age-death}
+$$
+
+These agents **do not move this tick** and will be removed in the commit phase.
+
+### 5.2 Movement and Cost
+
+For each remaining agent in encounter order:
 
 $$
 E_i \leftarrow E_i - c_m
 $$
 
-Sample one cardinal move:
+Sample one cardinal direction uniformly:
 
 $$
-(\Delta x_i, \Delta y_i) \in \{(-1,0),(1,0),(0,-1),(0,1)\}
+(\Delta x_i, \Delta y_i) \sim \text{UniformChoice}\left\{(-1,0), (1,0), (0,-1), (0,1)\right\}
 $$
 
-Then:
+Update position with toroidal wrapping:
 
 $$
-(x_i, y_i) \leftarrow \mathrm{wrap}(x_i + \Delta x_i,\ y_i + \Delta y_i)
+(x_i, y_i) \leftarrow \Big((x_i + \Delta x_i) \bmod W_x,\ (y_i + \Delta y_i) \bmod W_y\Big)
 $$
 
-If:
+### 5.3 Metabolic Death
+
+If energy is now depleted:
 
 $$
-E_i \le 0
+\text{if } E_i \le 0: \text{ queue } i \text{ for metabolic-death}
 $$
 
-the agent is marked dead and queued in the metabolic-death bucket.
-
-Agents already carrying $\ell_i = 0$ at phase entry are queued in the age-death bucket without moving.
+Return movement report containing metabolic and age death counts.
 
 ## 6. Interaction / Harvest Phase
 
-Let a cell have:
+This phase distributes resources deterministically. For each occupied cell:
 
-- $n$ local agents
-- available resources $R$
+### 6.1 Total Harvest
 
-Current total harvest:
-
-$$
-H = \min(R,\ nH_{\max})
-$$
-
-Each local agent receives:
+At position $(x, y)$ with $n$ local agents and available resources $R$:
 
 $$
-\left\lfloor \frac{H}{n} \right\rfloor
+H = \min\left(R,\ n \cdot H_{\max}\right)
 $$
 
-and the first:
+### 6.2 Deterministic Distribution
+
+Base harvest per agent:
 
 $$
-H \bmod n
+h_{\text{base}} = \left\lfloor \frac{H}{n} \right\rfloor
 $$
 
-agents in local encounter order receive one extra unit.
-
-Cell resources update to:
+Remainder to distribute:
 
 $$
-R' = R - H
+r = H \bmod n
 $$
 
-Each recipient updates:
+For each local agent $j \in \{1, \ldots, n\}$ in encounter order:
 
 $$
-E_i \leftarrow E_i + h_i
+h_j = h_{\text{base}} + \begin{cases} 1 & \text{if } j \le r \\ 0 & \text{otherwise} \end{cases}
 $$
 
-Agents with $E_i \le 0$ after this phase are queued into `post_harvest_starvation`, though under the current rules that bucket is usually empty.
+This ensures deterministic, fair distribution: the first $r$ agents receive one extra resource unit.
+
+### 6.3 Energy Update and Starvation
+
+Each agent updates:
+
+$$
+E_j \leftarrow E_j + h_j
+$$
+
+**Note**: Starvation occurs immediately for agents reaching $E_j \le 0$ after harvest, though under current regime parameters this bucket is typically empty (most starvation occurs from movement cost, not harvest shortfall).
+
+Cell resources decrease:
+
+$$
+R \leftarrow R - H
+$$
 
 ## 7. Biology Phase
 
 For each post-harvest survivor:
 
-Eligibility:
+### 7.1 Reproduction Eligibility and Bernoulli Draw
+
+If energy meets threshold:
 
 $$
-E_i \ge \theta
+E_i \ge \theta \text{ (reproduction threshold)}
 $$
 
-If eligible, sample:
+Sample reproduction outcome:
 
 $$
 u_i \sim \mathrm{Uniform}[0, 1)
 $$
 
-and reproduce when:
+Reproduce with probability $p$:
 
 $$
-u_i < p
+u_i < p \implies \text{attempt reproduction}
 $$
 
-On success:
+### 7.2 Reproduction Cost
+
+On successful reproduction, deduct cost:
 
 $$
 E_i \leftarrow E_i - c_r
 $$
 
-and the parent is appended to the reproduction queue.
+Append parent $i$ to reproduction queue for later birth commits.
 
-If reproduction leaves:
+If energy is now exhausted:
 
 $$
-E_i \le 0
+E_i \le 0 \implies \text{queue } i \text{ for post-reproduction death}
 $$
 
-the parent is also queued in `post_reproduction_death`.
+### 7.3 Aging and Age Death (Second Check)
 
-Current aging rule:
+Every post-harvest survivor ages, including successful reproducers:
 
 $$
 a_i \leftarrow a_i + 1
 $$
 
-is applied to every post-harvest survivor, including successful reproducers.
-
-If:
+If age now exceeds maximum:
 
 $$
-a_i \ge A_{\max}
+a_i \ge A_{\max} \implies \ell_i \leftarrow \text{False}
 $$
 
-then:
+These age-marked agents remain in the population until the next tick's movement phase, when they are queued for death.
 
-$$
-\ell_i \leftarrow 0
-$$
+**Note**: Age-based death has two checkpoints:
+- **Movement entry**: agents already at or beyond max age do not move
+- **Biology exit**: agents aging into max age are marked dead for removal next tick
 
-Removal of age-dead agents occurs on the next tick's movement phase.
+This dual-check ensures no agent can act multiple times after hitting max age.
 
 ## 8. Commit Phase
 

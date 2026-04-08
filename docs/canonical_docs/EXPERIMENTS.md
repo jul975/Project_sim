@@ -47,22 +47,19 @@ CLI / menu
 - `--plot-dev`
 - `--perf-flag`
 - `--world-frame-flag`
-- `--tail-fraction`
+- `--tail-fraction` (fraction of run used for final metrics; default: 0.25)
 
-Important current limitation:
-
-- `tail_fraction` is exposed on the request object and menu, but `run_experiment_mode()` does not currently pass it into `AnalysisConfig`
-- as a result, the experiment lane still analyzes the final `25%` of each run
+All flags are properly wired end-to-end through [ExecutionContext](execution_model/execution_context.py) → [execute.py](app/execution/execute_service/execute.py) → [AnalysisContext](analytics/contracts/analysis_context.py).
 
 ## 3. Defaults
 
-From `engine_build/execution/default.py`:
+From [engine_build/app/execution_model/default.py](engine_build/app/execution_model/default.py):
 
 - `DEFAULT_MASTER_SEED = 20250302`
 - `EXPERIMENT_DEFAULTS = {"ticks": 1000, "runs": 10}`
 - `VALIDATION_DEFAULTS = {"ticks": 1000, "runs": 10}`
 
-That validation default is now the same as the experiment default. Older docs referring to `300` ticks and `2` runs are stale.
+Validation and experiment defaults are now aligned. Older docs referring to `300` ticks or `2` runs are stale.
 
 ## 4. Named Regimes
 
