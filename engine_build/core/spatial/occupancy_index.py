@@ -50,8 +50,13 @@ class OccupancyIndex:
         """ build_from_agents(agents):
         builds an OccupancyIndex from a given dict of agents, and returns a DeathBucket of dead agents. 
         """
+        # NOTE: insertion order of dict is preserved, need verification and formalization
+            # need to assure deterministic order of agent processing, while avoiding overhead of sorting by id at each tick.
+            # should be stable as is but still relying on dict order for determinism is a bit concerning/bug risk
+            # idea, counter? (easy to overdo it) or just be careful and document
         index = cls()
         dead_agents_ids = []
+
         for agent in agents.values():
             if agent.alive:
                 index.add(agent)

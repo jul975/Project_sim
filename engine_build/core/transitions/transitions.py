@@ -86,8 +86,8 @@ def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext, wo
 
     occupied_cells : Iterable[tuple[Position, list["Agent"]]] = current_occupancy.occupied_items()
     for position, local_agents in occupied_cells:
-        # Spatial query based on position 
-        # weight = f(spatial_query_results) => determines movement outcome
+        # note weights and temperature are hardcoded for now, 
+        # need to be defined by regime compiler
 
         movement_range = sample_moves(position, world, current_occupancy, resource_weight=1.0, crowding_weight=1.0, temperature=1.0)
 
