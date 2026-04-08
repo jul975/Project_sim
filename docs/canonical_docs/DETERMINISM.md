@@ -24,103 +24,142 @@ Different seeds are expected to diverge.
 Engine equality is hash-based:
 
 ```text
-sha256(get_state_bytes(engine))
+sha256(get_state_bytes(engine)) → canonical_hash
 ```
 
-`Engine.__eq__()` delegates to `get_state_hash()`.
+`Engine.__eq__()` delegates to `get_state_hash()`, defined in [engine_build/core/snapshot/state_schema.py](engine_build/core/snapshot/state_schema.py).
 
-The canonical schema is `SCHEMA_VERSION = 2` in `engine_build/core/state_schema.py`.
+The canonical schema is `SCHEMA_VERSION = 2`. Serialized state includes:
 
-Current serialized state includes:
+### Flags and Configuration
+- `schema_version`
+- `perf_flag` (performance instrumentation enabled?)
+- `collect_world_view` (world-frame capture enabled?)
+- `change_condition` (alternate reproduction probability active?)
+- compiled regime parameters: `max_harvest`, `reproduction_probability`, etc.
 
-- schema version
-- `change_condition`
+### Simulation State
 - `world.tick`
-- current agent count
 - `next_agent_id`
 - `max_age`
-- `perf_flag`
-- `collect_world_view`
-- compiled rule-environment values used by the runtime
-- world dimensions
-- `max_harvest`
+
+### World
+- dimensions: `width`, `height`
 - `resource_regen_rate`
-- resource array
-- fertility array
-- world RNG state
-- every agent sorted by ID, including:
-  - `id`
-  - 2D position
-  - energy
-  - age
-  - alive flag
-  - offspring count
-  - move RNG state
-  - repro RNG state
-  - energy RNG state
+- `fertility[:]` array (int32)
+- `resources[:]` array (int32)
+- `world.rng_world` bit-generator state (PCG64 dict)
 
-Important nuance:
+### All Agents (sorted by ID)
+For each live agent:
+  - `id`, `position` (x, y tuple)
+  - `energy_level`, `age`, `alive` flag, `offspring_count`
+  - `move_rng.bit_generator.state`
+  - `repro_rng.bit_generator.state`
+  - `energy_rng.bit_generator.state`
 
-- canonical equality is stricter than "same ecological outcome"
-- it includes runtime flags and RNG state, not just visible population behavior
+### Important Nuances
+
+- **Flags affect hashing**: `perf_flag` and `collect_world_view` are part of the hash, so two runs that differ only in instrumentation flags will have different hashes
+- **RNG states included**: Canonical equality is stricter than "same ecological outcome"—it includes RNG state, not just visible population counts
+- **Determinism vs. outcome equivalence**: Two seeds will produce different trajectories, but the same seed always produces the same hash
 
 ## How Determinism Is Enforced
 
-### Stable phase order
+### Strict Phase Order
 
-`Engine.step()` always executes:
+`Engine.step()` always executes phases in this order:
 
-```text
-movement -> interaction -> biology -> commit -> tick += 1
+```
+movement_phase() → interaction_phase() → biology_phase() → commit_phase() → tick += 1
 ```
 
-### Deterministic structural mutation
+No reordering, no conditional skipping. This is enforced in [engine_build/core/engine.py](engine_build/core/engine.py).
 
-`commit_phase()` always applies:
+### Deterministic Traversal Order
 
-```text
-queued deaths -> committed births -> world regrowth
+At the core of determinism is **insertion-ordered dictionary traversal**. Python 3.7+ guarantees that `dict` insertion order is preserved.
+
+#### Agent Dictionary Order
+
+The agent dict (`engine.agents`) maintains:
+1. **Founders** added in range order: `[0, initial_agent_count)`
+2. **Children** appended at end in commit order
+3. Dead agents removed (never re-added)
+4. Result: **insertion order = genealogical order** (with founders first)
+
+#### Movement Phase: Occupancy Index
+
+```python
+# engine_build/core/spatial/occupancy_index.py
+
+@classmethod
+def build_from_agents(cls, agents: dict[int, Agent]):
+    index = OccupancyIndex()
+    for agent in agents.values():  # iteration preserves insertion order
+        if agent.alive:
+            index.add(agent)
+    return index
 ```
 
-Births are sliced by remaining capacity before any newborn is materialized.
+Agents are processed in encounter order (dictionary order), not re-sorted per tick. This is critical for determinism.
 
-### Stable traversal semantics
+Within each cell, local agents are stored in a list in encounter order. Resource distribution remainder is allocated to the first $r$ agents in this list.
 
-The hot path does not sort agents each tick.
+### Deterministic Structural Mutation
 
-Current runtime stability comes from:
+Commit phase is always:
 
-- Python's insertion-ordered dictionaries
-- deterministic mutation order
-- deterministic append order inside occupancy buckets
+```
+1. Remove all queued deaths (in death_bucket order)
+2. Create first N births (limited by remaining capacity)
+3. Regrow resources
+```
 
-Canonical serialization then sorts agents by ID before hashing.
+No birth re-ordering, no selective culling by cause. Death buckets track cause but don't affect order.
 
-### RNG isolation
+Births increment `next_agent_id` deterministically and sequentially.
 
-Randomness is partitioned into separate streams:
+### RNG Isolation
 
-- `world.rng_world`
-- `agent.move_rng`
-- `agent.repro_rng`
-- `agent.energy_rng`
+See [RNG_ARCHITECTURE.md](RNG_ARCHITECTURE.md) for details. In brief:
 
-This prevents movement, reproduction, world generation, and initial energy draws from perturbing each other.
+- `world.rng_world`: fertility generation only
+- `agent.move_rng`: movement direction sampling
+- `agent.repro_rng`: reproduction Bernoulli + child_entropy
+- `agent.energy_rng`: initial energy sampling
 
-### Monotonic identity allocation
+Stream separation prevents one concern from perturbing another's randomness.
 
-`next_agent_id` only increments and committed births are the only place new IDs are allocated.
+### Snapshot Continuation
 
-### Snapshot continuation
+Snapshots capture all state necessary for perfect execution continuation:
 
-Snapshots preserve the runtime state needed for continuation:
+```
+Snapshot contains:
+  - regime_config (CompiledRegime)
+  - world arrays (resources, fertility)
+  - world RNG state (PCG64 bit-generator dict)
+  - next_agent_id (counter)
+  - for each agent:
+    - all state fields
+    - all RNG bit-generator states
+    - master_ss metadata (entropy, spawn_key, pool_size)
+```
 
-- compiled config
-- world arrays
-- world RNG state
-- per-agent RNG states
-- structural counters
-- enough `SeedSequence` metadata to reconstruct `master_ss`
+Restore reconstructs:
+
+```
+engine_from_snapshot(snapshot)
+  → rebuild world
+  → rebuild agents + their RNGs via reconstruct_rng()
+  → restore RNG states from snapshot
+  → restart from snapshot tick
+```
+
+Result: **Continuation is byte-identical**. Resumed trajectory matches original.
+
+**Snapshot restoration caveat**: NumPy's `SeedSequence` internal spawn counter cannot be preserved. This is acceptable because the runtime does not call `master_ss.spawn()` after initialization.
 
 ## Verification Coverage
 
@@ -152,13 +191,51 @@ Primary checked-in tests:
 
 The full repository test run passed on March 23, 2026 in the project virtual environment.
 
-## Current Limits
+## Boundaries and Limitations
 
-- Reproducibility is a same-code, same-runtime guarantee. Python, NumPy, or PCG64 changes may change hashes.
-- Snapshot restoration reconstructs `master_ss` from metadata and does not preserve NumPy's internal child counter. This is acceptable in the current engine because the runtime no longer depends on repeated `master_ss.spawn()` calls after world initialization.
-- `change_condition` is part of the runtime model and the canonical hash, but it is not exposed through the current user-facing CLI.
-- Snapshot objects store `world_frame_flag`, but `engine_from_snapshot()` currently forces `collect_world_view = False` after reconstruction. That is a real implementation quirk and should be treated as a provisional edge of the snapshot surface.
-- Canonical hashing captures runtime state, not the original `RegimeSpec` source text.
+### Determinism Guarantee Scope
+
+$$
+\text{same seed} + \text{same regime} + \text{same code} + \text{same runtime}
+\implies
+\text{byte-identical state hashes}
+$$
+
+"Same runtime" means:
+- Same Python version
+- Same NumPy version
+- Same CPU architecture (for floating-point rounding in smoothing kernel)
+- Same operating system (for path-dependent floating-point differences, if any)
+
+**Corollary**: Different Python/NumPy versions may produce different hashes even with the same seed.
+
+### What Changed vs. What Stays Stable
+
+**Determinism is maintained across:**
+- Code refactors that preserve the phase order and RNG streams
+- Regime parameter tuning
+- Snapshot saves + restores within the same code version
+
+**Determinism may break across:**
+- Python version upgrades (PCG64 or NumPy internals may change)
+- NumPy version upgrades
+- Architecture changes affecting floating-point rounding
+
+### Known Edges
+
+- `change_condition`: This parameter is part of the runtime state and affects hashing, but is not exposed through the standard CLI (only used in tests)
+- `world_frame_flag` in snapshots: Snapshot storage includes `world_frame_flag`, but `engine_from_snapshot()` currently forces `collect_world_view = False` on restore. This is a provisional edge and may change
+- RNG restoration does not preserve NumPy's internal `SeedSequence.spawn()` counter, but this is irrelevant because the runtime never calls `spawn()` after initialization
+
+### Canonical Hashing Does Not Replay RegimeSpec
+
+The canonical hash is of the **runtime state**, not the source `RegimeSpec`:
+
+```
+RegimeSpec → compile_regime() → CompiledRegime → Engine → get_state_hash()
+```
+
+If two functionally identical `RegimeSpec` objects are compiled to the same `CompiledRegime`, all runs produce the same hash, even if the source specs differ.
 
 ## Practical Guidance
 

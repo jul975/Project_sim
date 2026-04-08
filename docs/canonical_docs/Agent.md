@@ -2,14 +2,14 @@
 
 ## Status
 
-This document describes the current `Agent` implementation in `engine_build/core/agent.py` as of March 23, 2026.
+This document describes the current `Agent` implementation in [engine_build/core/domains/agent.py](engine_build/core/domains/agent.py) as of April 8, 2026.
 
-The agent model is deliberately compact and exists to support:
+The agent model is deliberately compact, supporting:
 
-- deterministic execution
-- snapshot restore
+- deterministic execution via isolated RNG streams
+- snapshot persistence and restoration
 - reproducible batch runs
-- a clean pre-Stage III baseline
+- the Stage III freeze baseline
 
 ## Responsibilities
 
@@ -56,48 +56,67 @@ Notes:
 
 ## Initialization
 
-Construction is split into:
+Agent construction follows a deterministic three-step process:
 
-- `_init_identity()`
-- `_init_rngs()`
-- `_init_state()`
+```
+identity_words → RNG derivation → state initialization
+```
 
-### Identity model
+### Identity Model
 
-The current engine no longer stores a `SeedSequence` lineage object on each agent.
+**No per-agent SeedSequence object is stored.** Instead, each agent is identified by a deterministic tuple:
 
-Identity words are:
+### Founder Identity
 
-- founder: `(run_entropy, founder_id)`
-- child: `(run_entropy, child_entropy, parent_id, parent.offspring_count)`
+A founder with `id = founder_id` receives:
 
-Those identity words are built by:
+```python
+identity_words = (master_ss.entropy, founder_id)
+```
 
-- `Engine.get_first_agent_setup()`
-- `Engine.get_child_setup()`
+where `master_ss.entropy` is extracted once from the run's `SeedSequence` at engine startup.
 
-### RNG setup
+### Child Identity
 
-Each agent derives three independent `PCG64` generators:
+A newborn with parent `parent_id` and parent's `offspring_count = k` receives:
 
-- movement: `identity_words + (1,)`
-- reproduction: `identity_words + (2,)`
-- energy: `identity_words + (3,)`
+```python
+child_entropy = parent.repro_rng.bit_generator.random_raw()
 
-This is one of the core determinism mechanisms in the project.
+identity_words = (master_ss.entropy, child_entropy, parent_id, k)
+```
 
-### Initial state
+The child entropy comes from the parent's reproduction RNG, ensuring sibling differentiation.
+
+### RNG Derivation
+
+From identity_words, three independent RNG streams are derived:
+
+```python
+move_rng   = Generator(PCG64(identity_words + (MOVEMENT,)))        # domain_tag = 1
+repro_rng  = Generator(PCG64(identity_words + (REPRODUCTION,)))    # domain_tag = 2
+energy_rng = Generator(PCG64(identity_words + (ENERGY,)))          # domain_tag = 3
+```
+
+Domain tags are constants defined in [engine_build/core/domains/agent.py](engine_build/core/domains/agent.py). This architecture is explained in detail in [docs/canonical_docs/RNG_ARCHITECTURE.md](RNG_ARCHITECTURE.md).
+
+This is one of the core determinism mechanisms in the project: identity uniquely determines RNG streams.
+
+### State Initialization
 
 At creation:
 
-- founders sample their initial position from `move_rng`
-- newborns inherit the parent position directly
+- **Founders**: sample initial position from `move_rng` uniformly on the world grid
+- **Newborns**: inherit parent's position directly (no position draw)
 - `alive = True`
 - `age = 0`
 - `offspring_count = 0`
-- `energy_level` is sampled from `energy_init_range` with `energy_rng`
+- `energy_level` sampled from `[energy_min, energy_max)` using `energy_rng.integers(low, high)`
 
-The energy draw uses `np.random.Generator.integers(low, high)`, so the upper bound is exclusive.
+Notes:
+- Energy sampling uses NumPy's `integers(low, high)`, so the upper bound is **exclusive**
+- Founders are all created at engine construction time
+- Children are created only during commit phase when they receive valid IDs
 
 ## Runtime Behavior
 

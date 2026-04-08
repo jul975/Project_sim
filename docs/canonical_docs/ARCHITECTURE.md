@@ -2,15 +2,15 @@
 
 ## Status
 
-This document describes the implementation that is actually checked in on April 3, 2026.
+This document describes the implementation checked in as of April 8, 2026.
 
 Current baseline:
 
 - Stage III freeze point on `0.3.0a0`
-- `v0.2.5` remains the earlier pre-Stage III freeze artifact
+- `v0.2.5` remains the earlier pre-Stage III baseline documentation
 - deterministic 2D toroidal ecology simulator
-- CLI subcommands and the top-level menu both route into the same execution-context and dispatch layer
-- validation currently needs repair before the Stage III freeze line can be called fully green again
+- CLI subcommands and the top-level menu route through a unified `ExecutionContext` + `dispatch()` + `service` pattern
+- all verification and validation tests passing locally
 
 ## High-Level Structure
 
@@ -137,23 +137,61 @@ Each agent owns:
 
 Identity is no longer a stored `SeedSequence` lineage tree. The current engine derives RNGs from compact deterministic `identity_words`.
 
-### Transition layer
+### Transition Layer: Phase Separation
 
-`engine_build/core/transitions.py` separates evaluation from structural mutation.
+The engine separates **phase evaluation** from **structural state mutation** using `TransitionContext`.
 
-`TransitionContext` holds:
+**Why this pattern?**
 
-- `occupied_positions`
-- `post_harvest_alive`
-- `pending_deaths_by_cause`
-- `reproducing_agents`
+Each phase computes *what should happen* (e.g., which agents die, which reproduce) but does not immediately modify engine state. Results are accumulated in intermediate buckets, then applied atomically during commit.
 
-Current death buckets:
+**TransitionContext** (`engine_build/core/transitions.py`) holds:
 
-- `age_deaths`
-- `metabolic_deaths`
-- `post_harvest_starvation`
-- `post_reproduction_death`
+```python
+occupancy: OccupancyIndex            # spatial index after movement
+post_harvest_alive: list[Agent]      # agents surviving harvest
+reproducing_agents: list[Agent]      # agents queued for birth commits
+pending_deaths_by_cause: dict[str, DeathBucket]
+    "age_deaths": DeathBucket
+    "metabolic_deaths": DeathBucket
+    "post_harvest_starvation": DeathBucket
+    "post_reproduction_death": DeathBucket
+```
+
+**Phase flow:**
+
+```
+movement_phase(agents, context, world)
+    → updates context.occupancy
+    → appends to pending_deaths (age, metabolic)
+
+interaction_phase(context, world)
+    → appends to context.post_harvest_alive
+    → appends to pending_deaths (starvation)
+
+biology_phase(context)
+    → appends to context.reproducing_agents
+    → appends to pending_deaths (post-reproduction)
+
+commit_phase(context)
+    → DELETE all pending deaths
+    → CREATE all births (up to capacity)
+    → REGROW resources
+```
+
+This separation allows:
+- each phase to operate independently without cascading state changes
+- death causes to be tracked separately for analytics
+- clean, testable phase logic
+- deterministic commit order: deaths before births before regrowth
+
+**Current death buckets:**
+
+Each death bucket tracks agent IDs by cause:
+- `age_deaths`: queued in movement phase, removed next tick
+- `metabolic_deaths`: insufficient energy after movement
+- `post_harvest_starvation`: insufficient energy after harvest
+- `post_reproduction_death`: insufficient energy after reproduction cost
 
 ### Runner and analytics
 
@@ -190,7 +228,39 @@ movement
 -> world.tick += 1
 ```
 
-The details are documented in `docs/canonical_docs/SIMULATION_PIPELINE.md`.
+For mathematical detail, see [MATHEMATICAL_MODEL.md](MATHEMATICAL_MODEL.md).
+
+### Movement Phase Details
+
+**Step 1: Age Entry Check**
+- Before any movement, agents with `age >= max_age` are identified and queued for removal (no movement occurs)
+
+**Step 2: Direction Sampling**
+- For each remaining agent, sample movement candidates using softmax scoring
+- Candidates weight: resource density + crowding at neighboring cells
+- Sample one cardinal direction: `(-1,0), (1,0), (0,-1), (0,1)`
+
+**Step 3: Movement Cost**
+- Deduct `movement_cost` from energy
+- Update position with toroidal wrapping
+
+**Step 4: Metabolic Death Check**
+- If `energy <= 0`, queue for metabolic death
+
+Result: Updated `occupancy` index and death buckets for the transition context.
+
+### Harvest Phase Details
+
+**Deterministic per-cell distribution:**
+- Total harvest at cell = `min(available_resources, num_agents * max_harvest)`
+- Base share per agent = `total_harvest // num_agents`
+- Remainder distributed to first N agents in encounter order
+- Each agent in list position `i` gets `base_share + (1 if i < remainder else 0)`
+
+This ensures:
+- perfectly deterministic identical outcomes under same seed
+- fair allocation within numerical precision
+- encounter-order dependency captured by `OccupancyIndex` iteration
 
 ## Determinism Model
 
@@ -276,13 +346,11 @@ As of April 3, 2026:
 
 ## Known Freeze-Relevant Limits
 
-- the Stage III freeze point does not mean explicit crowding, collision, or richer local-competition rules are fully implemented
+- the Stage III freeze point does not include explicit crowding, collision, or advanced local-competition rules beyond cell-level harvest sharing
 - there are no explicit agent-agent mechanics beyond shared-cell harvesting and population-cap competition
-- `contrast` and `floor` remain unused in world generation
-- the experiment context exposes `tail_fraction`, but `build_and_run_batch()` does not currently pass it into `AnalysisContext`, so experiment analysis still uses the default `0.25`
-- validation currently regressed: `engine_build/validation/helpers.py` constructs `AnalysisContext(regime_label=...)` without the `n_runs` and `total_tics` values required by `analyze_batch()`, so `tests/validation` currently fail before the regime-contract assertions run
-- snapshot objects store `world_frame_flag`, but `engine_from_snapshot()` currently forces `collect_world_view = False` after reconstruction
-- world-frame analytics and dev plotting are useful support tools, not yet the most polished public surface
+- `contrast` and `floor` parameters are still unused in world generation (future optimization layer)
+- snapshot objects store `world_frame_flag`, but `engine_from_snapshot()` currently forces `collect_world_view = False` after reconstruction (provisional design edge)
+- world-frame analytics and dev plotting are support tools, not yet the primary public surface
 
 ## Scope Boundary
 

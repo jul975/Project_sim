@@ -94,202 +94,124 @@ The T operator is deterministic, meaning that given the same initial state, it w
 
 As of March 23, 2026, the repository is at package version `0.3.0a0` and represents the current pre-Stage III / pre-`v0.3` freeze candidate. The 2D engine transition is live, determinism is still a hard constraint, and the main public surface is a small CLI for experiments plus suite-based verification and validation.
 
-## Pre-Stage III Freeze Snapshot
+## Current Baseline (Stage III)
 
-- 2D toroidal world with 2D fertility and resource fields
-- deterministic execution with canonical state hashing
-- snapshot and restore support with continuation-equivalent behavior
-- isolated RNG ownership across world, movement, reproduction, and energy
-- phase-structured engine loop: movement -> interaction -> biology -> commit
-- batch runner plus per-run and batch-level analytics
-- optional plotting, performance profiling, and world-frame capture
-- CLI lanes for `experiment`, `verify`, and `validate`
-- explicit interactive menu entrypoint via `python -m engine_build.main menu`
+### What's Stable
 
-Checked on March 23, 2026 in the project `.venv`:
+- **2D toroidal world** with fertility and resource fields
+- **Deterministic execution** with canonical state hashing and snapshot continuation
+- **Isolated RNG streams** for world, movement, reproduction, and energy
+- **Phase-structured tick loop**: movement → interaction → biology → commit
+- **Batch analytics** with per-run metrics, fingerprints, and regime classification
+- **Optional instrumentation**: performance profiling, world-frame capture, plotting
 
-- `tests/verification`: `25 passed`
-- `tests/validation`: `6 passed`
+### Command Surface
 
-## What This Version Is Not Yet
+```bash
+python -m engine_build.main experiment --regime <name> [--runs N] [--ticks T] [--seed S] [--plot] [--tail-fraction F]
+python -m engine_build.main verify --suite <all|determinism|invariants|rng|snapshots>
+python -m engine_build.main validate --suite <all|contracts|separation>
+python -m engine_build.main menu
+```
 
-- explicit Stage III crowding, collision, and local-competition rules are not implemented yet
-- spatial diagnostics exist, but the current 2D analytics surface is still lighter than the planned Stage III metrics stack
-- the CLI is usable but still intentionally small and pre-freeze
-- plotting dependencies are imported during CLI startup, so dependencies should be installed before running any CLI command, including `--help`
+### Named Regimes
 
-## Current Regimes
+| Regime | Behavior |
+|--------|----------|
+| `stable` | Balanced birth/death cycles |
+| `fragile` | Stressed but usually surviving |
+| `abundant` | Permissive growth |
+| `saturated` | Population bottleneck |
+| `collapse` | Low regeneration, systemic failure |
+| `extinction` | High failure rate |
 
-The live regime registry is:
+### Design Decisions
 
-- `stable`
+- No per-agent `SeedSequence` lineage tree; RNGs derived from deterministic identity words
+- No per-tick agent re-sorting; encounter order preserved via Python dict insertion order
+- No crowding / collision rules yet (planned post-freeze extension)
 
-    ![stable](docs/images/STABLE.png)
+## Setup & Usage
 
-- `fragile`
-
-    ![fragile](docs/images/FRAGILE.png)
-
-- `abundant`
-
-    ![abundant](docs/images/ABUNDANT.png)
-
-- `saturated`
-
-    ![saturated](docs/images/SATURATED.png)
-
-- `collapse`
-
-    ![collapse](docs/images/COLLAPSE.png)
-
-- `extinction`
-
-    ![extinction](docs/images/EXTINCTION.png)
-
-Current defaults from `engine_build/execution/default.py`:
-
-- `DEFAULT_MASTER_SEED = 20250302`
-- experiment defaults: `runs = 10`, `ticks = 1000`
-- experiment tail window default: `--tail-fraction 0.25`
-
-## Quickstart
+### Installation
 
 ```bash
 git clone https://github.com/jul975/FestinaLente.git
 cd FestinaLente
 python -m venv .venv
-```
-
-Windows:
-
-```bash
-.venv\Scripts\activate
-```
-
-Linux or macOS:
-
-```bash
-source .venv/bin/activate
-```
-
-Install dependencies before running the CLI:
-
-```bash
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 python -m pip install -r requirements.txt
 ```
 
-Python requirement from `pyproject.toml`: `>=3.11`
+Python >= 3.11 required ([from pyproject.toml](pyproject.toml)).
 
-## Running Experiments
+### Quick Examples
 
-Baseline run:
-
+**Baseline stable regime:**
 ```bash
 python -m engine_build.main experiment --regime stable
 ```
 
-Custom run:
-
+**Custom parameters:**
 ```bash
-python -m engine_build.main experiment --regime stable --seed 42 --runs 5 --ticks 500
+python -m engine_build.main experiment --regime abundant --runs 5 --ticks 500 --seed 42
 ```
 
-Batch plots:
-
+**With analysis tuning:**
 ```bash
-python -m engine_build.main experiment --regime stable --plot
+python -m engine_build.main experiment --regime collapse --runs 10 --ticks 2000 --tail-fraction 0.1
 ```
 
-Performance profiling:
-
+**With performance profiling:**
 ```bash
-python -m engine_build.main experiment --regime abundant --runs 10 --ticks 1000 --perf-flag
+python -m engine_build.main experiment --regime saturated --perf-flag
 ```
 
-World-frame capture plus dev plots:
-
-```bash
-python -m engine_build.main experiment --regime stable --runs 3 --ticks 200 --world-frame-flag --plot-dev
-```
-
-Interactive menu:
-
+**Interactive menu:**
 ```bash
 python -m engine_build.main menu
 ```
 
-## Verification And Validation
-
-Verification suites:
-
-- `all`
-- `determinism`
-- `invariants`
-- `rng`
-- `snapshots`
-
-Validation suites:
-
-- `all`
-- `contracts`
-- `separation`
-
-Run via the project CLI:
+### Verification & Validation
 
 ```bash
+# Via CLI (routes to pytest)
 python -m engine_build.main verify --suite all
 python -m engine_build.main validate --suite all
-```
 
-Direct pytest entry points:
-
-```bash
+# Direct pytest
 python -m pytest tests/verification
 python -m pytest tests/validation
 ```
 
-Useful markers from `pytest.ini`:
+## Documentation Map
 
-- `dev`
-- `validate`
-- `verify`
-- `regime`
-- `full`
-- `slow`
-- `rng`
-- `invariant`
-- `snapshot`
+**Essential references:**
+- [ARCHITECTURE.md](docs/canonical_docs/ARCHITECTURE.md) — system structure and phase flow
+- [MATHEMATICAL_MODEL.md](docs/canonical_docs/MATHEMATICAL_MODEL.md) — State-transition formalism
+- [RNG_ARCHITECTURE.md](docs/canonical_docs/RNG_ARCHITECTURE.md) — Determinism via seeding
+- [DETERMINISM.md](docs/canonical_docs/DETERMINISM.md) — Reproducibility contracts
+- [EXPERIMENTS.md](docs/canonical_docs/EXPERIMENTS.md) — analytics and regime classification
 
-## Repository Map
+**Status & planning:**
+- [CURRENT_STATE.md](docs/Project_Status/CURRENT_STATE.md) — Stage III baseline summary
+- [ROADMAP.md](docs/Project_Status/ROADMAP.md) — next priorities
 
-- `engine_build/core/` - engine, world, transitions, snapshots, canonical state schema
-- `engine_build/regimes/` - regime specs, compiled params, registry, compiler
-- `engine_build/runner/` - batch orchestration and run lifecycle
-- `engine_build/metrics/` - per-tick metrics collection
-- `engine_build/analytics/` - fingerprints, summaries, classification, world-frame analytics
-- `engine_build/experiments/` - experiment-mode entrypoints and output formatting
-- `engine_build/cli/` - parser, requests, dispatch, and menu frontend
-- `engine_build/visualisation/` - batch plots, single-run plots, world-view plots
-- `tests/verification/` - determinism, invariants, snapshots, RNG isolation, CLI smoke
-- `tests/validation/` - regime contracts and regime separation checks
-- `docs/canonical_docs/` - architecture and behavior references
-- `docs/Project_Status/` - roadmap, current status, performance notes
+**Code organization:**
+- `engine_build/core/` — engine, world, agent state
+- `engine_build/regimes/` — configuration compilation
+- `engine_build/runner/` — batch orchestration
+- `engine_build/analytics/` — metrics, fingerprints, classification
+- `tests/verification/` — determinism, invariants, snapshots, RNG isolation
+- `tests/validation/` — regime contracts and cross-regime checks
 
-## Documentation
+## Design Philosophy
 
-- [Architecture](docs/canonical_docs/ARCHITECTURE.md)
-- [Simulation Pipeline](docs/canonical_docs/SIMULATION_PIPELINE.md)
-- [Mathematical Model](docs/canonical_docs/MATHEMATICAL_MODEL.md)
-- [Configuration](docs/canonical_docs/CONFIGURATION.md)
-- [Determinism](docs/canonical_docs/DETERMINISM.md)
-- [RNG Architecture](docs/canonical_docs/RNG_ARCHITECTURE.md)
-- [Experiments](docs/canonical_docs/EXPERIMENTS.md)
-- [Current State](docs/Project_Status/CURRENT_STATE.md)
-- [Roadmap](docs/Project_Status/ROADMAP.md)
+The codebase prioritizes:
 
-## Near-Term Priorities
+1. **Determinism** — fixed seed → identical trajectory (tested explicitly)
+2. **Clarity** — phase separation and transparent orchestration over convenience
+3. **Reproducibility** — snapshot/restore and canonical hashing as first-class concerns
+4. **Research rigor** — separation of simulation logic, metrics, and analytics
 
-- keep the current verification and validation surface green while freezing docs and CLI behavior
-- expand 2D-aware spatial diagnostics on top of the existing world-frame analytics
-- document Stage III interaction rules before implementing them
-- freeze a clean pre-Stage III baseline that matches code, tests, and docs
+Not prioritized (yet): advanced GUIs, distributed computation, complex spatial interaction rules.
