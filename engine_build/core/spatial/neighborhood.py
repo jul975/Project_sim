@@ -36,7 +36,7 @@ class MovementRange:
 
 # build movement candidates based on passed location
 
-def build_move_candidates(position : "Position", world : "World", occupancy : "OccupancyIndex", include_stay=False):
+def _build_move_candidates(position : "Position", world : "World", occupancy : "OccupancyIndex", include_stay=False):
     """ build_move_candidates(position, world, occupancy): """
     x, y = position
 
@@ -64,7 +64,7 @@ def build_move_candidates(position : "Position", world : "World", occupancy : "O
 
 # score candidates 
 
-def score_move_candidates(
+def _score_move_candidates(
     candidates: list[MoveCandidate],
     resource_weight: float,
     crowding_weight: float,
@@ -76,11 +76,12 @@ def score_move_candidates(
             - crowding_weight * c.occupancy_count
         )
         scores.append(score)
+    """ scores are unnormalized, will be converted to probabilities later. """
     return scores
 
 # get prob for each candidate based on score
 
-def softmax_probabilities(scores: list[float], temperature: float = 1.0) -> np.ndarray:
+def _softmax_probabilities(scores: list[float], temperature: float = 1.0) -> np.ndarray:
     arr = np.asarray(scores, dtype=float)
 
     if temperature <= 0:
@@ -93,9 +94,9 @@ def softmax_probabilities(scores: list[float], temperature: float = 1.0) -> np.n
 # sample candidates and prob based on position
 
 def sample_moves(position : "Position", world : "World", occupancy : "OccupancyIndex", resource_weight: float, crowding_weight: float, temperature: float) -> MovementRange:
-    candidates = build_move_candidates(position, world, occupancy)
-    scores = score_move_candidates(candidates, resource_weight, crowding_weight)
-    probs = softmax_probabilities(scores, temperature)
+    candidates = _build_move_candidates(position, world, occupancy)
+    scores = _score_move_candidates(candidates, resource_weight, crowding_weight)
+    probs = _softmax_probabilities(scores, temperature)
     
     return MovementRange(candidates=candidates, probability=probs)
 
