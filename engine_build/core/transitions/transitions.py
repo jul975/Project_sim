@@ -69,6 +69,7 @@ def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext) ->
     
     age_deaths = DeathBucket()
     metabolic_deaths = DeathBucket()
+    current_occupancy = context.occupancy.cells.copy()
 
 
     for agent_id,  agent in agents.items():
@@ -77,12 +78,17 @@ def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext) ->
         if not agent.alive:
             age_deaths.agents_ids.append(agent_id)
             continue
-        # M
-        if not agent.move_agent():
-            metabolic_deaths.agents_ids.append(agent_id)
-            continue
 
         context.occupancy.add(agent)
+        # M
+
+
+        """
+        if not agent.move_agent():
+            metabolic_deaths.agents_ids.append(agent_id)
+            continue"""
+
+        
 
 
     context.pending_deaths_by_cause["age_deaths"] = age_deaths
