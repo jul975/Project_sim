@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..engine import Engine
     from ..snapshot.snapshots import AgentSnapshot
+    from ..spatial.neighborhood import MoveCandidate
 
 from ..contracts.step_results import AgentSetup
 from ..snapshot.snapshots import _agent_from_snapshot
@@ -43,8 +44,7 @@ REPRODUCTION : int = 2
 ENERGY : int = 3
 
 
-# relocated temp for now bc of performance reasons.
-moves = ((-1, 0), (1, 0), (0, -1), (0, 1))
+
 
 
 
@@ -155,17 +155,16 @@ class Agent:
 
 
 
-    def move_agent(self) -> bool:
+    def move_agent(self, candidates : list["MoveCandidate"], probability : np.ndarray) -> bool:
         # M, if energy <= 0, agent dies of metabolic starvation.
-        self.energy_level -= self.engine.energy_params.movement_cost     
-        dx, dy = moves[self.move_rng.integers(0, 4)]
-        
-        x, y = self.position
+             
+        candidate_count = len(candidates)
+        idx = self.move_rng.choice(candidate_count, p=probability)
 
-        self.position = (x + dx, y + dy)
+        self.position = candidates[idx].position
 
-
-        self.position = self.engine.world.wrap_around(self.position)
+        # NOTE: 8/6/24 - deduct energy after movement, future proofing for potential movement costs that depend on the environment or movement range.
+        self.energy_level -= self.engine.energy_params.movement_cost
 
         if self.energy_level <= 0:
             self.alive = False

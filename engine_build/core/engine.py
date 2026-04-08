@@ -164,7 +164,7 @@ class Engine:
     def _step_fast(self) -> StepReport:
         context = TransitionContext()
 
-        movement_report = movement_phase(self.agents, context)
+        movement_report = movement_phase(self.agents, context, self.world)
         interaction_report = interaction_phase(context, self.world)
         biology_report = biology_phase(context)
         commit_report = self.commit_phase(context)
@@ -191,7 +191,7 @@ class Engine:
 
         if self.perf_flag:
             t0 = time.perf_counter()
-            movement_report = movement_phase(self.agents, context)
+            movement_report = movement_phase(self.agents, context , self.world)
             t1 = time.perf_counter()
 
             interaction_report = interaction_phase(context, self.world)
@@ -210,7 +210,7 @@ class Engine:
                 commit=t4 - t3,
             )
         else:
-            movement_report = movement_phase(self.agents, context)
+            movement_report = movement_phase(self.agents, context, self.world)
             interaction_report = interaction_phase(context, self.world)
             biology_report = biology_phase(context)
             commit_report = self.commit_phase(context)
