@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.service_request_container import ServiceRequest
 from engine_build.app.service_models.default import DEFAULT_MASTER_SEED, EXPLORATION_DEFAULTS
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
@@ -20,15 +20,15 @@ from engine_build.visualisation.dynamic_new import animate_run
 # return exit code
 
 
-def exploration_service_call(context: ExecutionRequest) -> int:
-    if context.regime is None:
+def exploration_service_call(exploration_request: ServiceRequest) -> int:
+    if exploration_request.regime is None:
         raise ValueError("Exploration mode requires a regime.")
 
-    regime_spec = get_regime_spec(context.regime)
+    regime_spec = get_regime_spec(exploration_request.regime)
     regime_config = compile_regime(regime_spec)
 
-    seed = context.seed if context.seed is not None else DEFAULT_MASTER_SEED
-    ticks = context.ticks if context.ticks is not None else EXPLORATION_DEFAULTS["ticks"]
+    seed = exploration_request.seed if exploration_request.seed is not None else DEFAULT_MASTER_SEED
+    ticks = exploration_request.ticks if exploration_request.ticks is not None else EXPLORATION_DEFAULTS["ticks"]
 
     runner = BatchRunner(
         regime_config=regime_config,

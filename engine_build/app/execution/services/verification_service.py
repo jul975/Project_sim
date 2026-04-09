@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import pytest
 
-from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.service_request_container import ServiceRequest
 from engine_build.app.service_models.suite_registry import VERIFICATION_SUITES
 
 
-def verification_service_call(context: ExecutionRequest) -> int:
+def verification_service_call(verification_request: ServiceRequest) -> int:
     """Execute a verification suite through pytest.
 
     Args:
-        context: Execution request containing the verification suite selection
+        verification_request: Service request containing the verification suite selection
             and optional pytest control flags.
 
     Returns:
@@ -30,24 +30,24 @@ def verification_service_call(context: ExecutionRequest) -> int:
         The service appends suite targets first and then forwards any extra
         ``pytest_args`` from the request unchanged.
     """
-    if context.suite is None:
+    if verification_request.suite is None:
         raise ValueError("Verification mode requires a suite.")
 
-    targets = VERIFICATION_SUITES.get(str(context.suite))
+    targets = VERIFICATION_SUITES.get(str(verification_request.suite))
     if targets is None:
         valid = ", ".join(sorted(VERIFICATION_SUITES))
-        raise ValueError(f"Unknown verification suite: {context.suite!r}. Valid suites: {valid}")
+        raise ValueError(f"Unknown verification suite: {verification_request.suite!r}. Valid suites: {valid}")
 
     pytest_args: list[str] = []
-    if context.verbose:
+    if verification_request.verbose:
         pytest_args.append("-v")
-    if context.fail_fast:
+    if verification_request.fail_fast:
         pytest_args.append("-x")
 
     pytest_args.extend(targets)
-    pytest_args.extend(context.pytest_args)
+    pytest_args.extend(verification_request.pytest_args)
 
-    print(f"[verification] Running verification suite: {context.suite}")
+    print(f"[verification] Running verification suite: {verification_request.suite}")
     result = pytest.main(pytest_args)
     return int(result)
 
