@@ -30,37 +30,48 @@ import time
 if TYPE_CHECKING:
     from .snapshot.snapshots import EngineSnapshot
 
+# RegimeSpec -> CompiledRegime -> EngineRuntimeParams -> TransitionContext -> EngineState -> StepReport
 
 class Engine:
-    def __init__(self, seed_seq : np.random.SeedSequence , config : CompiledRegime, perf_flag : bool = False , world_frame_flag : bool = False,change_condition=False) -> None:
+    def __init__(self, 
+                 seed_seq : np.random.SeedSequence , 
+                 config : CompiledRegime, 
+                 perf_flag : bool = False , 
+                 world_frame_flag : bool = False,
+                 change_condition=False
+                 ) -> None:
 
 
+        # 1) Setup concerns 
         self.master_ss = seed_seq
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
 
+
+        # 2) Execution Mode concerns
         self.perf_flag = perf_flag
-
         self.collect_world_view = world_frame_flag
+        # + change_condition flag need to change
 
+        # 3) Compiled model concerns
         self.config : CompiledRegime = config
-        
-        self.energy_params : EnergyParams = self.config.energy_params  
-
-
-        self.reproduction_probability : float = self.config.reproduction_params.probability if not change_condition else self.config.reproduction_params.probability_change_condition
-        
-        
+        self.energy_params : EnergyParams = self.config.energy_params          
         self.resource_params : ResourceParams = self.config.resource_params
         self.landscape_params : LandscapeParams = self.config.landscape_params
         self.population_params : PopulationParams = self.config.population_params
         self.world_params : WorldParams = self.config.world_params
 
+
+        # 4) run specific semantics
+        self.reproduction_probability : float = self.config.reproduction_params.probability if not change_condition else self.config.reproduction_params.probability_change_condition
+
+
+        # 5) Convenience mirrors of important parameters for easy access
         self.max_agent_count = self.population_params.max_agent_count
-        self.next_agent_id = self.population_params.initial_agent_count
         self.max_age = self.population_params.max_age
         
+        # 6) Mutable simulation state
+        self.next_agent_id = self.population_params.initial_agent_count
         self.world = World( world_seed, self.config ,change_condition)
-        
         self.agents : dict[int, Agent] = self.initialize_state(self.next_agent_id) 
 
         self._assert_invariants()

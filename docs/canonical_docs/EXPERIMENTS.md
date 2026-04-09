@@ -49,7 +49,7 @@ CLI / menu
 - `--world-frame-flag`
 - `--tail-fraction` (fraction of run used for final metrics; default: 0.25)
 
-All flags are properly wired end-to-end through [ExecutionContext](execution_model/execution_context.py) → [execute.py](app/execution/execute_service/execute.py) → [AnalysisContext](analytics/contracts/analysis_context.py).
+All flags are properly wired end-to-end through [ExecutionRequest](execution_model/execution_request.py) → [execute.py](app/execution/execute_service/execute.py) → [AnalysisContext](analytics/contracts/analysis_context.py).
 
 ## 3. Defaults
 

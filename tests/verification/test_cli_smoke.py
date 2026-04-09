@@ -10,8 +10,8 @@ from engine_build.app.cli.parser import (
     build_validation_context,
 )
 from engine_build.app.cli.menu import run_menu
-from engine_build.app.execution_model.execution_context import (
-    ExecutionContext
+from engine_build.app.execution_model.execution_request import (
+    ExecutionRequest
     )
 from engine_build.app.execution_model.modes import ExecutionMode
 
@@ -40,7 +40,7 @@ def test_cli_smoke_experiment_request_build():
 
     request = build_experiment_context(args)
 
-    assert isinstance(request, ExecutionContext)
+    assert isinstance(request, ExecutionRequest)
     assert request.regime == "stable"
     assert request.runs is None
     assert request.ticks is None
@@ -59,7 +59,7 @@ def test_cli_smoke_experiment_tail_fraction_parser_plumbing():
 
     request = build_experiment_context(args)
 
-    assert isinstance(request, ExecutionContext)
+    assert isinstance(request, ExecutionRequest)
     assert request.mode is ExecutionMode.EXPERIMENT
     assert request.regime == "stable"
     assert request.runs is None
@@ -93,7 +93,7 @@ def test_cli_smoke_experiment_tail_fraction_menu_plumbing(monkeypatch):
 
     context = run_menu()
 
-    assert isinstance(context, ExecutionContext)
+    assert isinstance(context, ExecutionRequest)
     assert context.mode is ExecutionMode.EXPERIMENT
     assert context.regime == "stable"
     assert context.runs is None
@@ -112,7 +112,7 @@ def test_cli_smoke_verify_request_build():
 
     request = build_verification_context(args)
 
-    assert isinstance(request, ExecutionContext)
+    assert isinstance(request, ExecutionRequest)
     assert request.suite == "determinism"
     assert request.verbose is False
     assert request.fail_fast is False
@@ -125,7 +125,7 @@ def test_cli_smoke_validate_request_build():
 
     request = build_validation_context(args)
 
-    assert isinstance(request, ExecutionContext)
+    assert isinstance(request, ExecutionRequest)
     assert request.suite == "contracts"
     assert request.verbose is False
     assert request.fail_fast is False

@@ -9,14 +9,14 @@ Current baseline:
 - Stage III freeze point on `0.3.0a0`
 - `v0.2.5` remains the earlier pre-Stage III baseline documentation
 - deterministic 2D toroidal ecology simulator
-- CLI subcommands and the top-level menu route through a unified `ExecutionContext` + `dispatch()` + `service` pattern
+- CLI subcommands and the top-level menu route through a unified `ExecutionRequest` + `dispatch()` + `service` pattern
 - all verification and validation tests passing locally
 
 ## High-Level Structure
 
 ```text
 CLI args or terminal menu
--> ExecutionContext
+-> ExecutionRequest
 -> dispatch()
 -> service
 
@@ -314,11 +314,11 @@ This feeds the optional world-frame analytics path. It is useful, but still seco
 
 The typed execution layer currently centers on:
 
-- `ExecutionContext`
+- `ExecutionRequest`
 - `ExecutionFeatures`
 - `ExecutionMode`
 
-`engine_build.main` and `engine_build/app/cli/menu.py` both ultimately build an `ExecutionContext`.
+`engine_build.main` and `engine_build/app/cli/menu.py` both ultimately build an `ExecutionRequest`.
 
 `engine_build/app/cli/dispatch.py` routes that context to:
 

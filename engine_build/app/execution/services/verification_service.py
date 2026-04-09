@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import pytest
 
-from engine_build.app.execution_model.execution_context import ExecutionContext
+from engine_build.app.execution_model.execution_request import ExecutionRequest
 from engine_build.app.execution_model.suite_registry import VERIFICATION_SUITES
 
 
-def run_verification(context: ExecutionContext) -> int:
+def run_verification(context: ExecutionRequest) -> int:
     if context.suite is None:
         raise ValueError("Verification mode requires a suite.")
 
