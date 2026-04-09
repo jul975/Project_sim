@@ -1,10 +1,5 @@
-
-
-
-
-
-
 from __future__ import annotations
+
 from dataclasses import dataclass
 
 
@@ -16,45 +11,69 @@ from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.spec import RegimeSpec
 
 
-'''
-def build_and_run_batch(batch_request: ServiceRequest) -> tuple[BatchRunResults, AnalysisContext]:
-    """ build batch, run batch and return batch results from context. """
 
-# def sep function for building and retuning batch 
-    regime_spec = get_regime_spec(batch_request.regime)
-    regime_config = compile_regime(regime_spec)
-
-    ticks = batch_request.ticks if batch_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
-    runs = batch_request.runs if batch_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
-'''
 
 @dataclass
-class CompiledWorkflow:
+class RunnerWorkflow:
     regime_spec: RegimeSpec
     regime_config: CompiledRegime
     ticks: int
     runs: int
 
+
 @dataclass
-class WorkflowRequest: 
-    regime: str
-    ticks: int | None = None
-    runs: int | None = None
+class ProcessingWorkflow:
+    pass
 
 
-def compile_workflow(workflow_request: ServiceRequest) -> CompiledWorkflow:
+@dataclass
+class PresentationWorkflow:
+    pass 
+
+
+@dataclass
+class CompiledWorkflow:
+    runner_workflow: RunnerWorkflow
+    processing_workflow: ProcessingWorkflow
+    presentation_workflow: PresentationWorkflow 
+
+
+def _get_runner_workflow(workflow_request: ServiceRequest) -> RunnerWorkflow:
     """ => single source of truth for runner"""
-
-# def sep function for building and retuning batch 
     regime_spec = get_regime_spec(workflow_request.regime)
     regime_config = compile_regime(regime_spec)
 
     ticks = workflow_request.ticks if workflow_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
     runs = workflow_request.runs if workflow_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
 
-    return CompiledWorkflow(
+    return RunnerWorkflow(
         regime_spec=regime_spec,
         regime_config=regime_config,
         ticks=ticks,
         runs=runs
+    )
+
+def _get_processing_workflow(workflow_request: ServiceRequest) -> ProcessingWorkflow:
+    """ => single source of truth for processing"""
+    pass
+
+def _get_presentation_workflow(workflow_request: ServiceRequest) -> PresentationWorkflow:
+    """ => single source of truth for presentation"""
+    pass
+
+
+
+def compile_workflow(workflow_request: ServiceRequest) -> CompiledWorkflow:
+    
+
+# def sep function for building and retuning batch 
+
+    runner_workflow  = _get_runner_workflow(workflow_request)
+    processing_workflow = _get_processing_workflow(workflow_request)
+    presentation_workflow = _get_presentation_workflow(workflow_request)
+
+    return CompiledWorkflow(
+        runner_workflow=runner_workflow,
+        processing_workflow=processing_workflow,
+        presentation_workflow=presentation_workflow,
     )

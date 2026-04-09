@@ -9,18 +9,15 @@ from __future__ import annotations
 from engine_build.analytics.summaries.regime_summary import summarise_regime
 from engine_build.analytics.classification.regime_classification import classify_regime
 from engine_build.app.execution.presenters.experiment_presenters import present_experiment
-from engine_build.app.execution.workflows.compile_workflow import compile_workflow
+from engine_build.app.execution.workflows.compile_workflow import compile_workflow, CompiledWorkflow
 from engine_build.app.service_models.service_request_container import ServiceRequest
 from engine_build.app.execution.presenters.console import (
     print_experiment_spec,
     print_summarize_analytics,
 )
-from engine_build.visualisation.plot_run import (
-    plot_batch_metrics,
-    plot_single_run_metrics,
-    plot_world_view_summary,
-    plot_world_view_samples,
-)
+
+
+
 from engine_build.app.execution.workflows.workflow_runner import build_and_run_batch
 
 from engine_build.analytics.pipelines.analyze_batch import analyze_batch, BatchAnalysis
@@ -53,11 +50,11 @@ def experiment_service_call(experiment_request: ServiceRequest) -> int:
     if experiment_request.regime is None:
         raise ValueError("Experiment mode requires a regime.")
     ################################ NEw #####################
+     # idea, pass service request and create workflow(request?) obj containting everytgin over different service layers
 
     ################## SERVICE REQUEST PARSING
-    execution_workflow = compile_workflow(experiment_request)    
-    processing_workflow = compile_workflow(experiment_request)    
-    presentation_workflow = compile_workflow(experiment_request)    
+
+    compiled_workflow : CompiledWorkflow = compile_workflow(experiment_request) 
 
     ################## Workflow orchestration
 
