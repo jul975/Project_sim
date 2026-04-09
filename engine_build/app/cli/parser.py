@@ -1,6 +1,6 @@
-from engine_build.app.execution_model.execution_context import ExecutionContext
-from engine_build.app.execution_model.features import ExecutionFeatures
-from engine_build.app.execution_model.modes import ExecutionMode
+
+from __future__ import annotations
+
 from engine_build.app.execution_model.suite_registry import (
     REGIME_OPTIONS,
     VERIFICATION_SUITES,
@@ -9,54 +9,8 @@ from engine_build.app.execution_model.suite_registry import (
 import argparse
 
 
-# NOTE: Parser should only build ExecutionContext objects, not dispatch directly.
+# NOTE: Parser should only build ExecutionRequest objects, not dispatch directly.
 
-def build_experiment_context(args) -> ExecutionContext:
-    return ExecutionContext(
-        mode=ExecutionMode.EXPERIMENT,
-        regime=args.regime,
-        seed=args.seed,
-        runs=args.runs,
-        ticks=args.ticks,
-        tail_fraction=args.tail_fraction,
-        features=ExecutionFeatures(
-            plotting=args.plot,
-            plot_dev=args.plot_dev,
-            profiling=args.perf_flag,
-            capture_world_frames=args.world_frame_flag,
-            animate=args.animate,
-        ),
-    )
-
-
-def build_verification_context(args) -> ExecutionContext:
-    return ExecutionContext(
-        mode=ExecutionMode.VERIFICATION,
-        suite=args.suite,
-        verbose=args.verbose,
-        fail_fast=args.fail_fast,
-        pytest_args=tuple(args.pytest_args),
-    )
-
-
-def build_validation_context(args) -> ExecutionContext:
-    return ExecutionContext(
-        mode=ExecutionMode.VALIDATION,
-        suite=args.suite,
-        verbose=args.verbose,
-        fail_fast=args.fail_fast,
-        pytest_args=tuple(args.pytest_args),
-    )
-
-
-def build_exploration_context(args) -> ExecutionContext:
-    return ExecutionContext(
-        mode=ExecutionMode.EXPLORATION,
-        regime=args.regime,
-        seed=args.seed,
-        ticks=args.ticks,
-        features=ExecutionFeatures(animate=True),
-    )
 
 
 

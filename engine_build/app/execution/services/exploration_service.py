@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from engine_build.app.execution_model.execution_context import ExecutionContext
+from engine_build.app.execution_model.execution_request import ExecutionRequest
 from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, EXPLORATION_DEFAULTS
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
@@ -8,7 +8,7 @@ from engine_build.runner.batch_runner import BatchRunner
 from engine_build.visualisation.dynamic_new import animate_run
 
 
-def run_exploration(context: ExecutionContext) -> int:
+def run_exploration(context: ExecutionRequest) -> int:
     if context.regime is None:
         raise ValueError("Exploration mode requires a regime.")
 

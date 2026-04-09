@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from engine_build.analytics.summaries.regime_summary import summarise_regime
 from engine_build.analytics.classification.regime_classification import classify_regime
-from engine_build.app.execution_model.execution_context import ExecutionContext
+from engine_build.app.execution_model.execution_request import ExecutionRequest
 from engine_build.app.execution.presenters.console import (
     print_experiment_spec,
     print_summarize_analytics,
@@ -13,7 +13,7 @@ from engine_build.visualisation.plot_run import (
     plot_world_view_summary,
     plot_world_view_samples,
 )
-from engine_build.app.execution.execute_service.execute import build_and_run_batch
+from engine_build.app.execution.workflows.batch_workflow import build_and_run_batch
 
 from engine_build.analytics.pipelines.analyze_batch import analyze_batch, BatchAnalysis
 
@@ -21,7 +21,7 @@ from engine_build.analytics.pipelines.analyze_batch import analyze_batch, BatchA
 
 
 
-def run_experiment(context: ExecutionContext) -> int:
+def run_experiment(context: ExecutionRequest) -> int:
     if context.regime is None:
         raise ValueError("Experiment mode requires a regime.")
 

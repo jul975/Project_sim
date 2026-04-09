@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import pytest
 
-from engine_build.app.execution_model.execution_context import ExecutionContext
+from engine_build.app.execution_model.execution_request import ExecutionRequest
 from engine_build.app.execution_model.suite_registry import (
     VALIDATION_SUITES,
     resolve_validation_suite_name,
 )
 
 
-def run_validation(context: ExecutionContext) -> int:
+def run_validation(context: ExecutionRequest) -> int:
     if context.suite is None:
         raise ValueError("Validation mode requires a suite.")
 

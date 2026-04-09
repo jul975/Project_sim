@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from engine_build.app.execution_model.execution_context import ExecutionContext
+from engine_build.app.execution_model.execution_request import ExecutionRequest
 from engine_build.app.execution_model.modes import ExecutionMode
 from engine_build.app.execution.services.experiment_service import run_experiment
 from engine_build.app.execution.services.verification_service import run_verification
@@ -14,7 +14,7 @@ from engine_build.app.execution.services.validation_service import run_validatio
 from engine_build.app.execution.services.exploration_service import run_exploration
 
 
-def dispatch(context: ExecutionContext) -> int:
+def dispatch(context: ExecutionRequest) -> int:
     if context.mode is ExecutionMode.EXPERIMENT:
         return run_experiment(context)
 

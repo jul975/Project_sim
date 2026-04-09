@@ -1,5 +1,5 @@
 
-from engine_build.app.execution_model.execution_context import ExecutionContext
+from engine_build.app.execution_model.execution_request import ExecutionRequest
 from engine_build.app.execution_model.default import EXPERIMENT_DEFAULTS
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
@@ -9,15 +9,15 @@ from engine_build.app.execution.presenters.console import print_experiment_spec
 from engine_build.analytics.contracts.analysis_context import AnalysisContext, AnalysisOptions
 
 
-def build_and_run_batch(context: ExecutionContext) -> tuple[BatchRunResults, AnalysisContext]:
+def build_and_run_batch(batch_request: ExecutionRequest) -> tuple[BatchRunResults, AnalysisContext]:
     """ build batch, run batch and return batch results from context. """
 
 # def sep function for building and retuning batch 
-    regime_spec = get_regime_spec(context.regime)
+    regime_spec = get_regime_spec(batch_request.regime)
     regime_config = compile_regime(regime_spec)
 
-    ticks = context.ticks if context.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
-    runs = context.runs if context.runs is not None else EXPERIMENT_DEFAULTS["runs"]
+    ticks = batch_request.ticks if batch_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
+    runs = batch_request.runs if batch_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
 
     # NOTE: temp need to move 
     print_experiment_spec(regime_spec)
@@ -25,9 +25,9 @@ def build_and_run_batch(context: ExecutionContext) -> tuple[BatchRunResults, Ana
     runner : BatchRunner = BatchRunner(
         regime_config=regime_config,
         n_runs=runs,
-        batch_id=context.seed,
-        include_world_frames=context.features.capture_world_frames,
-        include_perf=context.features.profiling,
+        batch_id=batch_request.seed,
+        include_world_frames=batch_request.features.capture_world_frames,
+        include_perf=batch_request.features.profiling,
     )
 
     batch_results : BatchRunResults = runner.run_batch(ticks=ticks)
@@ -35,12 +35,12 @@ def build_and_run_batch(context: ExecutionContext) -> tuple[BatchRunResults, Ana
     analysis_context = AnalysisContext(
         n_runs=runs,
         total_tics=ticks,
-        tail_fraction=context.tail_fraction,
-        regime_label=context.regime,
+        tail_fraction=batch_request.tail_fraction,
+        regime_label=batch_request.regime,
         compiled_regime=regime_config,
         options=AnalysisOptions(
-            include_perf=context.features.profiling,
-            include_world_frames=context.features.capture_world_frames,
+            include_perf=batch_request.features.profiling,
+            include_world_frames=batch_request.features.capture_world_frames,
         ),
     )
     

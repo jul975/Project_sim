@@ -1,253 +1,243 @@
 from __future__ import annotations
 
+
+from engine_build.app.cli.request_builder import build_experiment_request, build_verification_request, build_validation_request, build_exploration_request
+from engine_build.app.execution_model.suite_registry import REGIME_OPTIONS, VERIFICATION_SUITES, VALIDATION_SUITES
+
+from engine_build.app.execution_model.execution_request import ExecutionRequest
+
 from typing import Sequence
 
-from engine_build.app.execution_model.execution_context import ExecutionContext
-from engine_build.app.execution_model.features import ExecutionFeatures
-from engine_build.app.execution_model.modes import ExecutionMode
-from engine_build.app.execution_model.suite_registry import (
-    REGIME_OPTIONS,
-    VALIDATION_SUITES,
-    VERIFICATION_SUITES,
-)
-
-MenuContext = ExecutionContext | None
 
 
-def run_menu() -> MenuContext:
+
+
+###########
+
+def _choose_from_list(prompt: str, options: Sequence[str]) -> str:
+    print(f"\n{prompt}:")
+    for i, option in enumerate(options, start=1):
+        print(f"  {i}. {option}")
     while True:
-        print("\n" + "=" * 50)
-        print(" Ecosystem Emergent Behavior Simulator ")
-        print("=" * 50)
-        print("1. Run experiment")
-        print("2. Run verification suite")
-        print("3. Run validation suite")
-        print("4. Run exploration / dynamic simulation")
-        print("5. Exit")
-
-        choice = input("\nSelect option: ").strip()
-
-        if choice == "1":
-            return _build_experiment_context()
-        if choice == "2":
-            return _build_verification_context()
-        if choice == "3":
-            return _build_validation_context()
-        if choice == "4":
-            return _build_exploration_context()
-        if choice == "5":
+        choice = input("Enter choice number: ")
+        if not choice.isdigit():
+            print("Invalid input. Please enter a number.")
+            continue
+        index = int(choice) - 1
+        if 0 <= index < len(options):
+            return options[index]
+        print(f"Invalid choice. Please enter a number between 1 and {len(options)}.")
+    
+def _optional_int(prompt: str, allow_zero: bool = True) -> int | None:
+    while True:
+        value = input(f"{prompt} (leave blank for default): ")
+        if value == "":
             return None
+        if value.isdigit():
+            int_value = int(value)
+            if allow_zero or int_value > 0:
+                return int_value
+        print("Invalid input. Please enter a positive integer or leave blank.")
 
-        print("Invalid choice.")
-
-
-def _build_experiment_context() -> ExecutionContext:
-    print("\n--- Experiment Setup ---")
-    regime = _choose_from_list("Select regime", REGIME_OPTIONS)
-    runs = _optional_int("Runs", allow_zero=False)
-    ticks = _optional_int("Ticks", allow_zero=False)
-    seed = _optional_int("Seed")
-    plot = _yes_no("Plot batch results?", default=False)
-    plot_dev = _yes_no("Plot dev figures?", default=False)
-    profile = _yes_no("Enable perf profiling?", default=False)
-    capture_world_frames = _yes_no("Enable world-frame capture?", default=False)
-    tail_fraction = _optional_float(
-        "Tail fraction",
-        default=0.25,
-        min_value=0.0,
-        max_value=1.0,
-    )
-
-    print("\nExperiment summary:")
-    print(f"  mode                 : {ExecutionMode.EXPERIMENT.name}")
-    print(f"  regime               : {regime}")
-    print(f"  runs                 : {runs}")
-    print(f"  ticks                : {ticks}")
-    print(f"  seed                 : {seed}")
-    print(f"  plot                 : {plot}")
-    print(f"  plot_dev             : {plot_dev}")
-    print(f"  profile              : {profile}")
-    print(f"  capture_world_frames : {capture_world_frames}")
-    print(f"  tail_fraction        : {tail_fraction}")
-
-    if not _yes_no("Launch experiment?", default=True):
-        return _build_experiment_context()
-
-    return ExecutionContext(
-        mode=ExecutionMode.EXPERIMENT,
-        regime=regime,
-        runs=runs,
-        ticks=ticks,
-        seed=seed,
-        tail_fraction=tail_fraction,
-        features=ExecutionFeatures(
-            profiling=profile,
-            capture_world_frames=capture_world_frames,
-            plotting=plot,
-            
-            plot_dev=plot_dev,
-        ),
-    )
-
-
-def _build_verification_context() -> ExecutionContext:
-    print("\n--- Verification Setup ---")
-    suite = _choose_from_list(
-        "Select verification suite",
-        tuple(VERIFICATION_SUITES.keys()),
-    )
-    verbose = _yes_no("Verbose output?", default=False)
-    fail_fast = _yes_no("Fail fast?", default=False)
-
-    print("\nVerification summary:")
-    print(f"  mode      : {ExecutionMode.VERIFICATION.name}")
-    print(f"  suite     : {suite}")
-    print(f"  verbose   : {verbose}")
-    print(f"  fail_fast : {fail_fast}")
-
-    if not _yes_no("Run verification?", default=True):
-        return _build_verification_context()
-
-    return ExecutionContext(
-        mode=ExecutionMode.VERIFICATION,
-        suite=suite,
-        verbose=verbose,
-        fail_fast=fail_fast,
-    )
-
-
-def _build_validation_context() -> ExecutionContext:
-    print("\n--- Validation Setup ---")
-    suite = _choose_from_list(
-        "Select validation suite",
-        tuple(VALIDATION_SUITES.keys()),
-    )
-    verbose = _yes_no("Verbose output?", default=False)
-    fail_fast = _yes_no("Fail fast?", default=False)
-
-    print("\nValidation summary:")
-    print(f"  mode      : {ExecutionMode.VALIDATION.name}")
-    print(f"  suite     : {suite}")
-    print(f"  verbose   : {verbose}")
-    print(f"  fail_fast : {fail_fast}")
-
-    if not _yes_no("Run validation?", default=True):
-        return _build_validation_context()
-
-    return ExecutionContext(
-        mode=ExecutionMode.VALIDATION,
-        suite=suite,
-        verbose=verbose,
-        fail_fast=fail_fast,
-    )
-
-
-def _build_exploration_context() -> ExecutionContext:
-    print("\n--- Exploration / Dynamic Run Setup ---")
-    regime = _choose_from_list("Select regime", REGIME_OPTIONS)
-    seed = _optional_int("Seed")
-    ticks = _optional_int("Ticks", allow_zero=False)
-
-    print("\nExploration summary:")
-    print(f"  mode   : {ExecutionMode.EXPLORATION.name}")
-    print(f"  regime : {regime}")
-    print(f"  seed   : {seed}")
-    print(f"  ticks  : {ticks}")
-
-    if not _yes_no("Run exploration?", default=True):
-        return _build_exploration_context()
-
-    return ExecutionContext(
-        mode=ExecutionMode.EXPLORATION,
-        regime=regime,
-        seed=seed,
-        ticks=ticks,
-        features=ExecutionFeatures(animate=True),
-    )
-
-
-def _choose_from_list(title: str, options: Sequence[str]) -> str:
+def _optional_float(prompt: str, default: float, min_value: float = float("-inf"), max_value: float = float("inf")) -> float:
     while True:
-        print(f"\n{title}:")
-        for i, option in enumerate(options, start=1):
-            print(f"{i}. {option}")
-
-        raw = input("Enter choice number: ").strip()
-
-        if raw.isdigit():
-            idx = int(raw)
-            if 1 <= idx <= len(options):
-                return options[idx - 1]
-
-        print("Invalid selection.")
-
-
-def _optional_int(label: str, allow_zero: bool = True) -> int | None:
-    while True:
-        raw = input(f"{label} [blank = default]: ").strip()
-
-        if raw == "":
-            return None
-
-        try:
-            value = int(raw)
-        except ValueError:
-            print("Please enter an integer or leave blank.")
-            continue
-
-        if not allow_zero and value <= 0:
-            print("Please enter a positive integer.")
-            continue
-
-        return value
-
-
-def _optional_float(
-    label: str,
-    *,
-    default: float,
-    min_value: float | None = None,
-    max_value: float | None = None,
-) -> float:
-    while True:
-        raw = input(f"{label} [blank = {default}]: ").strip()
-
-        if raw == "":
+        value = input(f"{prompt} (default {default}): ")
+        if value == "":
             return default
-
         try:
-            value = float(raw)
+            float_value = float(value)
+            if min_value <= float_value <= max_value:
+                return float_value
+            print(f"Value must be between {min_value} and {max_value}.")
         except ValueError:
-            print("Please enter a float or leave blank.")
-            continue
+            print("Invalid input. Please enter a number or leave blank.")
 
-        if min_value is not None and value < min_value:
-            print(f"Please enter a value >= {min_value}.")
-            continue
-
-        if max_value is not None and value > max_value:
-            print(f"Please enter a value <= {max_value}.")
-            continue
-
-        return value
-
-
-def _yes_no(prompt: str, default: bool) -> bool:
-    suffix = "[Y/n]" if default else "[y/N]"
-
+def _yes_no(prompt: str, default: bool = False) -> bool:
+    default_str = "Y/n" if default else "y/N"
     while True:
-        raw = input(f"{prompt} {suffix}: ").strip().lower()
-
-        if raw == "":
+        value = input(f"{prompt} ({default_str}): ").strip().lower()
+        if value == "":
             return default
-        if raw in {"y", "yes"}:
+        if value in ("y", "yes"):
             return True
-        if raw in {"n", "no"}:
+        if value in ("n", "no"):
             return False
+        print("Invalid input. Please enter 'y' or 'n'.")
 
-        print("Please enter y or n.")
+
+##################
 
 
+def _collect_experiment_inputs() -> dict[str, object]:
+    print("\n--- Experiment Setup ---")
+    return {
+        "regime": _choose_from_list("Select regime", REGIME_OPTIONS),
+        "runs": _optional_int("Runs", allow_zero=False),
+        "ticks": _optional_int("Ticks", allow_zero=False),
+        "seed": _optional_int("Seed"),
+        "plot": _yes_no("Plot batch results?", default=False),
+        "plot_dev": _yes_no("Plot dev figures?", default=False),
+        "profiling": _yes_no("Enable perf profiling?", default=False),
+        "capture_world_frames": _yes_no("Enable world-frame capture?", default=False),
+        "tail_fraction": _optional_float(
+            "Tail fraction",
+            default=0.25,
+            min_value=0.0,
+            max_value=1.0,
+        ),
+    }
+
+def _collect_exploration_inputs() -> dict[str, object]:
+    print("\n--- Exploration Setup ---")
+    return {
+        "regime": _choose_from_list("Select regime", REGIME_OPTIONS),
+        "seed": _optional_int("Seed"),
+        "ticks": _optional_int("Ticks", allow_zero=False),
+    }
+
+def _collect_verification_inputs() -> dict[str, object]:
+    print("\n--- Verification Setup ---")
+    return {
+        "suite": _choose_from_list("Select verification suite", tuple(VERIFICATION_SUITES.keys())),
+        "verbose": _yes_no("Verbose output?", default=False),
+        "fail_fast": _yes_no("Fail fast?", default=False),
+        "pytest_args": tuple(input("Extra pytest args (space-separated, leave blank for none): ").split()),
+    }
+
+def _collect_validation_inputs() -> dict[str, object]:
+    print("\n--- Validation Setup ---")
+    return {
+        "suite": _choose_from_list("Select validation suite", tuple(VALIDATION_SUITES.keys())),
+        "verbose": _yes_no("Verbose output?", default=False),
+        "fail_fast": _yes_no("Fail fast?", default=False),
+        "pytest_args": tuple(input("Extra pytest args (space-separated, leave blank for none): ").split()),
+    }
+
+############
+
+def _print_experiment_summary(inputs: dict[str, object]) -> None:
+    print("\nExperiment summary:")
+    print("  mode                 : EXPERIMENT")
+    print(f"  regime               : {inputs['regime']}")
+    print(f"  runs                 : {inputs['runs']}")
+    print(f"  ticks                : {inputs['ticks']}")
+    print(f"  seed                 : {inputs['seed']}")
+    print(f"  plot                 : {inputs['plot']}")
+    print(f"  plot_dev             : {inputs['plot_dev']}")
+    print(f"  profile              : {inputs['profiling']}")
+    print(f"  capture_world_frames : {inputs['capture_world_frames']}")
+    print(f"  tail_fraction        : {inputs['tail_fraction']}")
+
+def _print_exploration_summary(inputs: dict[str, object]) -> None:
+    print("\nExploration summary:")
+    print("  mode                 : EXPLORATION")
+    print(f"  regime               : {inputs['regime']}")
+    print(f"  ticks                : {inputs['ticks']}")
+    print(f"  seed                 : {inputs['seed']}")
+
+
+def _print_verification_summary(inputs: dict[str, object]) -> None:
+    print("\nVerification summary:")
+    print("  mode                 : VERIFICATION")
+    print(f"  suite                : {inputs['suite']}")
+    print(f"  verbose              : {inputs['verbose']}")
+    print(f"  fail_fast            : {inputs['fail_fast']}")
+    print(f"  pytest_args          : {inputs['pytest_args']}")
+
+
+def _print_validation_summary(inputs: dict[str, object]) -> None:
+    print("\nValidation summary:")
+    print("  mode                 : VALIDATION")
+    print(f"  suite                : {inputs['suite']}")
+    print(f"  verbose              : {inputs['verbose']}")
+    print(f"  fail_fast            : {inputs['fail_fast']}")
+    print(f"  pytest_args          : {inputs['pytest_args']}")
+
+##############
+
+def _confirm_and_build(
+    *,
+    collect_fn,
+    summary_fn,
+    build_fn,
+    confirm_prompt: str,
+) -> ExecutionRequest:
+    while True:
+        answers = collect_fn()
+        summary_fn(answers)
+        if _yes_no(confirm_prompt, default=True):
+            return build_fn(**answers)
+
+
+
+#############
+
+def _build_experiment_request_from_menu() -> ExecutionRequest:
+    return _confirm_and_build(
+        collect_fn=_collect_experiment_inputs,
+        summary_fn=_print_experiment_summary,
+        build_fn=build_experiment_request,
+        confirm_prompt="Launch experiment?",
+    )
+        
+def _build_exploration_request_from_menu() -> ExecutionRequest:
+    return _confirm_and_build(
+        collect_fn=_collect_exploration_inputs,
+        summary_fn=_print_exploration_summary,
+        build_fn=build_exploration_request,
+        confirm_prompt="Launch exploration?",
+    )
+
+def _build_verification_request_from_menu() -> ExecutionRequest:
+    return _confirm_and_build(
+        collect_fn=_collect_verification_inputs,
+        summary_fn=_print_verification_summary,
+        build_fn=build_verification_request,
+        confirm_prompt="Launch verification?",
+    )
+
+
+def _build_validation_request_from_menu() -> ExecutionRequest:
+    return _confirm_and_build(
+        collect_fn=_collect_validation_inputs,
+        summary_fn=_print_validation_summary,
+        build_fn=build_validation_request,
+        confirm_prompt="Launch validation?",
+    )
+
+
+def _build_validation_request_from_menu() -> ExecutionRequest:
+    return _confirm_and_build(
+        collect_fn=_collect_validation_inputs,
+        summary_fn=_print_validation_summary,
+        build_fn=build_validation_request,
+        confirm_prompt="Launch validation?",
+    )
+
+        
+def run_menu() -> ExecutionRequest | None:
+    print("Welcome to the Engine Build CLI!")
+    print("Please select an execution mode:")
+    mode = _choose_from_list("Execution mode", ["Experiment", "Exploration", "Verification", "Validation", "Exit"])
+
+    if mode == "Experiment":
+        request = _build_experiment_request_from_menu()
+        return request
+    elif mode == "Exploration":
+        request = _build_exploration_request_from_menu()
+        return request
+    elif mode == "Verification":
+        request = _build_verification_request_from_menu()
+        return request
+    elif mode == "Validation":
+        request = _build_validation_request_from_menu()
+        return request
+    elif mode == "Exit":
+        print("Exiting. Goodbye!")
+        return None
+    else:
+        print("Invalid mode selected.")
+        return None
 
 if __name__ == "__main__":
-    pass
+    run_menu()
