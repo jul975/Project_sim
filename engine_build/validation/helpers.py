@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
+from engine_build.app.service_models.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.runner.batch_runner import BatchRunner

@@ -1,117 +1,122 @@
+"""Human-authored regime specifications used as compiler inputs.
 
-
-
-# RegimeSpec  →  CompiledRegime  →  Engine / World / Agent
-
-"""
-RegimeSpec:
-    - human-authored
-    - ratios + anchors only
-    - no derived numbers
-
-    
-    RegimeSpec
-    ├─ EnergySystem
-    ├─ ResourceSystem
-    ├─ LandscapeSystem
-    └─ PopulationSystem
-
-
-    Scale anchors:
-
-    - max_energy
-    - max_resource_level
-
-    Active ecological controls:
-
-    - harvest_fraction
-    - beta
-    - gamma
-    - regen_fraction
-
-    Temporarily frozen control:
-
-    - alpha = 0.6 => temp hardcoded, clearly sustainable movement and meaningful metabolic pressure
-        
+This module defines the declarative regime layer. ``RegimeSpec`` and its
+sub-specifications describe ecological ratios, anchors, and controls without
+storing derived engine parameters.
 """
 
+from __future__ import annotations
 
 from dataclasses import dataclass
 
+
 @dataclass(frozen=True)
 class EnergySpec:
-    # β = c_r / θ
-    # γ = θ / c_m
-    # α = c_m / H_max
-    # h = H_max / R_max
-    beta: float # REPRODUCTIVE DEPLETION => reproduction_cost / reproduction_threshold
-    gamma: float # ENERGY MATURITY SCALE => reproduction_threshold / movement_cost
-    harvest_fraction: float # H_MAX / R_MAX
+    """Ratio-based controls for the energy system.
 
-    alpha: float = 0.6 # METABOLIC PRESSURE => movement_cost / max_harvest => temp hardcoded, clearly sustainable movement and meaningful metabolic pressure
+    Attributes:
+        beta: Reproductive depletion ratio defined as
+            ``reproduction_cost / reproduction_threshold``.
+        gamma: Energy maturity ratio defined as
+            ``reproduction_threshold / movement_cost``.
+        harvest_fraction: Maximum harvest ratio defined as
+            ``max_harvest / max_resource_level``.
+        alpha: Metabolic pressure ratio defined as
+            ``movement_cost / max_harvest``.
+        initial_energy_low_ratio: Lower bound for initial energy relative to
+            ``max_energy``.
+        initial_energy_high_ratio: Upper bound for initial energy relative to
+            ``max_energy``.
+    """
 
-    initial_energy_low_ratio : float = 0.3
-    initial_energy_high_ratio : float = 0.6
+    # beta = c_r / theta
+    # gamma = theta / c_m
+    # alpha = c_m / H_max
+    # harvest_fraction = H_max / R_max
+    beta: float
+    gamma: float
+    harvest_fraction: float
+
+    alpha: float = 0.6
+    initial_energy_low_ratio: float = 0.3
+    initial_energy_high_ratio: float = 0.6
+
 
 @dataclass(frozen=True)
 class ReproductionSpec:
+    """Probability-based controls for the reproduction system.
+
+    Attributes:
+        probability: Base reproduction probability.
+        probability_change_condition: Threshold or condition value used by the
+            reproduction logic to modulate probability.
+    """
+
     probability: float = 0.25
     probability_change_condition: float = 0.5
 
 
 @dataclass(frozen=True)
 class ResourceSpec:
+    """Ratio-based controls for world resource regrowth.
+
+    Attributes:
+        regen_fraction: Resource regrowth expressed relative to the maximum
+            resource level.
+    """
+
     regen_fraction: float
 
 
 @dataclass(frozen=True)
 class LandscapeSpec:
-    # ρ_L = k / W
-    # σ_F = (F_max - f_min) / R_max
-    
-    correlation: float 
-    contrast: float 
-    floor: float 
+    """Controls for fertility-field generation across the world.
+
+    Attributes:
+        correlation: Spatial correlation factor used when smoothing the
+            fertility landscape.
+        contrast: Fertility contrast scaling applied to the smoothed field.
+        floor: Minimum fertility floor retained after scaling.
+    """
+
+    correlation: float
+    contrast: float
+    floor: float
+
 
 @dataclass(frozen=True)
 class PopulationSpec:
-    # NOTE: move to simulationDomain later (simulationDomain = world size + population config + ... )
+    """Population-size and lifecycle limits for a regime.
+
+    Attributes:
+        max_agent_count: Hard population capacity for the run.
+        initial_agent_count: Number of agents created at initialization.
+        max_age: Maximum agent age before deterministic death.
+    """
 
     max_agent_count: int
     initial_agent_count: int
     max_age: int
 
 
-"""
-        NOTE: 
-
-Anchor Rules:
-
-        1. max_energy comfrable larger then derived reproduction threshold.
-            => movement_cost < reproduction_threshold < max_energy
-            practically default  = max_energy = 100 or 120
-
-        2. max_resource_level large enough to support smooth harverst scaling.
-            => max_harvest < max_resource_level
-            practically default  = max_resource_level = 80-100
-
-        3. anchors should make integer rounding stable.
-            => avoid fractional values, round to integers. or collapse to 0.
-            E_max = 100-150 => 
-            R_max = 80-100
-            W = 100-400
-
-
-"""
-
-
 @dataclass(frozen=True)
 class RegimeSpec:
-    # energy = EnergyRatios
-    # resources = ResourceRatios
-    # landscape = LandscapeRatios
-    # population = PopulationConfig
+    """Human-authored ecological specification for one named regime.
 
+    Attributes:
+        energy_spec: Ratio-based energy-system controls.
+        resources_spec: Resource regrowth controls.
+        landscape_spec: Fertility landscape controls.
+        reproduction_spec: Reproduction probability controls.
+        population_spec: Population capacity and lifecycle controls.
+        max_energy: Anchor used to scale derived energy parameters.
+        max_resource_level: Anchor used to scale resource and harvest values.
+        world_size: Total world area anchor used during world compilation.
+
+    Notes:
+        ``RegimeSpec`` intentionally stores declarative controls and anchors
+        only. Derived integer parameters belong in ``CompiledRegime``.
+    """
 
     energy_spec: EnergySpec
     resources_spec: ResourceSpec
@@ -119,6 +124,6 @@ class RegimeSpec:
     reproduction_spec: ReproductionSpec
     population_spec: PopulationSpec
 
-    max_energy: int = 100                 # E_max => anchor
-    max_resource_level: int  = 80        # R_max => anchor
-    world_size: int = 400                 # W => anchor  NOTE: move to simulationDomain later
+    max_energy: int = 100
+    max_resource_level: int = 80
+    world_size: int = 400

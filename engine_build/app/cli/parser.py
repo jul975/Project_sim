@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 
-from engine_build.app.execution_model.suite_registry import (
+from engine_build.app.service_models.suite_registry import (
     REGIME_OPTIONS,
     VERIFICATION_SUITES,
     VALIDATION_SUITES,

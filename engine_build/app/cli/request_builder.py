@@ -1,8 +1,14 @@
+"""Build normalized execution requests from CLI or menu inputs.
+
+This module centralizes app-layer request construction so every entry point
+produces the same immutable ``ExecutionRequest`` shape before dispatch.
+"""
+
 from __future__ import annotations
 
-from engine_build.app.execution_model.execution_request import ExecutionRequest
-from engine_build.app.execution_model.modes import ExecutionMode
-from engine_build.app.execution_model.features import ExecutionFeatures
+from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.modes import ExecutionMode
+from engine_build.app.service_models.features import ExecutionFeatures
 
 
 def build_experiment_request(
@@ -18,6 +24,23 @@ def build_experiment_request(
     capture_world_frames: bool = False,
     animate: bool = False,
 ) -> ExecutionRequest:
+    """Build an experiment-mode execution request.
+
+    Args:
+        regime: Regime identifier to compile and run.
+        seed: Optional deterministic seed for the batch.
+        runs: Optional number of runs to execute.
+        ticks: Optional tick limit per run.
+        tail_fraction: Fraction of each run treated as the analysis tail.
+        plot: Enables batch plotting outputs.
+        plot_dev: Enables developer-oriented plot outputs.
+        profiling: Enables performance profiling features.
+        capture_world_frames: Enables world-frame capture for visualization.
+        animate: Enables animation-oriented features.
+
+    Returns:
+        Immutable execution request normalized for experiment dispatch.
+    """
     return ExecutionRequest(
         mode=ExecutionMode.EXPERIMENT,
         regime=regime,
@@ -42,6 +65,17 @@ def build_verification_request(
     fail_fast: bool = False,
     pytest_args: tuple[str, ...] = (),
 ) -> ExecutionRequest:
+    """Build a verification-mode execution request.
+
+    Args:
+        suite: Verification suite name to run.
+        verbose: Enables verbose pytest output.
+        fail_fast: Stops pytest after the first failure.
+        pytest_args: Extra pytest arguments to forward unchanged.
+
+    Returns:
+        Immutable execution request normalized for verification dispatch.
+    """
     return ExecutionRequest(
         mode=ExecutionMode.VERIFICATION,
         suite=suite,
@@ -58,6 +92,17 @@ def build_validation_request(
     fail_fast: bool = False,
     pytest_args: tuple[str, ...] = (),
 ) -> ExecutionRequest:
+    """Build a validation-mode execution request.
+
+    Args:
+        suite: Validation suite name to run.
+        verbose: Enables verbose pytest output.
+        fail_fast: Stops pytest after the first failure.
+        pytest_args: Extra pytest arguments to forward unchanged.
+
+    Returns:
+        Immutable execution request normalized for validation dispatch.
+    """
     return ExecutionRequest(
         mode=ExecutionMode.VALIDATION,
         suite=suite,
@@ -73,6 +118,16 @@ def build_exploration_request(
     seed: int | None = None,
     ticks: int | None = None,
 ) -> ExecutionRequest:
+    """Build an exploration-mode execution request.
+
+    Args:
+        regime: Regime identifier to compile and explore.
+        seed: Optional deterministic seed for the exploration run.
+        ticks: Optional tick limit for the exploration run.
+
+    Returns:
+        Immutable execution request normalized for exploration dispatch.
+    """
     return ExecutionRequest(
         mode=ExecutionMode.EXPLORATION,
         regime=regime,
