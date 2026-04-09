@@ -1,14 +1,26 @@
 from __future__ import annotations
 
-from engine_build.app.execution_model.execution_request import ExecutionRequest
-from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, EXPLORATION_DEFAULTS
+from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.default import DEFAULT_MASTER_SEED, EXPLORATION_DEFAULTS
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.runner.batch_runner import BatchRunner
 from engine_build.visualisation.dynamic_new import animate_run
 
 
-def run_exploration(context: ExecutionRequest) -> int:
+# NOTE: Service should own the workflow
+
+# get request
+# validate request
+# build workflow context (compile regime, build runner, results handlers, presenters, etc.)
+# run workflow
+    # create single source of truth for all entry points (CLI, menu, API, etc.) to get workflow context from.
+    # pass to runner
+# process results runner (summarise, classify, print, plot, etc.)
+# return exit code
+
+
+def exploration_service_call(context: ExecutionRequest) -> int:
     if context.regime is None:
         raise ValueError("Exploration mode requires a regime.")
 

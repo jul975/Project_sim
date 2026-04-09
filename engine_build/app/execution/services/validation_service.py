@@ -1,15 +1,38 @@
+"""Run validation test suites from normalized execution requests.
+
+This module resolves validation suite names, builds pytest arguments, and
+executes the requested validation suite.
+"""
+
 from __future__ import annotations
 
 import pytest
 
-from engine_build.app.execution_model.execution_request import ExecutionRequest
-from engine_build.app.execution_model.suite_registry import (
+from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.suite_registry import (
     VALIDATION_SUITES,
     resolve_validation_suite_name,
 )
 
 
-def run_validation(context: ExecutionRequest) -> int:
+def validation_service_call(context: ExecutionRequest) -> int:
+    """Execute a validation suite through pytest.
+
+    Args:
+        context: Execution request containing the validation suite selection
+            and optional pytest control flags.
+
+    Returns:
+        Integer pytest exit code for the executed validation suite.
+
+    Raises:
+        ValueError: If validation mode is requested without a suite, or if the
+            resolved suite name is not registered.
+
+    Notes:
+        Validation suite aliases are normalized before lookup so the service
+        can accept the app-layer suite vocabulary consistently.
+    """
     if context.suite is None:
         raise ValueError("Validation mode requires a suite.")
 

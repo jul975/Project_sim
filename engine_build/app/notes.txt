@@ -25,3 +25,61 @@ domain.py
     |
     |
 infra.py
+
+
+
+"""
+    NOTE: goal CompiledRegime:
+
+                    RegimeSpec
+                        ↓
+                    compile()
+                        ↓
+                    CompiledRegime
+                        ↓
+                    Engine / World / Agent
+
+
+    RegimeSpec
+    ├─ EnergySystem
+    ├─ ResourceSystem
+    ├─ LandscapeSystem
+    └─ PopulationSystem
+        
+        → CompiledRegime
+            ├─ EnergySystem => EnergyParams
+            │   ├─ E_max => anchor
+            │   ├─ metabolic pressure (α)          => ratio 
+            │   ├─ reproductive depletion (β)      => ratio
+            │   ├─ reproductive maturity (γ)       => ratio
+            │   ├─ harvest fraction (h)            => ratio
+            │   ├─ max_harvest (H_max)               => derived
+            │   ├─ movement_cost (c_m)               => derived
+            │   ├─ reproduction_threshold (θ)        => derived
+            │   └─ reproduction_cost (c_r)           => derived
+            │
+            ├─ ResourceSystem => ResourceParams
+            │   ├─ R_max => anchor
+            │   ├─ regen fraction (r)                => ratio
+            │   └─ regen_rate (r_max)                => derived
+            │
+            ├─ LandscapeSystem => LandscapeParams
+            │   ├─ fertility correlation ratio (ρ_L)                 => ratio
+            │   ├─ fertility contrast (σ_F)                    => ratio
+            │   └─ fertility floor (f_min)                       => ratio
+            │       -> kernel size (k)                           => derived k = ρ_L * sqrt(W)
+            │       -> fertility (f)                             => derived fertility = f_min + σ_F * smooth * (R_max - f_min)
+            │
+            └─ PopulationSystem => PopulationParams
+                ├─ max_agent_count (P_max) => anchor
+                ├─ max_age (A_max) => anchor
+                └─ initial_agent_count (P_0) => anchor
+
+            → Engine
+                ├─ World
+                │   └─ Agents
+                └─ Metrics
+                    
+
+
+"""

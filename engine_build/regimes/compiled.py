@@ -1,158 +1,144 @@
+"""Compiled regime parameter bundles consumed by the engine.
+
+This module defines the concrete parameters produced by the regime compiler.
+``CompiledRegime`` is the engine-facing counterpart to the declarative
+``RegimeSpec`` layer.
+"""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 
-# CompiledRegime  →  Engine / World / Agent
-# obj gets created during intialization of engine.
 
-        # EVERY SUBSYSTEM READS FROM THIS.
-
-
-"""
-    RegimeSpec
-    ├─ EnergySpec
-    ├─ ResourceSpec
-    ├─ LandscapeSpec
-    ├─ ReproductionSpec
-    └─ PopulationSpec
-        
-        → CompiledRegime
-            ├─ EnergyParams
-            ├─ ResourceParams
-            ├─ LandscapeParams
-            ├─ ReproductionParams
-            └─ PopulationParams
-
-
-            → Engine
-                ├─ World
-                │   └─ Agents
-                └─ Metrics
-
-"""
 @dataclass(frozen=True)
 class EnergyParams:
-    """ Energy related parameters. 
+    """Compiled energy-system parameters.
+
     Attributes:
-        max_energy: int
-        energy_init_range: tuple[int, int]
-        max_harvest: int
-        movement_cost: int
-        reproduction_threshold: int
-        reproduction_cost: int
+        max_energy: Maximum agent energy cap.
+        energy_init_range: Inclusive initial-energy range used for agent
+            initialization.
+        max_harvest: Maximum resource harvest per interaction.
+        movement_cost: Energy cost paid on movement.
+        reproduction_threshold: Minimum energy required to reproduce.
+        reproduction_cost: Energy spent when reproduction succeeds.
     """
+
     max_energy: int
     energy_init_range: tuple[int, int]
-    
-    max_harvest: int # agent level logic
+    max_harvest: int
     movement_cost: int
     reproduction_threshold: int
     reproduction_cost: int
 
 
-
 @dataclass(frozen=True)
 class ReproductionParams:
-    """ Non energy related reproduction parameters. 
+    """Compiled reproduction parameters outside the energy budget.
+
     Attributes:
-        probability: float
-        probability_change_condition: float
+        probability: Base reproduction probability.
+        probability_change_condition: Threshold or condition value used by the
+            reproduction logic.
     """
+
     probability: float
     probability_change_condition: float
 
+
 @dataclass(frozen=True)
 class ResourceParams:
-    """ Non energy related resource parameters. 
+    """Compiled resource-system parameters.
+
     Attributes:
-        max_resource_level: int
-        regen_rate: int
+        max_resource_level: Maximum resource value per world cell.
+        regen_rate: Deterministic per-tick regrowth amount.
     """
+
     max_resource_level: int
     regen_rate: int
 
+
 @dataclass(frozen=True)
 class LandscapeParams:
-    """ Non energy related landscape parameters. 
+    """Compiled landscape-generation parameters.
+
     Attributes:
-        correlation: float
-        contrast: float
-        floor: float
-    
-    NOTE: 
-        -   correlation: float →  kernel_size = max(3, round(correlation * world_width))
-        -   contrast: float →  fertility = floor + contrast * smooth * (max_resource_level - floor)
-        -   floor: float →  fertility = floor + contrast * smooth * (max_resource_level - floor)
+        correlation: Spatial correlation factor used to smooth the fertility
+            field.
+        contrast: Contrast multiplier applied to the smoothed fertility field.
+        floor: Minimum fertility floor retained after scaling.
+
+    Notes:
+        ``correlation`` influences smoothing width, while ``contrast`` and
+        ``floor`` shape the final fertility range.
     """
+
     correlation: float
     contrast: float
     floor: float
 
+
 @dataclass(frozen=True)
 class PopulationParams:
-    """ Non energy related population parameters. 
+    """Compiled population constraints.
+
     Attributes:
-        max_agent_count: int
-        initial_agent_count: int
-        max_age: int
+        max_agent_count: Hard population capacity for the run.
+        initial_agent_count: Number of agents created at initialization.
+        max_age: Maximum age before deterministic death.
     """
+
     max_agent_count: int
     initial_agent_count: int
     max_age: int
 
+
 @dataclass(frozen=True)
 class WorldParams:
+    """Compiled world dimensions.
+
+    Attributes:
+        world_width: Width of the toroidal world grid.
+        world_height: Height of the toroidal world grid.
+    """
+
     world_width: int
     world_height: int
 
 
-
 @dataclass(frozen=True)
 class CompiledRegime:
-    """ CompiledRegime is the result of the compilation of a RegimeSpec.
-        It contains all the parameters needed to initialize an Engine.
-   
+    """Concrete engine-facing parameter bundle derived from a ``RegimeSpec``.
+
     Attributes:
-        energy_params: EnergyParams
-        resource_params: ResourceParams
-        reproduction_params: ReproductionParams
-        population_params: PopulationParams
-        world_params: WorldParams
-        landscape_params: LandscapeParams
+        energy_params: Compiled energy-system parameters.
+        resource_params: Compiled resource-system parameters.
+        reproduction_params: Compiled reproduction parameters.
+        population_params: Compiled population constraints.
+        world_params: Compiled world dimensions.
+        landscape_params: Compiled fertility landscape parameters.
     """
-    # max_energy and max_resource_level inside EnergyParams and ResourceParams for now, logic:
-    #   -   max_energy is part of the agents energy system, as such it makes sense to keep it there.
-    #   -   max_resource_level is part of the resources system, as such it makes sense to keep it there.
-    #       => they are needed in the current logic, so keeping them in the system should make calling them cleaner.
 
-
-
-
-    # energy system
     energy_params: EnergyParams
-
-    # resource system
     resource_params: ResourceParams
-
-    # reproduction system
     reproduction_params: ReproductionParams
-
-    # population system
     population_params: PopulationParams
-
-    # world system
     world_params: WorldParams
-
-
-    # landscape
     landscape_params: LandscapeParams
-
-    # metrics
-    # → Engine → Metrics
-
-
 
     @classmethod
     def from_dict(cls, d: dict) -> "CompiledRegime":
+        """Build a compiled regime from a nested dictionary representation.
+
+        Args:
+            d: Mapping whose nested subsystem dictionaries match the compiled
+                dataclass field names.
+
+        Returns:
+            Fully materialized compiled regime instance.
+        """
+
         outer = dict(d)
 
         ep = outer.get("energy_params")
@@ -180,18 +166,3 @@ class CompiledRegime:
             outer["world_params"] = WorldParams(**wp)
 
         return cls(**outer)
-    
-
-
-
-
-
-'''
-    
-    # future proving 
-    def __post_init__(self):
-        side = int(np.sqrt(self.world_size))
-        if side * side != self.world_size:
-            raise ValueError("world_size must be a perfect square")
-
-'''

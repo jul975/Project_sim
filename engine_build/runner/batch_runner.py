@@ -1,5 +1,12 @@
+"""Run deterministic experiment batches and collect per-run artifacts.
+
+This module bridges compiled regimes and batch-level analytics by creating
+seeded engines, stepping them for a fixed number of ticks, and packaging the
+results into batch containers.
+"""
+
 from engine_build.core.engine import Engine
-from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED
+from engine_build.app.service_models.default import DEFAULT_MASTER_SEED
 from engine_build.core.contracts.step_results import StepReport
 
 
@@ -13,18 +20,18 @@ import time
 
 from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
 from engine_build.runner.seeds import generate_run_sequences
-"""
- 
-
-
-"""
 
 
 
 
 
 def reset_phase_profile(phase_profile : PhaseProfile) -> None:
-    """ resets phase profile. """
+    """Clear accumulated timing fields on a phase profile.
+
+    Args:
+        phase_profile: Mutable profile that stores cumulative per-phase timing
+            totals for one run.
+    """
     phase_profile.movement = 0.0
     phase_profile.interaction = 0.0
     phase_profile.biology = 0.0
@@ -37,7 +44,12 @@ def reset_phase_profile(phase_profile : PhaseProfile) -> None:
     
 
 def add_perf_to_profile(phase_profile : PhaseProfile, step_report : StepReport) -> None:
-    """ adds tick level perf to run profile. """
+    """Accumulate step-level timing data into a run-level phase profile.
+
+    Args:
+        phase_profile: Mutable profile receiving cumulative timing totals.
+        step_report: Per-step report produced by the engine.
+    """
 
     phase_profile.movement += step_report.step_profile.movement
     phase_profile.interaction += step_report.step_profile.interaction
@@ -54,6 +66,18 @@ def add_perf_to_profile(phase_profile : PhaseProfile, step_report : StepReport) 
 
 
 class BatchRunner:
+    """Execute multiple deterministic runs for a single compiled regime.
+
+    Attributes:
+        regime_config: Compiled regime shared by every run in the batch.
+        n_runs: Number of runs to execute.
+        batch_id: Batch-level seed used to derive per-run seed sequences.
+        run_seeds: Deterministic per-run seed sequences generated from
+            ``batch_id``.
+        include_world_frames: Enables world-frame capture during execution.
+        include_perf: Enables per-phase timing collection.
+    """
+
     def __init__(
             self, 
             regime_config : CompiledRegime , 
@@ -62,10 +86,15 @@ class BatchRunner:
             include_world_frames : bool = False,
             include_perf : bool = False,
             ) -> None:
-        """ 
-            set up batch run with batch_id == batch_seed. 
-            will set up run seeds internally at initialization.
-         """
+        """Initialize a batch runner for one compiled regime configuration.
+
+        Args:
+            regime_config: Compiled regime applied to every run.
+            n_runs: Number of deterministic runs to execute.
+            batch_id: Optional master seed used to derive run seeds.
+            include_world_frames: Enables world-frame capture.
+            include_perf: Enables per-phase performance profiling.
+        """
         
         self.regime_config = regime_config
         self.n_runs = n_runs
@@ -80,6 +109,16 @@ class BatchRunner:
 #############################################################
     # NOTE: world_frames is a temp solution, the flag is getting drilled from to high up 
     def run_single(self, seed: np.random.SeedSequence, ticks: int) -> RunArtifacts:
+        """Run one seeded engine instance for a fixed number of ticks.
+
+        Args:
+            seed: Seed sequence used to initialize the engine.
+            ticks: Number of ticks to execute.
+
+        Returns:
+            Run artifacts containing the final engine, collected metrics, and
+            optional phase profile.
+        """
         eng = Engine(
             seed,
             self.regime_config,
@@ -112,7 +151,17 @@ class BatchRunner:
 
 #############################################################
     def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> RunArtifacts:
-        """ continues a run for a given engine and metrics. """
+        """Continue an existing run using a live engine and metrics buffer.
+
+        Args:
+            eng: Existing engine state to continue stepping.
+            metrics: Metrics object that should continue recording into the
+                same run history.
+            ticks: Additional number of ticks to execute.
+
+        Returns:
+            Run artifacts containing the updated engine and metrics objects.
+        """
         phase_profile = PhaseProfile()
         for _ in range(ticks):
             step_report : StepReport = eng.step()
@@ -132,7 +181,15 @@ class BatchRunner:
                          ticks : np.int64, 
 
                          ) -> BatchRunResults:
-        """ only return aggregates and results."""
+        """Run all configured seeds for the batch and collect their outputs.
+
+        Args:
+            ticks: Number of ticks to execute per run.
+
+        Returns:
+            Batch-level result container holding per-run artifacts and total
+            batch duration.
+        """
 
         batch_start_time = time.perf_counter()
 

@@ -10,12 +10,12 @@ from engine_build.app.cli.request_builder import (
     build_validation_request,
 )
 from engine_build.app.cli.menu import run_menu
-from engine_build.app.execution_model.execution_request import (
+from engine_build.app.service_models.service_request_container import (
     ExecutionRequest
     )
-from engine_build.app.execution_model.modes import ExecutionMode
+from engine_build.app.service_models.modes import ExecutionMode
 
-from engine_build.app.execution_model.suite_registry import (
+from engine_build.app.service_models.suite_registry import (
     REGIME_OPTIONS,
     VERIFICATION_SUITES,
     VALIDATION_SUITES,

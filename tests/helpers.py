@@ -6,7 +6,7 @@ from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.registry import get_regime_spec
 from engine_build.regimes.compiler import compile_regime
 from engine_build.analytics.pipelines.analyze_batch import analyze_batch
-from engine_build.app.execution_model.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
+from engine_build.app.service_models.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from dataclasses import fields
 import numpy as np
 from engine_build.analytics.contracts.analysis_context import AnalysisContext

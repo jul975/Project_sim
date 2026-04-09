@@ -1,12 +1,35 @@
+"""Run verification test suites from normalized execution requests.
+
+This module translates verification-mode request fields into pytest arguments
+and executes the requested verification suite.
+"""
+
 from __future__ import annotations
 
 import pytest
 
-from engine_build.app.execution_model.execution_request import ExecutionRequest
-from engine_build.app.execution_model.suite_registry import VERIFICATION_SUITES
+from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.suite_registry import VERIFICATION_SUITES
 
 
-def run_verification(context: ExecutionRequest) -> int:
+def verification_service_call(context: ExecutionRequest) -> int:
+    """Execute a verification suite through pytest.
+
+    Args:
+        context: Execution request containing the verification suite selection
+            and optional pytest control flags.
+
+    Returns:
+        Integer pytest exit code for the executed verification suite.
+
+    Raises:
+        ValueError: If verification mode is requested without a suite, or if
+            the requested suite name is not registered.
+
+    Notes:
+        The service appends suite targets first and then forwards any extra
+        ``pytest_args`` from the request unchanged.
+    """
     if context.suite is None:
         raise ValueError("Verification mode requires a suite.")
 
