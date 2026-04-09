@@ -8,18 +8,18 @@ from __future__ import annotations
 
 import pytest
 
-from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.service_request_container import ServiceRequest
 from engine_build.app.service_models.suite_registry import (
     VALIDATION_SUITES,
     resolve_validation_suite_name,
 )
 
 
-def validation_service_call(context: ExecutionRequest) -> int:
+def validation_service_call(validation_request: ServiceRequest) -> int:
     """Execute a validation suite through pytest.
 
     Args:
-        context: Execution request containing the validation suite selection
+        validation_request: Service request containing the validation suite selection
             and optional pytest control flags.
 
     Returns:
@@ -33,24 +33,24 @@ def validation_service_call(context: ExecutionRequest) -> int:
         Validation suite aliases are normalized before lookup so the service
         can accept the app-layer suite vocabulary consistently.
     """
-    if context.suite is None:
+    if validation_request.suite is None:
         raise ValueError("Validation mode requires a suite.")
 
-    suite_name = resolve_validation_suite_name(str(context.suite))
+    suite_name = resolve_validation_suite_name(str(validation_request.suite))
     targets = VALIDATION_SUITES.get(suite_name)
 
     if targets is None:
         valid = ", ".join(sorted(VALIDATION_SUITES))
-        raise ValueError(f"Unknown validation suite: {context.suite!r}. Valid suites: {valid}")
+        raise ValueError(f"Unknown validation suite: {validation_request.suite!r}. Valid suites: {valid}")
 
     pytest_args: list[str] = []
-    if context.verbose:
+    if validation_request.verbose:
         pytest_args.append("-v")
-    if context.fail_fast:
+    if validation_request.fail_fast:
         pytest_args.append("-x")
 
     pytest_args.extend(targets)
-    pytest_args.extend(context.pytest_args)
+    pytest_args.extend(validation_request.pytest_args)
 
     print(f"[validation] Running validation suite: {suite_name}")
     result = pytest.main(pytest_args)

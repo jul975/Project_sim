@@ -1,12 +1,12 @@
 """Build normalized execution requests from CLI or menu inputs.
 
 This module centralizes app-layer request construction so every entry point
-produces the same immutable ``ExecutionRequest`` shape before dispatch.
+produces the same immutable ``ServiceRequest`` shape before dispatch.
 """
 
 from __future__ import annotations
 
-from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.service_request_container import ServiceRequest
 from engine_build.app.service_models.modes import ExecutionMode
 from engine_build.app.service_models.features import ExecutionFeatures
 
@@ -23,7 +23,7 @@ def build_experiment_request(
     profiling: bool = False,
     capture_world_frames: bool = False,
     animate: bool = False,
-) -> ExecutionRequest:
+) -> ServiceRequest:
     """Build an experiment-mode execution request.
 
     Args:
@@ -39,9 +39,9 @@ def build_experiment_request(
         animate: Enables animation-oriented features.
 
     Returns:
-        Immutable execution request normalized for experiment dispatch.
+        Immutable service request normalized for experiment dispatch.
     """
-    return ExecutionRequest(
+    return ServiceRequest(
         mode=ExecutionMode.EXPERIMENT,
         regime=regime,
         seed=seed,
@@ -64,7 +64,7 @@ def build_verification_request(
     verbose: bool = False,
     fail_fast: bool = False,
     pytest_args: tuple[str, ...] = (),
-) -> ExecutionRequest:
+) -> ServiceRequest:
     """Build a verification-mode execution request.
 
     Args:
@@ -74,9 +74,9 @@ def build_verification_request(
         pytest_args: Extra pytest arguments to forward unchanged.
 
     Returns:
-        Immutable execution request normalized for verification dispatch.
+        Immutable service request normalized for verification dispatch.
     """
-    return ExecutionRequest(
+    return ServiceRequest(
         mode=ExecutionMode.VERIFICATION,
         suite=suite,
         verbose=verbose,
@@ -91,7 +91,7 @@ def build_validation_request(
     verbose: bool = False,
     fail_fast: bool = False,
     pytest_args: tuple[str, ...] = (),
-) -> ExecutionRequest:
+) -> ServiceRequest:
     """Build a validation-mode execution request.
 
     Args:
@@ -101,9 +101,9 @@ def build_validation_request(
         pytest_args: Extra pytest arguments to forward unchanged.
 
     Returns:
-        Immutable execution request normalized for validation dispatch.
+        Immutable service request normalized for validation dispatch.
     """
-    return ExecutionRequest(
+    return ServiceRequest(
         mode=ExecutionMode.VALIDATION,
         suite=suite,
         verbose=verbose,
@@ -117,7 +117,7 @@ def build_exploration_request(
     regime: str,
     seed: int | None = None,
     ticks: int | None = None,
-) -> ExecutionRequest:
+) -> ServiceRequest:
     """Build an exploration-mode execution request.
 
     Args:
@@ -126,12 +126,17 @@ def build_exploration_request(
         ticks: Optional tick limit for the exploration run.
 
     Returns:
-        Immutable execution request normalized for exploration dispatch.
+        Immutable service request normalized for exploration dispatch.
     """
-    return ExecutionRequest(
+    return ServiceRequest(
         mode=ExecutionMode.EXPLORATION,
         regime=regime,
         seed=seed,
         ticks=ticks,
         features=ExecutionFeatures(animate=True),
     )
+
+
+
+if __name__ == "__main__":
+    pass

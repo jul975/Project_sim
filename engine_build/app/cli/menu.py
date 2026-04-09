@@ -1,7 +1,7 @@
 """Interactive menu helpers for building execution requests.
 
 This module gathers console input, prints confirmation summaries, and returns
-normalized ``ExecutionRequest`` objects through the shared request-builder
+normalized ``ServiceRequest`` objects through the shared request-builder
 layer.
 """
 
@@ -11,7 +11,7 @@ from __future__ import annotations
 from engine_build.app.cli.request_builder import build_experiment_request, build_verification_request, build_validation_request, build_exploration_request
 from engine_build.app.service_models.suite_registry import REGIME_OPTIONS, VERIFICATION_SUITES, VALIDATION_SUITES
 
-from engine_build.app.service_models.service_request_container import ExecutionRequest
+from engine_build.app.service_models.service_request_container import ServiceRequest
 
 from typing import Sequence
 
@@ -214,7 +214,7 @@ def _confirm_and_build(
     summary_fn,
     build_fn,
     confirm_prompt: str,
-) -> ExecutionRequest:
+) -> ServiceRequest:
     """Collect inputs, show a summary, and build a confirmed request.
 
     Args:
@@ -236,7 +236,7 @@ def _confirm_and_build(
 
 #############
 
-def _build_experiment_request_from_menu() -> ExecutionRequest:
+def _build_experiment_request_from_menu() -> ServiceRequest:
     """Build an experiment request through the interactive menu flow."""
     return _confirm_and_build(
         collect_fn=_collect_experiment_inputs,
@@ -245,7 +245,7 @@ def _build_experiment_request_from_menu() -> ExecutionRequest:
         confirm_prompt="Launch experiment?",
     )
         
-def _build_exploration_request_from_menu() -> ExecutionRequest:
+def _build_exploration_request_from_menu() -> ServiceRequest:
     """Build an exploration request through the interactive menu flow."""
     return _confirm_and_build(
         collect_fn=_collect_exploration_inputs,
@@ -254,7 +254,7 @@ def _build_exploration_request_from_menu() -> ExecutionRequest:
         confirm_prompt="Launch exploration?",
     )
 
-def _build_verification_request_from_menu() -> ExecutionRequest:
+def _build_verification_request_from_menu() -> ServiceRequest:
     """Build a verification request through the interactive menu flow."""
     return _confirm_and_build(
         collect_fn=_collect_verification_inputs,
@@ -264,7 +264,7 @@ def _build_verification_request_from_menu() -> ExecutionRequest:
     )
 
 
-def _build_validation_request_from_menu() -> ExecutionRequest:
+def _build_validation_request_from_menu() -> ServiceRequest:
     """Build a validation request through the interactive menu flow."""
     return _confirm_and_build(
         collect_fn=_collect_validation_inputs,
@@ -274,7 +274,7 @@ def _build_validation_request_from_menu() -> ExecutionRequest:
     )
 
 
-def _build_validation_request_from_menu() -> ExecutionRequest:
+def _build_validation_request_from_menu() -> ServiceRequest:
     """Build a validation request through the interactive menu flow."""
     return _confirm_and_build(
         collect_fn=_collect_validation_inputs,
@@ -284,11 +284,11 @@ def _build_validation_request_from_menu() -> ExecutionRequest:
     )
 
         
-def run_menu() -> ExecutionRequest | None:
-    """Run the interactive menu and return the selected execution request.
+def run_menu() -> ServiceRequest | None:
+    """Run the interactive menu and return the selected service request.
 
     Returns:
-        Built execution request for the selected mode, or ``None`` when the
+        Built service request for the selected mode, or ``None`` when the
         user chooses to exit.
     """
     print("Welcome to the Engine Build CLI!")

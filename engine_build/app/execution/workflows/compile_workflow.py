@@ -17,7 +17,7 @@ from engine_build.regimes.spec import RegimeSpec
 
 
 '''
-def build_and_run_batch(batch_request: ExecutionRequest) -> tuple[BatchRunResults, AnalysisContext]:
+def build_and_run_batch(batch_request: ServiceRequest) -> tuple[BatchRunResults, AnalysisContext]:
     """ build batch, run batch and return batch results from context. """
 
 # def sep function for building and retuning batch 
@@ -35,6 +35,11 @@ class CompiledWorkflow:
     ticks: int
     runs: int
 
+@dataclass
+class WorkflowRequest: 
+    regime: str
+    ticks: int | None = None
+    runs: int | None = None
 
 
 def compile_workflow(workflow_request: ServiceRequest) -> CompiledWorkflow:
