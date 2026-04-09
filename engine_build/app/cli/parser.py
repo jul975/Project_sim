@@ -9,11 +9,6 @@ from engine_build.app.execution_model.suite_registry import (
 import argparse
 
 
-# NOTE: Parser should only build ExecutionRequest objects, not dispatch directly.
-
-
-
-
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -31,13 +26,13 @@ def build_parser() -> argparse.ArgumentParser:
     experiment.add_argument("--seed", type=int)
     experiment.add_argument("--plot", action="store_true")
     experiment.add_argument("--plot-dev", action="store_true", dest="plot_dev")
-    experiment.add_argument("--perf-flag", action="store_true", dest="perf_flag")
+    experiment.add_argument("--perf-flag", action="store_true", dest="profiling")
     experiment.add_argument(
         "--world-frame-flag",
         action="store_true",
-        dest="world_frame_flag",
+        dest="capture_world_frames",
     )
-    experiment.add_argument("--tail-fraction", type=float, default=0.25),
+    experiment.add_argument("--tail-fraction", type=float, default=0.25)
     experiment.add_argument("--animate", action="store_true")
 
     # verify
