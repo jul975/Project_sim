@@ -47,7 +47,7 @@ def build_verification_request(
         suite=suite,
         verbose=verbose,
         fail_fast=fail_fast,
-        pytest_args=pytest_args,
+        pytest_args=tuple(pytest_args),
     )
 
 
@@ -63,7 +63,7 @@ def build_validation_request(
         suite=suite,
         verbose=verbose,
         fail_fast=fail_fast,
-        pytest_args=pytest_args,
+        pytest_args=tuple(pytest_args),
     )
 
 

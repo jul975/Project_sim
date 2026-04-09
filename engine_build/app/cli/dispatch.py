@@ -1,9 +1,3 @@
-
-
-# bridge, maps request to workflow
-
-# NOTE: Dispatch should only route to services, not build requests.
-
 from __future__ import annotations
 
 from engine_build.app.execution_model.execution_request import ExecutionRequest
@@ -14,20 +8,20 @@ from engine_build.app.execution.services.validation_service import run_validatio
 from engine_build.app.execution.services.exploration_service import run_exploration
 
 
-def dispatch(context: ExecutionRequest) -> int:
-    if context.mode is ExecutionMode.EXPERIMENT:
-        return run_experiment(context)
+def dispatch(request: ExecutionRequest) -> int:
+    if request.mode is ExecutionMode.EXPERIMENT:
+        return run_experiment(request)
 
-    if context.mode is ExecutionMode.VERIFICATION:
-        return run_verification(context)
+    if request.mode is ExecutionMode.VERIFICATION:
+        return run_verification(request)
 
-    if context.mode is ExecutionMode.VALIDATION:
-        return run_validation(context)
+    if request.mode is ExecutionMode.VALIDATION:
+        return run_validation(request)
 
-    if context.mode is ExecutionMode.EXPLORATION:
-        return run_exploration(context)
+    if request.mode is ExecutionMode.EXPLORATION:
+        return run_exploration(request)
 
-    raise ValueError(f"Unsupported execution mode: {context.mode!r}")
+    raise ValueError(f"Unsupported execution mode: {request.mode!r}")
 
 
 
