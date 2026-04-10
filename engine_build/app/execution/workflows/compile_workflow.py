@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from numpy.random import SeedSequence
 
-from engine_build.app.service_models.default import EXPERIMENT_DEFAULTS, DEFAULT_MASTER_SEED
+from engine_build.app.service_models.default import EXPERIMENT_DEFAULTS, DEFAULT_MASTER_SEED, DEFAULT_REGIME_CONFIG
 from engine_build.app.service_models.service_request_container import RunnerRequest, ServiceRequest, ServiceRequestMeta
 
 from engine_build.regimes.compiler import compile_regime
@@ -25,24 +25,12 @@ batch_plan
 @dataclass(frozen=True)
 class EngineTemplate:
     """ Immutable template for engine construction, containing all configuration except the seed. """
-    regime_config: CompiledRegime = 
+    regime_config: CompiledRegime = DEFAULT_REGIME_CONFIG
     perf_flag: bool = False
     world_frame_flag: bool = False
     change_condition: bool = False
 
-@dataclass(frozen=True)
-class EngineBuildRequest:
-    ''' Immutable request for building a single engine instance, containing a seed and an engine template. '''
-    run_seed: SeedSequence
-    engine_template: EngineTemplate
 
-
-@dataclass(frozen=True)
-class SingleRunPlan:
-    ''' Plan for executing a single run, containing the run index, tick count, and engine build request. '''
-    run_index: int
-    ticks: int
-    engine_request: EngineBuildRequest
 
 @dataclass(frozen=True)
 class BatchPlan:
@@ -82,8 +70,7 @@ def _get_engine_template(runner_request : RunnerRequest, service_request_meta : 
     regime_spec = get_regime_spec(service_request_meta.regime)
     regime_config = compile_regime(regime_spec)
 
-    ticks = runner_request.ticks if runner_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
-    runs = runner_request.runs if runner_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
+
 
     execution_features = service_request_meta.execution_features
 
@@ -110,11 +97,14 @@ def _get_runner_plan(workflow_request: ServiceRequest):
     runner_request = workflow_request.runner_request
     meta_request = workflow_request.service_request_meta
     engine_template=_get_engine_template(runner_request=runner_request, service_request_meta=meta_request)
+    
+    ticks = runner_request.ticks if runner_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
+    runs = runner_request.runs if runner_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
 
     return BatchPlan(
         batch_seed = runner_request.seed,
-        n_runs = runner_request.runs,
-        ticks = runner_request.ticks,
+        n_runs = runs,
+        ticks = ticks,
         engine_template=engine_template
         )
 

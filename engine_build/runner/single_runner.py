@@ -1,11 +1,9 @@
 
 
-from archive.LEGACY_FILES.legacy_seed_logic.leagacy_engine_repro import Engine
 from engine_build.analytics.observation.simulation_metrics import SimulationMetrics
-from engine_build.app.service_models.service_request_container import ServiceRequest
-from engine_build.app.service_models.default import EXPERIMENT_DEFAULTS
+
 from engine_build.core.contracts.step_results import StepReport
-from engine_build.runner.factories import engine_factory
+from engine_build.runner.factories import SingleRunPlan, engine_factory
 from engine_build.runner.results import RunArtifacts
 
 import numpy as np
@@ -15,8 +13,8 @@ import numpy as np
 
 
 class SingleRunner:
-    def __init__(self, compiled_workflow):
-        self.compiled_workflow = compiled_workflow
+    def __init__(self, single_run_plan : SingleRunPlan ):
+        
 
         self.engine = engine_factory(compiled_workflow.runner_workflow.regime_config)
 
