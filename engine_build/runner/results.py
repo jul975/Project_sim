@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Dict
 import numpy as np
 
+from engine_build.core.contracts.step_results import StepReport
 from engine_build.core.engine import Engine
 from engine_build.analytics.observation.simulation_metrics import SimulationMetrics
 from engine_build.regimes.compiled import CompiledRegime
@@ -32,6 +33,44 @@ class PhaseProfile:
     commit_deaths: float = 0.0
     commit_births: float = 0.0
     commit_resource_regrowth: float = 0.0
+
+    def add_perf_to_profile(self, step_report : StepReport) -> None:
+        """Accumulate step-level timing data into a run-level phase profile.
+
+        Args:
+            phase_profile: Mutable profile receiving cumulative timing totals.
+            step_report: Per-step report produced by the engine.
+        """
+
+        self.movement += step_report.step_profile.movement
+        self.interaction += step_report.step_profile.interaction
+        self.biology += step_report.step_profile.biology
+        self.commit += step_report.step_profile.commit
+
+        self.commit_setup += step_report.commit_report.commit_profile.setup
+        self.commit_deaths += step_report.commit_report.commit_profile.deaths
+        self.commit_births += step_report.commit_report.commit_profile.births
+        self.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
+
+
+    def reset_phase_profile(self) -> None:
+        """Clear accumulated timing fields on a phase profile.
+
+        Args:
+            phase_profile: Mutable profile that stores cumulative per-phase timing
+                totals for one run.
+        """
+        self.movement = 0.0
+        self.interaction = 0.0
+        self.biology = 0.0
+        self.commit = 0.0
+
+        self.commit_setup = 0.0
+        self.commit_deaths = 0.0
+        self.commit_births = 0.0
+        self.commit_resource_regrowth = 0.0
+
+    
 
 
 
