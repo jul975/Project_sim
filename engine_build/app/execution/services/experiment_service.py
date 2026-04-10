@@ -9,7 +9,8 @@ from __future__ import annotations
 from engine_build.analytics.summaries.regime_summary import summarise_regime
 from engine_build.analytics.classification.regime_classification import classify_regime
 from engine_build.app.execution.presenters.experiment_presenters import present_experiment
-from engine_build.app.execution.workflows.compile_workflow import compile_workflow, CompiledWorkflow
+from engine_build.app.execution.workflows.compile_workflow import compile_workflow_plans
+
 from engine_build.app.service_models.service_request_container import ServiceRequest
 from engine_build.app.execution.presenters.console import (
     print_experiment_spec,
@@ -17,8 +18,6 @@ from engine_build.app.execution.presenters.console import (
 )
 
 
-
-from engine_build.app.execution.workflows.workflow_runner import build_and_run_batch
 
 from engine_build.analytics.pipelines.analyze_batch import analyze_batch, BatchAnalysis
 
@@ -47,29 +46,37 @@ def experiment_service_call(experiment_request: ServiceRequest) -> int:
         service owns orchestration of the experiment workflow but does not
         construct requests itself.
     """
-    if experiment_request.regime is None:
+    
+    # 1) unpack service request for easy access to all layers of the request
+    service_meta = experiment_request.service_request_meta
+    service_runner = experiment_request.runner_request
+    service_processing = experiment_request.processing_request
+    service_presentation = experiment_request.presentation_request
+    
+    if experiment_request.service_request_meta.regime is None:
         raise ValueError("Experiment mode requires a regime.")
-    ################################ NEw #####################
-     # idea, pass service request and create workflow(request?) obj containting everytgin over different service layers
 
-    ################## SERVICE REQUEST PARSING
+    # 2) Process service request into workflow plans.
+    ################## SERVICE REQUEST Processing => COMPILE WORKFLOW PLANS
+                     # => AFTER this point, Workflow Plans are source of truth for execution, processing and presentation.
+ 
+    # experiment_plan :  
 
-    compiled_workflow : CompiledWorkflow = compile_workflow(experiment_request) 
-
+    # 3) Execute workflow plans.
     ################## Workflow orchestration
 
     # NOTE: print entry point summary here
     ##################
 
-    ################## WORKFLOW: RUN RUNNER
+    ################## EXEXCUTION PLAN  => RUN RUNNER
     # batch_results = execution_workflow.run()
 
 
-    ################## WORKFLOW: ANALYZE RESULTS
+    ################## PROCESSING PLAN => ANALYZE RESULTS
     # batch_analysis = processing_workflow.run(batch_results)
     # CLASSIFICATION, SUMMARIZATION, AND OTHER ANALYTIC DERIVATIONS SHOULD BE PART OF THIS WORKFLOW
 
-    ################## WORKFLOW: PRESENT RESULTS
+    ################## PRESENTATION PLAN => PRESENT RESULTS
     # presentation_workflow.run(batch_analysis)
 
     ################################ OLD #####################

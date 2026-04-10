@@ -108,6 +108,25 @@ class WorldParams:
 
 
 @dataclass(frozen=True)
+class SpatialWeights:
+    """Compiled spatial weight parameters for agent interactions.
+
+    Attributes:
+        movement_weight: Weight applied to distance in movement decisions.
+        interaction_weight: Weight applied to distance in interaction decisions.
+
+        temperature: (temp)
+        These weights modulate the influence of spatial proximity on agent
+        behavior, with higher values increasing the preference for closer
+        targets.
+    """
+
+    movement_weight: float = 1.0
+    interaction_weight: float = 1.0
+    temperature: float = 1.0
+
+
+@dataclass(frozen=True)
 class CompiledRegime:
     """Concrete engine-facing parameter bundle derived from a ``RegimeSpec``.
 
@@ -118,6 +137,7 @@ class CompiledRegime:
         population_params: Compiled population constraints.
         world_params: Compiled world dimensions.
         landscape_params: Compiled fertility landscape parameters.
+        spatial_weights: Compiled spatial weight parameters for agent interactions.
     """
 
     energy_params: EnergyParams
@@ -126,6 +146,7 @@ class CompiledRegime:
     population_params: PopulationParams
     world_params: WorldParams
     landscape_params: LandscapeParams
+    spatial_weights: SpatialWeights
 
     @classmethod
     def from_dict(cls, d: dict) -> "CompiledRegime":
@@ -164,5 +185,9 @@ class CompiledRegime:
         wp = outer.get("world_params")
         if isinstance(wp, dict):
             outer["world_params"] = WorldParams(**wp)
+
+        sw = outer.get("spatial_weights")
+        if isinstance(sw, dict):
+            outer["spatial_weights"] = SpatialWeights(**sw)
 
         return cls(**outer)

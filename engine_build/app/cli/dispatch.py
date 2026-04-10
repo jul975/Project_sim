@@ -6,7 +6,7 @@ mode-specific execution services.
 
 from __future__ import annotations
 
-from engine_build.app.service_models.service_request import Service_request
+from engine_build.app.service_models.service_request_container import ServiceRequest
 from engine_build.app.service_models.modes import ExecutionMode
 
 from engine_build.app.execution.services.experiment_service import experiment_service_call
@@ -15,7 +15,7 @@ from engine_build.app.execution.services.validation_service import validation_se
 from engine_build.app.execution.services.exploration_service import exploration_service_call
 
 
-def dispatch(service_request: Service_request) -> int:
+def dispatch(service_request: ServiceRequest) -> int:
     """Route an execution service_request to the matching service implementation.
 
     Args:
@@ -31,19 +31,20 @@ def dispatch(service_request: Service_request) -> int:
         This function only performs mode dispatch. It does not validate CLI
         inputs, build service_requests, or implement workflow logic.
     """
-    if service_request.mode is ExecutionMode.EXPERIMENT:
+    service_type = service_request.service_request_meta.mode
+    if service_type is ExecutionMode.EXPERIMENT:
         return experiment_service_call(service_request)
 
-    if service_request.mode is ExecutionMode.VERIFICATION:
+    if service_type is ExecutionMode.VERIFICATION:
         return verification_service_call(service_request)
 
-    if service_request.mode is ExecutionMode.VALIDATION:
+    if service_type is ExecutionMode.VALIDATION:
         return validation_service_call(service_request)
 
-    if service_request.mode is ExecutionMode.EXPLORATION:
+    if service_type is ExecutionMode.EXPLORATION:
         return exploration_service_call(service_request)
 
-    raise ValueError(f"Unsupported execution mode: {service_request.mode!r}")
+    raise ValueError(f"Unsupported execution mode: {service_type!r}")
 
 
 

@@ -6,9 +6,92 @@ produces the same immutable ``ServiceRequest`` shape before dispatch.
 
 from __future__ import annotations
 
-from engine_build.app.service_models.service_request_container import ServiceRequest
+from engine_build.app.service_models.service_request_container import (
+    PresentationRequest, 
+    ProcessingRequest, 
+    RunnerRequest, 
+    ServiceRequest, 
+    ServiceRequestMeta
+)
 from engine_build.app.service_models.modes import ExecutionMode
 from engine_build.app.service_models.features import ExecutionFeatures
+
+
+
+def _build_runner_request(
+    *,
+    seed: int | None = None,
+    runs: int | None = None,
+    ticks: int | None = None,
+) -> RunnerRequest:
+    """Build the runner controls component of a service request."""
+    return RunnerRequest(
+        seed=seed,
+        runs=runs,
+        ticks=ticks,
+    )
+
+def _build_processing_request(
+    *,
+    tail_fraction: float = 0.25,
+    verbose: bool = False,
+    fail_fast: bool = False,
+    pytest_args: tuple[str, ...] = (),
+) -> ProcessingRequest:
+    """Build the processing controls component of a service request."""
+    return ProcessingRequest(
+        tail_fraction=tail_fraction,
+        verbose=verbose,
+        fail_fast=fail_fast,
+        pytest_args=pytest_args,
+    )
+
+def _build_presentation_request() -> PresentationRequest:
+    """Build the presentation controls component of a service request."""
+    
+    return PresentationRequest()
+
+def _build_experiment_features(
+    *,
+    plot: bool = False,
+    plot_dev: bool = False,
+    profiling: bool = False,
+    capture_world_frames: bool = False,
+    animate: bool = False,
+    change_condition: bool = False
+) -> ExecutionFeatures:
+    """Build the execution features for an experiment request."""
+    return ExecutionFeatures(
+        plot=plot,
+        plot_dev=plot_dev,
+        perf_profiling=profiling,
+        capture_world_frames=capture_world_frames,
+        animate=animate,
+        change_condition=change_condition
+    )
+
+
+def _build_service_request_meta(
+    *,
+    mode: ExecutionMode,
+    regime: str | None = None,
+    suite: str | None = None,
+    # features flags need cleanup
+    features: ExecutionFeatures = ExecutionFeatures(),
+) -> ServiceRequestMeta:
+    """Build the metadata component of a service request."""
+    return ServiceRequestMeta(
+        mode=mode,
+        regime=regime,
+        suite=suite,
+        features=features,
+    )
+
+
+
+
+# NOTE: can be unified upstream leaving it temp for now
+
 
 
 def build_experiment_request(
@@ -23,39 +106,33 @@ def build_experiment_request(
     profiling: bool = False,
     capture_world_frames: bool = False,
     animate: bool = False,
+    change_conditions: bool = False
 ) -> ServiceRequest:
-    """Build an experiment-mode execution request.
-
-    Args:
-        regime: Regime identifier to compile and run.
-        seed: Optional deterministic seed for the batch.
-        runs: Optional number of runs to execute.
-        ticks: Optional tick limit per run.
-        tail_fraction: Fraction of each run treated as the analysis tail.
-        plot: Enables batch plotting outputs.
-        plot_dev: Enables developer-oriented plot outputs.
-        profiling: Enables performance profiling features.
-        capture_world_frames: Enables world-frame capture for visualization.
-        animate: Enables animation-oriented features.
-
-    Returns:
-        Immutable service request normalized for experiment dispatch.
-    """
-    return ServiceRequest(
-        mode=ExecutionMode.EXPERIMENT,
+    """Build a complete service request for an experiment execution."""
+    meta = _build_service_request_meta(
+        mode=ExecutionMode.EXPLORATION,
         regime=regime,
-        seed=seed,
-        runs=runs,
-        ticks=ticks,
-        tail_fraction=tail_fraction,
-        features=ExecutionFeatures(
-            plotting=plot,
+        features=_build_experiment_features(
+            plot=plot,
             plot_dev=plot_dev,
             profiling=profiling,
             capture_world_frames=capture_world_frames,
             animate=animate,
+            change_conditions=change_conditions
         ),
     )
+    runner_req = _build_runner_request(seed=seed, runs=runs, ticks=ticks)
+    processing_req = _build_processing_request(tail_fraction=tail_fraction)
+    presentation_req = _build_presentation_request()
+
+    return ServiceRequest(
+        **meta.__dict__,
+        **runner_req.__dict__,
+        **processing_req.__dict__,
+        **presentation_req.__dict__,
+    )
+
+
 
 
 def build_verification_request(
@@ -65,23 +142,22 @@ def build_verification_request(
     fail_fast: bool = False,
     pytest_args: tuple[str, ...] = (),
 ) -> ServiceRequest:
-    """Build a verification-mode execution request.
-
-    Args:
-        suite: Verification suite name to run.
-        verbose: Enables verbose pytest output.
-        fail_fast: Stops pytest after the first failure.
-        pytest_args: Extra pytest arguments to forward unchanged.
-
-    Returns:
-        Immutable service request normalized for verification dispatch.
-    """
-    return ServiceRequest(
+    """Build a complete service request for a verification execution."""
+    meta = _build_service_request_meta(
         mode=ExecutionMode.VERIFICATION,
         suite=suite,
+    )
+    processing_req = _build_processing_request(
         verbose=verbose,
         fail_fast=fail_fast,
-        pytest_args=tuple(pytest_args),
+        pytest_args=pytest_args,
+    )
+    presentation_req = _build_presentation_request()
+
+    return ServiceRequest(
+        **meta.__dict__,
+        **processing_req.__dict__,
+        **presentation_req.__dict__,
     )
 
 
@@ -92,25 +168,23 @@ def build_validation_request(
     fail_fast: bool = False,
     pytest_args: tuple[str, ...] = (),
 ) -> ServiceRequest:
-    """Build a validation-mode execution request.
-
-    Args:
-        suite: Validation suite name to run.
-        verbose: Enables verbose pytest output.
-        fail_fast: Stops pytest after the first failure.
-        pytest_args: Extra pytest arguments to forward unchanged.
-
-    Returns:
-        Immutable service request normalized for validation dispatch.
-    """
-    return ServiceRequest(
+    """Build a complete service request for a validation execution."""
+    meta = _build_service_request_meta(
         mode=ExecutionMode.VALIDATION,
         suite=suite,
+    )
+    processing_req = _build_processing_request(
         verbose=verbose,
         fail_fast=fail_fast,
-        pytest_args=tuple(pytest_args),
+        pytest_args=pytest_args,
     )
+    presentation_req = _build_presentation_request()
 
+    return ServiceRequest(
+        **meta.__dict__,
+        **processing_req.__dict__,
+        **presentation_req.__dict__,
+    )
 
 def build_exploration_request(
     *,
@@ -118,24 +192,22 @@ def build_exploration_request(
     seed: int | None = None,
     ticks: int | None = None,
 ) -> ServiceRequest:
-    """Build an exploration-mode execution request.
-
-    Args:
-        regime: Regime identifier to compile and explore.
-        seed: Optional deterministic seed for the exploration run.
-        ticks: Optional tick limit for the exploration run.
-
-    Returns:
-        Immutable service request normalized for exploration dispatch.
-    """
-    return ServiceRequest(
+    """Build an exploration-mode execution request."""
+    meta = _build_service_request_meta(
         mode=ExecutionMode.EXPLORATION,
         regime=regime,
-        seed=seed,
-        ticks=ticks,
         features=ExecutionFeatures(animate=True),
     )
+    runner_req = _build_runner_request(seed=seed, ticks=ticks)
+    processing_req = _build_processing_request()
+    presentation_req = _build_presentation_request()
 
+    return ServiceRequest(
+        **meta.__dict__,
+        **runner_req.__dict__,
+        **processing_req.__dict__,
+        **presentation_req.__dict__,
+    )
 
 
 if __name__ == "__main__":
