@@ -2,9 +2,13 @@
 
 from engine_build.analytics.observation.simulation_metrics import SimulationMetrics
 
+from engine_build.app.execution.workflows.compile_workflow import EngineTemplate
 from engine_build.core.contracts.step_results import StepReport
-from engine_build.runner.factories import SingleRunPlan, engine_factory
+from engine_build.runner.factories import build_engine
 from engine_build.runner.results import RunArtifacts
+from .factories import EngineBuildMap
+from ..core.engine import Engine
+
 
 import numpy as np
 
@@ -13,14 +17,19 @@ import numpy as np
 
 
 class SingleRunner:
-    def __init__(self, single_run_plan : SingleRunPlan ):
+    def __init__(self, engine_build_map : EngineBuildMap) -> None:
+
+        engine_template: EngineTemplate = engine_build_map.engine_template
+        perf_flag : bool = engine_template.perf_flag
+        world_frame : bool = engine_template.world_frame_flag
+        change_condition : bool = engine_template.change_condition
         
 
-        self.engine = engine_factory(compiled_workflow.runner_workflow.regime_config)
+        self.engine : Engine = Engine(EngineBuildMap)
+
 
         self.metrics = SimulationMetrics(self.engine.max_agent_count)
-
-    def run(self, ticks: int):
+    def run(self, ticks: int) -> RunArtifacts:
         """ => single source of truth for runner"""
         for _ in range(ticks):
             step_report : StepReport = self.engine.step()

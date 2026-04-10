@@ -17,7 +17,7 @@ from engine_build.regimes.compiled import CompiledRegime
 batch_plan
 -> generate run seeds from batch_seed
 -> combine each run seed with engine_template
--> produce SingleRunPlan / EngineBuildRequest
+-> produce SingleRunPlan / EngineBuildMap
 -> SingleRunner builds and runs the engine
 """
 

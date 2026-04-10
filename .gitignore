@@ -17,10 +17,12 @@ env/
 ENV/
 .buildtmp/
 
+
 # Distribution / packaging
 build/
 dist/
 *.egg-info/
+.sixth
 
 # Testing / coverage
 .coverage
