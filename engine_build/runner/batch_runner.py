@@ -5,10 +5,6 @@ seeded engines, stepping them for a fixed number of ticks, and packaging the
 results into batch containers.
 """
 
-from engine_build.app.service_models.default import DEFAULT_MASTER_SEED
-from engine_build.core.contracts.step_results import StepReport
-
-
 
 import numpy as np
 
@@ -18,51 +14,6 @@ import time
 from engine_build.runner.factories import SingleRunPlans, build_single_run_plans
 from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
 from engine_build.app.execution.workflows.compile_workflow import BatchPlan, EngineTemplate
-from engine_build.runner.seeds import generate_run_sequences
-
-
-
-
-
-def reset_phase_profile(phase_profile : PhaseProfile) -> None:
-    """Clear accumulated timing fields on a phase profile.
-
-    Args:
-        phase_profile: Mutable profile that stores cumulative per-phase timing
-            totals for one run.
-    """
-    phase_profile.movement = 0.0
-    phase_profile.interaction = 0.0
-    phase_profile.biology = 0.0
-    phase_profile.commit = 0.0
-
-    phase_profile.commit_setup = 0.0
-    phase_profile.commit_deaths = 0.0
-    phase_profile.commit_births = 0.0
-    phase_profile.commit_resource_regrowth = 0.0
-    
-
-def add_perf_to_profile(phase_profile : PhaseProfile, step_report : StepReport) -> None:
-    """Accumulate step-level timing data into a run-level phase profile.
-
-    Args:
-        phase_profile: Mutable profile receiving cumulative timing totals.
-        step_report: Per-step report produced by the engine.
-    """
-
-    phase_profile.movement += step_report.step_profile.movement
-    phase_profile.interaction += step_report.step_profile.interaction
-    phase_profile.biology += step_report.step_profile.biology
-    phase_profile.commit += step_report.step_profile.commit
-
-    phase_profile.commit_setup += step_report.commit_report.commit_profile.setup
-    phase_profile.commit_deaths += step_report.commit_report.commit_profile.deaths
-    phase_profile.commit_births += step_report.commit_report.commit_profile.births
-    phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
-
-# NOTE: batch runner should create either all single runners or all engines directly on init, and then run them in sequence in run batch. This will allow for more flexible runner orchestration and clearer separation of concerns.
-
-
 
 
 class BatchRunner:
@@ -95,6 +46,8 @@ class BatchRunner:
 
         self.engine_template : EngineTemplate = batch_plan.engine_template
 
+        self.perf_profiling : bool = self.engine_template.perf_flag
+
 
         self.batch_run_plans : SingleRunPlans = build_single_run_plans(self.batch_id, self.n_runs ,self.engine_template)
 
@@ -108,17 +61,15 @@ class BatchRunner:
         # NOTE: still thinking about creating all single_runner class instance on init, wait for now
 
         
+    def _run_batch_quick(self, ticks : int) -> BatchRunResults:
+        pass
 
 
 
 
 
 
-
-    def run_batch(self, 
-                         ticks : np.int64, 
-
-                         ) -> BatchRunResults:
+    def _run_batch_perf_profiling(self, ticks : int) -> BatchRunResults:
         """Run all configured seeds for the batch and collect their outputs.
 
         Args:
@@ -129,7 +80,7 @@ class BatchRunner:
             batch duration.
         """
 
-        batch_start_time = time.perf_counter()
+        batch_start_time: float = time.perf_counter()
 
         # NOTE: tmp entry point connection help. 
 
@@ -149,8 +100,8 @@ class BatchRunner:
 
             
 
-        batch_end_time = time.perf_counter()
-        batch_duration = batch_end_time - batch_start_time
+        batch_end_time: float = time.perf_counter()
+        batch_duration: float = batch_end_time - batch_start_time
         batch_data.batch_duration = batch_duration
 
         batch_data.max_agent_count = batch_data.runs[0].engine_final.max_agent_count
@@ -158,6 +109,12 @@ class BatchRunner:
 
 
         return batch_data
+    
+
+    def run_batch(self, ticks) -> BatchRunResults:
+        if self.perf_profiling:
+            return self._run_batch_perf_profiling(self, ticks)
+        return self._run_batch_quick(self, ticks)
 
 
 

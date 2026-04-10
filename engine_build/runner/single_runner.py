@@ -4,8 +4,9 @@ from engine_build.analytics.observation.simulation_metrics import SimulationMetr
 
 from engine_build.app.execution.workflows.compile_workflow import EngineTemplate
 from engine_build.core.contracts.step_results import StepReport
+from engine_build.runner.batch_runner import add_perf_to_profile
 from engine_build.runner.factories import build_engine
-from engine_build.runner.results import RunArtifacts
+from engine_build.runner.results import PhaseProfile, RunArtifacts
 from .factories import EngineBuildMap
 from ..core.engine import Engine
 
@@ -20,17 +21,20 @@ class SingleRunner:
     def __init__(self, engine_build_map : EngineBuildMap) -> None:
 
         engine_template: EngineTemplate = engine_build_map.engine_template
-        perf_flag : bool = engine_template.perf_flag
-        world_frame : bool = engine_template.world_frame_flag
-        change_condition : bool = engine_template.change_condition
+        
+        self.perf_flag : bool = engine_template.perf_flag
+        self.world_frame : bool = engine_template.world_frame_flag
+        self.change_condition : bool = engine_template.change_condition
         
 
         self.engine : Engine = Engine(EngineBuildMap)
 
-
+        # pass metrics-config obj in future
         self.metrics = SimulationMetrics(self.engine.max_agent_count)
-    def run(self, ticks: int) -> RunArtifacts:
-        """ => single source of truth for runner"""
+
+    # conditional run definition for perf
+
+    def _run_quick(self, ticks) -> RunArtifacts:
         for _ in range(ticks):
             step_report : StepReport = self.engine.step()
             self.metrics.record(step_report=step_report)
@@ -41,11 +45,38 @@ class SingleRunner:
             phase_profile=None, # NOTE: add phase profile to single runner if needed
         )
     
-    def continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> RunArtifacts:
+    def _run_perf_profiling(self, ticks) -> RunArtifacts:
+        """ run with performance flag on """
+        # NOTE: engine config needs to pass profiling flag, is done now
+        phase_profile : PhaseProfile = PhaseProfile()
+
+        for _ in range(ticks):
+            step_report : StepReport = self.engine.step()
+            self.metrics.record(step_report=step_report)
+        return RunArtifacts(
+            engine_final=self.engine,
+            metrics=self.metrics,
+            seed=self.engine.master_ss,
+            phase_profile=None, # NOTE: add phase profile to single runner if needed
+        )
+    
+    
+
+    def run(self, ticks: int) -> RunArtifacts:
+        """ => single source of truth for runner"""
+        if self.perf_flag:
+            return self._run_perf_profiling(self, ticks)
+        return self._run_quick(self, ticks)
+            
+    
+
+
+
+    def continue_run(self, ticks : np.int64) -> RunArtifacts:
         """Continue an existing run using a live engine and metrics buffer."""
         for _ in range(ticks):
-            step_report : StepReport = eng.step()
-            metrics.record(step_report = step_report)
+            step_report : StepReport = self.engine.step()
+            self.metrics.record(step_report = step_report)
 
         return RunArtifacts(engine_final=eng, 
                             metrics= metrics, 
@@ -76,7 +107,7 @@ class SingleRunner:
             world_frame_flag=self.include_world_frames,
         )
         metrics = SimulationMetrics(eng.max_agent_count)
-        phase_profile = PhaseProfile() if self.include_perf else None
+         if self.include_perf else None
 
         if phase_profile is not None:
             reset_phase_profile(phase_profile)
