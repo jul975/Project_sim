@@ -21,8 +21,9 @@ from engine_build.runner.single_runner import SingleRunner
 
 
 @dataclass(frozen=True)
-class EngineBuildRequest:
-    ''' Immutable request for building a single engine instance, containing a seed and an engine template. '''
+class EngineBuildMap:
+    ''' Immutable request for building a single engine instance, containing a seed and an engine template. 
+    '''
     run_seed: SeedSequence
     engine_template: EngineTemplate
 
@@ -32,17 +33,17 @@ class EngineBuildRequest:
 #     ''' Plan for executing a single run, containing the run index, tick count, and engine build request. '''
 #     # run_index: int | None = None
 #     # ticks: int = 1000
-#     engine_request: EngineBuildRequest
+#     engine_request: EngineBuildMap
 
 
 @dataclass(frozen=True)
 class SingleRunPlans:
     """Collection of all generated SingleRunPlan obj's on BatchRunner level """
     batch_id: int
-    single_run_plans: dict[int, EngineBuildRequest]
+    single_run_plans: dict[int, EngineBuildMap]
 
 
-def build_engine():
+def build_engine() -> None:
 
     pass
 
@@ -60,11 +61,11 @@ def build_single_runner() -> SingleRunner:
 def build_single_run_plans(batch_id: int, n_runs : int , engine_template: EngineTemplate) -> SingleRunPlans:
     '''return dict of all run plans for a given batch id'''
 
-    run_plans_dict : dict[int, EngineBuildRequest]
-    run_seeds_dict = generate_run_sequences(batch_id, n_runs)
+    run_plans_dict : dict[int, EngineBuildMap]
+    run_seeds_dic: dict[int, SeedSequence]= generate_run_sequences(batch_id, n_runs)
 
-    for run_index, run_seed in run_seeds_dict.items():
-        run_plans_dict[run_index] = EngineBuildRequest(
+    for run_index, run_seed in run_seeds_dic.items():
+        run_plans_dict[run_index] = EngineBuildMap(
             run_seed=run_seed,
             engine_template=engine_template
             )

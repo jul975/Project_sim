@@ -1,6 +1,10 @@
 import numpy as np
 import hashlib
 
+from numpy.random import SeedSequence
+
+from engine_build.core.contracts.step_results import BiologyReport, InteractionReport, MovementReport
+
 from .snapshot.state_schema import get_state_bytes
 
 from .snapshot.snapshots import engine_to_snapshot, engine_from_snapshot
@@ -43,13 +47,13 @@ class Engine:
 
 
         # 1) Setup concerns 
-        self.master_ss = seed_seq
+        self.master_ss: SeedSequence = seed_seq
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
 
 
         # 2) Execution Mode concerns
-        self.perf_flag = perf_flag
-        self.collect_world_view = world_frame_flag
+        self.perf_flag: bool = perf_flag
+        self.collect_world_view: bool = world_frame_flag
         # + change_condition flag need to change
 
         # 3) Compiled model concerns
@@ -66,11 +70,11 @@ class Engine:
 
 
         # 5) Convenience mirrors of important parameters for easy access
-        self.max_agent_count = self.population_params.max_agent_count
-        self.max_age = self.population_params.max_age
+        self.max_agent_count: int = self.population_params.max_agent_count
+        self.max_age: int = self.population_params.max_age
         
         # 6) Mutable simulation state
-        self.next_agent_id = self.population_params.initial_agent_count
+        self.next_agent_id: int = self.population_params.initial_agent_count
         self.world = World( world_seed, self.config ,change_condition)
         self.agents : dict[int, Agent] = self.initialize_state(self.next_agent_id) 
 
@@ -175,10 +179,10 @@ class Engine:
     def _step_fast(self) -> StepReport:
         context = TransitionContext()
 
-        movement_report = movement_phase(self.agents, context, self.world)
-        interaction_report = interaction_phase(context, self.world)
-        biology_report = biology_phase(context)
-        commit_report = self.commit_phase(context)
+        movement_report: MovementReport = movement_phase(self.agents, context, self.world)
+        interaction_report: InteractionReport = interaction_phase(context, self.world)
+        biology_report: BiologyReport = biology_phase(context)
+        commit_report: CommitReport = self.commit_phase(context)
 
         
 
