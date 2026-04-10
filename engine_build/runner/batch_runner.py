@@ -5,20 +5,18 @@ seeded engines, stepping them for a fixed number of ticks, and packaging the
 results into batch containers.
 """
 
-from engine_build.core.engine import Engine
 from engine_build.app.service_models.default import DEFAULT_MASTER_SEED
 from engine_build.core.contracts.step_results import StepReport
 
 
-from engine_build.regimes.compiled import CompiledRegime
 
-from engine_build.analytics.observation.simulation_metrics import SimulationMetrics
 import numpy as np
 
 
 import time
 
 from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
+from engine_build.app.execution.workflows.compile_workflow import BatchPlan
 from engine_build.runner.seeds import generate_run_sequences
 
 
@@ -81,11 +79,7 @@ class BatchRunner:
 
     def __init__(
             self, 
-            regime_config : CompiledRegime , 
-            n_runs : int, 
-            batch_id : int| None = None,
-            include_world_frames : bool = False,
-            include_perf : bool = False,
+            batch_plan : BatchPlan
             ) -> None:
         """Initialize a batch runner for one compiled regime configuration.
 
@@ -97,16 +91,36 @@ class BatchRunner:
             include_perf: Enables per-phase performance profiling.
         """
         
-        self.regime_config = regime_config
+        '''     
+        self.regime_config = 
+        self.n_runs = 
+        
+
+        #########################################################################
         self.n_runs = n_runs
         self.batch_id = batch_id if batch_id is not None else DEFAULT_MASTER_SEED
 
+# => make single runner or engine constructor instead prob better single runner as engine construction would be parallel 
         self.run_seeds = generate_run_sequences(self.batch_id , n_runs)
 
         self.include_world_frames = include_world_frames
-        self.include_perf = include_perf
+        self.include_perf = include_perf'''
 
-#############################################################
+        self.batch_seed = batch_plan.batch_seed
+        self.n_runs = batch_plan.n_runs
+        self.run_tick_count = batch_plan.ticks
+
+        self.engine_template = batch_plan.engine_template
+
+        self.all_single_run_seeds = 
+
+        
+
+
+
+
+
+
     def run_batch(self, 
                          ticks : np.int64, 
 

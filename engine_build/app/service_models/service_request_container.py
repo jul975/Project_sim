@@ -30,6 +30,39 @@ ValidationSuite = Literal[
     "separation",
 ]
 
+@dataclass(frozen=True)
+class ServiceRequestMeta:
+    '''Metadata describing the execution workflow to run and its parameters.'''
+    mode: ExecutionMode 
+    regime : RegimeName | None = None 
+    suite : VerificationSuite | ValidationSuite | None = None
+
+    # Optional execution controls
+    execution_features: ExecutionFeatures = field(default_factory=ExecutionFeatures)
+
+
+@dataclass(frozen=True)
+class RunnerRequest:
+    ''' Shared run controls for experiment/exploration workflows. '''
+    seed: int | None = None
+    runs: int | None = None
+    ticks: int | None = None
+
+@dataclass(frozen=True)
+class ProcessingRequest:
+    ''' Placeholder for processing-specific request parameters. '''
+    tail_fraction: float = 0.25
+
+    # Verification / validation controls
+    verbose: bool = False
+    fail_fast: bool = False
+    pytest_args: tuple[str, ...] = field(default_factory=tuple)    
+
+@dataclass(frozen=True)
+class PresentationRequest:
+    """Placeholder for presentation-specific request parameters. now inside execution features, but may need to be expanded for more complex presentation controls."""
+    pass
+
 
 @dataclass(frozen=True)
 class ServiceRequest:
@@ -40,44 +73,21 @@ class ServiceRequest:
     execution.
 
     Attributes:
-        mode: Top-level execution workflow to run.
-        regime: Regime identifier for experiment or exploration workflows.
-        suite: Verification or validation suite identifier.
-        seed: Optional deterministic seed for simulation workflows.
-        runs: Optional batch run count for experiment workflows.
-        ticks: Optional tick limit for experiment or exploration workflows.
-        tail_fraction: Fraction of each run treated as the analysis tail.
-        verbose: Enables verbose pytest output for verification/validation.
-        fail_fast: Stops pytest after the first failure when enabled.
-        pytest_args: Additional pytest arguments forwarded to the test runner.
-        features: Optional execution feature flags.
+        meta: Metadata describing the execution workflow to run and its parameters.
+        runner_request: Shared run controls for experiment/exploration workflows.
+        processing_request: Placeholder for processing-specific request parameters.
+        presentation_request: Placeholder for presentation-specific request parameters.
 
     Notes:
         Experiment/exploration requests use regime/run controls.
         Verification/validation requests use suite/pytest controls.
     """
-    mode: ExecutionMode
+    service_request_meta: ServiceRequestMeta
+    runner_request: RunnerRequest = field(default_factory=RunnerRequest)
+    processing_request: ProcessingRequest = field(default_factory=ProcessingRequest)
 
-    # Experiment / exploration selection
-    regime: RegimeName | None = None
-    suite: VerificationSuite | ValidationSuite | None = None
 
-    # Shared run controls
-    seed: int | None = None
-    runs: int | None = None
-    ticks: int | None = None
-
-    # Experiment analysis controls
-    tail_fraction: float = 0.25
-
-    # Verification / validation controls
-    verbose: bool = False
-    fail_fast: bool = False
-    pytest_args: tuple[str, ...] = field(default_factory=tuple)
-
-    # Optional execution features
-    features: ExecutionFeatures = field(default_factory=ExecutionFeatures)
-
+    presentation_request: PresentationRequest = field(default_factory=PresentationRequest)
 
 
 if __name__ == "__main__":

@@ -2,11 +2,13 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class ExecutionFeatures:
-    profiling: bool = False
+    perf_profiling: bool = False
     capture_world_frames: bool = False
     plotting: bool = False
     plot_dev: bool = False
     animate: bool = False
+
+    change_condition: bool = False
 
 
 
