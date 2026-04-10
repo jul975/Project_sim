@@ -16,7 +16,7 @@ import numpy as np
 import time
 
 from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
-from engine_build.app.execution.workflows.compile_workflow import BatchPlan
+from engine_build.app.execution.workflows.compile_workflow import BatchPlan, EngineTemplate
 from engine_build.runner.seeds import generate_run_sequences
 
 
@@ -84,37 +84,29 @@ class BatchRunner:
         """Initialize a batch runner for one compiled regime configuration.
 
         Args:
-            regime_config: Compiled regime applied to every run.
-            n_runs: Number of deterministic runs to execute.
-            batch_id: Optional master seed used to derive run seeds.
-            include_world_frames: Enables world-frame capture.
-            include_perf: Enables per-phase performance profiling.
+            
         """
         
-        '''     
-        self.regime_config = 
-        self.n_runs = 
-        
 
-        #########################################################################
-        self.n_runs = n_runs
-        self.batch_id = batch_id if batch_id is not None else DEFAULT_MASTER_SEED
+        self.batch_id : int = batch_plan.batch_id
+        self.n_runs : int = batch_plan.n_runs
+        self.run_tick_count : int = batch_plan.ticks
 
-# => make single runner or engine constructor instead prob better single runner as engine construction would be parallel 
-        self.run_seeds = generate_run_sequences(self.batch_id , n_runs)
+        self.engine_template : EngineTemplate = batch_plan.engine_template
 
-        self.include_world_frames = include_world_frames
-        self.include_perf = include_perf'''
+        self.all_batch_seeds : dict = generate_run_sequences(self.batch_id, self.n_runs)
 
-        self.batch_seed = batch_plan.batch_seed
-        self.n_runs = batch_plan.n_runs
-        self.run_tick_count = batch_plan.ticks
 
-        self.engine_template = batch_plan.engine_template
+        # if self.include_perf: 
+        #     print("Performance flag is set. Running with performance profiling.")
 
-        self.all_single_run_seeds = 
+        # if self.include_world_frames:
+        #     print("World frame flag is set. Running with world frame capture.")
+
+        # NOTE: still thinking about creating all single_runner class instance on init, wait for now
 
         
+
 
 
 
@@ -138,11 +130,7 @@ class BatchRunner:
         batch_start_time = time.perf_counter()
 
         # NOTE: tmp entry point connection help. 
-        if self.include_perf: 
-            print("Performance flag is set. Running with performance profiling.")
 
-        if self.include_world_frames:
-            print("World frame flag is set. Running with world frame capture.")
 
         
 
