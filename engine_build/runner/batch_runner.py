@@ -15,6 +15,7 @@ import numpy as np
 
 import time
 
+from engine_build.runner.factories import SingleRunPlans, build_single_run_plans
 from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
 from engine_build.app.execution.workflows.compile_workflow import BatchPlan, EngineTemplate
 from engine_build.runner.seeds import generate_run_sequences
@@ -94,7 +95,8 @@ class BatchRunner:
 
         self.engine_template : EngineTemplate = batch_plan.engine_template
 
-        self.all_batch_seeds : dict = generate_run_sequences(self.batch_id, self.n_runs)
+
+        self.batch_run_plans : SingleRunPlans = build_single_run_plans(self.batch_id, self.n_runs ,self.engine_template)
 
 
         # if self.include_perf: 

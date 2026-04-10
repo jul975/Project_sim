@@ -16,6 +16,8 @@ from dataclasses import dataclass
 from numpy.random import SeedSequence
 
 from engine_build.app.execution.workflows.compile_workflow import EngineTemplate
+from engine_build.runner.seeds import generate_run_sequences
+from engine_build.runner.single_runner import SingleRunner
 
 
 @dataclass(frozen=True)
@@ -25,21 +27,53 @@ class EngineBuildRequest:
     engine_template: EngineTemplate
 
 
+# @dataclass(frozen=True)
+# class SingleRunPlan:
+#     ''' Plan for executing a single run, containing the run index, tick count, and engine build request. '''
+#     # run_index: int | None = None
+#     # ticks: int = 1000
+#     engine_request: EngineBuildRequest
+
+
 @dataclass(frozen=True)
-class SingleRunPlan:
-    ''' Plan for executing a single run, containing the run index, tick count, and engine build request. '''
-    run_index: int | None = None
-    ticks: int = 1000
-    engine_request: EngineBuildRequest
+class SingleRunPlans:
+    """Collection of all generated SingleRunPlan obj's on BatchRunner level """
+    batch_id: int
+    single_run_plans: dict[int, EngineBuildRequest]
 
 
-def engine_factory():
+def build_engine():
+
+    pass
+
+def build_single_runner() -> SingleRunner:
+    pass
+
+
+
+
+
+
+
+
+
+def build_single_run_plans(batch_id: int, n_runs : int , engine_template: EngineTemplate) -> SingleRunPlans:
+    '''return dict of all run plans for a given batch id'''
+
+    run_plans_dict : dict[int, EngineBuildRequest]
+    run_seeds_dict = generate_run_sequences(batch_id, n_runs)
+
+    for run_index, run_seed in run_seeds_dict.items():
+        run_plans_dict[run_index] = EngineBuildRequest(
+            run_seed=run_seed,
+            engine_template=engine_template
+            )
+
+    return SingleRunPlans(
+        batch_id=batch_id,
+        single_run_plans=run_plans_dict
+    )
+
     
-    pass
 
-def single_run_factory():
-    pass
-
-def batch_run_plans_factory():
-    pass
 
