@@ -61,6 +61,7 @@ def add_perf_to_profile(phase_profile : PhaseProfile, step_report : StepReport) 
     phase_profile.commit_births += step_report.commit_report.commit_profile.births
     phase_profile.commit_resource_regrowth += step_report.commit_report.commit_profile.resource_regrowth
 
+# NOTE: batch runner should create either all single runners or all engines directly on init, and then run them in sequence in run batch. This will allow for more flexible runner orchestration and clearer separation of concerns.
 
 
 
@@ -104,77 +105,6 @@ class BatchRunner:
 
         self.include_world_frames = include_world_frames
         self.include_perf = include_perf
-
-
-#############################################################
-    # NOTE: world_frames is a temp solution, the flag is getting drilled from to high up 
-    def run_single(self, seed: np.random.SeedSequence, ticks: int) -> RunArtifacts:
-        """Run one seeded engine instance for a fixed number of ticks.
-
-        Args:
-            seed: Seed sequence used to initialize the engine.
-            ticks: Number of ticks to execute.
-
-        Returns:
-            Run artifacts containing the final engine, collected metrics, and
-            optional phase profile.
-        """
-        eng = Engine(
-            seed,
-            self.regime_config,
-            perf_flag=self.include_perf,
-            world_frame_flag=self.include_world_frames,
-        )
-        metrics = SimulationMetrics(eng.max_agent_count)
-        phase_profile = PhaseProfile() if self.include_perf else None
-
-        if phase_profile is not None:
-            reset_phase_profile(phase_profile)
-
-        for _ in range(ticks):
-            step_report = eng.step()
-            metrics.record(step_report=step_report)
-
-            if phase_profile is not None:
-                if step_report.step_profile is None:
-                    raise ValueError("Expected step_profile when include_perf=True")
-                add_perf_to_profile(phase_profile, step_report)
-
-        return RunArtifacts(
-            engine_final=eng,
-            metrics=metrics,
-            seed=seed,
-            phase_profile=phase_profile,
-        )
-    
-
-
-#############################################################
-    def _continue_run(self, eng : Engine, metrics : SimulationMetrics, ticks : np.int64) -> RunArtifacts:
-        """Continue an existing run using a live engine and metrics buffer.
-
-        Args:
-            eng: Existing engine state to continue stepping.
-            metrics: Metrics object that should continue recording into the
-                same run history.
-            ticks: Additional number of ticks to execute.
-
-        Returns:
-            Run artifacts containing the updated engine and metrics objects.
-        """
-        phase_profile = PhaseProfile()
-        for _ in range(ticks):
-            step_report : StepReport = eng.step()
-            metrics.record(step_report = step_report)
-
-        return RunArtifacts(engine_final=eng, 
-                            metrics= metrics, 
-                            seed= eng.master_ss,
-                            phase_profile= phase_profile,
-                            
-                            )
-
-
 
 #############################################################
     def run_batch(self, 

@@ -10,3 +10,14 @@ The factory functions are the only place where objects are constructed.
 Composition layer
 
 """
+
+
+def engine_factory():
+    pass
+
+def metrics_factory():
+    pass
+
+def runner_factory():
+    pass
+
