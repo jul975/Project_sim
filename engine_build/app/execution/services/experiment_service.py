@@ -6,20 +6,13 @@ derive analytics products, and trigger optional visual outputs.
 
 from __future__ import annotations
 
-from engine_build.analytics.summaries.regime_summary import summarise_regime
-from engine_build.analytics.classification.regime_classification import classify_regime
-from engine_build.app.execution.presenters.experiment_presenters import present_experiment
+
 from engine_build.app.execution.workflows.compile_workflow import CompiledWorkflowPlan, compile_workflow_plans
 
 from engine_build.app.service_models.service_request_container import PresentationRequest, ProcessingRequest, RunnerRequest, ServiceRequest, ServiceRequestMeta
-from engine_build.app.execution.presenters.console import (
-    print_experiment_spec,
-    print_summarize_analytics,
-)
 
 
 
-from engine_build.analytics.pipelines.analyze_batch import analyze_batch, BatchAnalysis
 
 # NOTE: Service should own the workflow, not build requests. --- IGNORE ---
 # NOTE: Service should be changed to compute clean entry point for runner. 
@@ -27,7 +20,7 @@ from engine_build.analytics.pipelines.analyze_batch import analyze_batch, BatchA
 
 
 
-def experiment_service_call(experiment_request: ServiceRequest) -> int:
+def experiment_service_call(experiment_request: ServiceRequest) -> CompiledWorkflowPlan:
     """Run an experiment workflow from a normalized service request.
 
     Args:
@@ -55,12 +48,19 @@ def experiment_service_call(experiment_request: ServiceRequest) -> int:
     
     if experiment_request.service_request_meta.regime is None:
         raise ValueError("Experiment mode requires a regime.")
+    
 
+    return compile_workflow_plans(experiment_request)
+
+    
+
+
+
+"""
     # 2) Process service request into workflow plans.
     ################## SERVICE REQUEST Processing => COMPILE WORKFLOW PLANS
                      # => AFTER this point, Workflow Plans are source of truth for execution, processing and presentation.
  
-    experiment_plan: CompiledWorkflowPlan = compile_workflow_plans(experiment_request)
 
     # 3) Execute workflow plans.
     ################## Workflow orchestration
@@ -101,7 +101,7 @@ def experiment_service_call(experiment_request: ServiceRequest) -> int:
 
     return 0
 
-
+"""
 
 
 

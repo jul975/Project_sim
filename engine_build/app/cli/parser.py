@@ -1,3 +1,9 @@
+"""Define the command-line argument parser for execution entrypoints.
+
+This module owns the declarative CLI surface for commands, flags, and
+subcommands before arguments are normalized into ``ServiceRequest``
+objects. It should remain free of request execution and workflow logic.
+"""
 
 from __future__ import annotations
 

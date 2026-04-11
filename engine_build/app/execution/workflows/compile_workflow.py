@@ -1,3 +1,9 @@
+"""Compile execution-stage plans from normalized service requests.
+
+This module translates app-layer request models into workflow plans.
+It does not execute runners, analytics, or presentation side effects.
+"""
+
 from __future__ import annotations
 
 from engine_build.app.service_models.default import EXPERIMENT_DEFAULTS, DEFAULT_MASTER_SEED, DEFAULT_REGIME_CONFIG
