@@ -16,6 +16,7 @@ from .compiled import (
     PopulationParams,
     ReproductionParams,
     ResourceParams,
+    SpatialWeights,
     WorldParams,
 )
 from .spec import RegimeSpec
@@ -178,6 +179,7 @@ def compile_regime(regime_spec: RegimeSpec) -> CompiledRegime:
     landscape_params = _compile_landscape_system(regime_spec)
     population_params = _compile_population_system(regime_spec)
     world_params = _compile_world_system(regime_spec.world_size)
+    spatial_weights = SpatialWeights()
 
     return CompiledRegime(
         energy_params=energy_params,
@@ -186,6 +188,7 @@ def compile_regime(regime_spec: RegimeSpec) -> CompiledRegime:
         population_params=population_params,
         world_params=world_params,
         landscape_params=landscape_params,
+        spatial_weights=spatial_weights
     )
 
 

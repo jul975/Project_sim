@@ -9,9 +9,9 @@ from __future__ import annotations
 from engine_build.analytics.summaries.regime_summary import summarise_regime
 from engine_build.analytics.classification.regime_classification import classify_regime
 from engine_build.app.execution.presenters.experiment_presenters import present_experiment
-from engine_build.app.execution.workflows.compile_workflow import compile_workflow_plans
+from engine_build.app.execution.workflows.compile_workflow import CompiledWorkflowPlan, compile_workflow_plans
 
-from engine_build.app.service_models.service_request_container import ServiceRequest
+from engine_build.app.service_models.service_request_container import PresentationRequest, ProcessingRequest, RunnerRequest, ServiceRequest, ServiceRequestMeta
 from engine_build.app.execution.presenters.console import (
     print_experiment_spec,
     print_summarize_analytics,
@@ -48,10 +48,10 @@ def experiment_service_call(experiment_request: ServiceRequest) -> int:
     """
     
     # 1) unpack service request for easy access to all layers of the request
-    service_meta = experiment_request.service_request_meta
-    service_runner = experiment_request.runner_request
-    service_processing = experiment_request.processing_request
-    service_presentation = experiment_request.presentation_request
+    service_meta: ServiceRequestMeta = experiment_request.service_request_meta
+    service_runner: RunnerRequest = experiment_request.runner_request
+    service_processing: ProcessingRequest = experiment_request.processing_request
+    service_presentation: PresentationRequest = experiment_request.presentation_request
     
     if experiment_request.service_request_meta.regime is None:
         raise ValueError("Experiment mode requires a regime.")
@@ -60,7 +60,7 @@ def experiment_service_call(experiment_request: ServiceRequest) -> int:
     ################## SERVICE REQUEST Processing => COMPILE WORKFLOW PLANS
                      # => AFTER this point, Workflow Plans are source of truth for execution, processing and presentation.
  
-    # experiment_plan :  
+    experiment_plan: CompiledWorkflowPlan = compile_workflow_plans(experiment_request)
 
     # 3) Execute workflow plans.
     ################## Workflow orchestration

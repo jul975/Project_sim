@@ -3,28 +3,37 @@ import hashlib
 
 from numpy.random import SeedSequence
 
+from engine_build.app.execution.workflows.compile_workflow import EngineTemplate
 from engine_build.core.contracts.step_results import BiologyReport, InteractionReport, MovementReport
+from engine_build.runner.factories import EngineBuildMap
 
 from .snapshot.state_schema import get_state_bytes
 
 from .snapshot.snapshots import engine_to_snapshot, engine_from_snapshot
 
-from .domains.agent import Agent
-from .domains.world import World
+from .domains import Agent, World
 
+from .contracts.step_results import (
+    CommitReport, 
+    StepReport, 
+    WorldView, 
+    StepProfile , 
+    CommitProfile, 
+    AgentSetup)
 
+from engine_build.regimes.compiled import (
+    CompiledRegime, 
+    EnergyParams, 
+    ResourceParams, 
+    LandscapeParams, 
+    PopulationParams, 
+    WorldParams)
 
-
-
-
-
-
-from .contracts.step_results import CommitReport, StepReport, WorldView, StepProfile , CommitProfile, AgentSetup
-
-from engine_build.regimes.compiled import CompiledRegime
-from engine_build.regimes.compiled import EnergyParams, ResourceParams, LandscapeParams, PopulationParams, WorldParams
-
-from .transitions.transitions import TransitionContext, movement_phase, interaction_phase, biology_phase
+from .transitions.transitions import (
+    TransitionContext, 
+    movement_phase, 
+    interaction_phase, 
+    biology_phase)
 
 
 from typing import TYPE_CHECKING
@@ -38,26 +47,25 @@ if TYPE_CHECKING:
 
 class Engine:
     def __init__(self, 
-                 seed_seq : np.random.SeedSequence , 
-                 config : CompiledRegime, 
-                 perf_flag : bool = False , 
-                 world_frame_flag : bool = False,
-                 change_condition=False
+                 engine_build_map:EngineBuildMap
                  ) -> None:
 
 
         # 1) Setup concerns 
-        self.master_ss: SeedSequence = seed_seq
+        self.master_ss: SeedSequence = engine_build_map.run_seed
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
+
+        # temp value
+        engine_template: EngineTemplate = engine_build_map.engine_template
 
 
         # 2) Execution Mode concerns
-        self.perf_flag: bool = perf_flag
-        self.collect_world_view: bool = world_frame_flag
+        self.perf_flag: bool = engine_template.perf_flag
+        self.collect_world_view: bool = engine_template.world_frame_flag
         # + change_condition flag need to change
 
         # 3) Compiled model concerns
-        self.config : CompiledRegime = config
+        self.config : CompiledRegime = engine_template.regime_config
         self.energy_params : EnergyParams = self.config.energy_params          
         self.resource_params : ResourceParams = self.config.resource_params
         self.landscape_params : LandscapeParams = self.config.landscape_params
@@ -66,6 +74,8 @@ class Engine:
 
 
         # 4) run specific semantics
+        # temp change_condition statement
+        change_condition : bool = engine_template.change_condition
         self.reproduction_probability : float = self.config.reproduction_params.probability if not change_condition else self.config.reproduction_params.probability_change_condition
 
 
