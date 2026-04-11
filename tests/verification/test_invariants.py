@@ -2,9 +2,9 @@ import pytest
 
 from tests.helpers import advance_engine
 
-from engine_build.regimes.compiled import CompiledRegime
+from FestinaLente.regimes.compiled import CompiledRegime
 
-from engine_build.core.engine import Engine
+from FestinaLente.core.engine import Engine
 
 @pytest.mark.dev
 @pytest.mark.invariant

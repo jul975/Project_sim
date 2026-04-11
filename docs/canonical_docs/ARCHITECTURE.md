@@ -27,27 +27,27 @@ Execution lanes:
 - exploration
 ```
 
-The public entrypoint is `engine_build.main`.
+The public entrypoint is `FestinaLente.main`.
 
 Current command surface:
 
-- `python -m engine_build.main experiment ...`
-- `python -m engine_build.main verify ...`
-- `python -m engine_build.main validate ...`
-- `python -m engine_build.main dynamic ...`
-- `python -m engine_build.main menu`
+- `python -m FestinaLente.main experiment ...`
+- `python -m FestinaLente.main verify ...`
+- `python -m FestinaLente.main validate ...`
+- `python -m FestinaLente.main dynamic ...`
+- `python -m FestinaLente.main menu`
 
 Important nuance:
 
 - the parser subcommands are `experiment`, `verify`, `validate`, and `dynamic`
-- `menu` is a top-level shortcut handled directly in `engine_build.main` before `argparse` dispatch
+- `menu` is a top-level shortcut handled directly in `FestinaLente.main` before `argparse` dispatch
 - there is no live `fertility` request or fertility execution lane in the current CLI
 
 ## Runtime Core
 
 ### Regime compilation
 
-Configuration is authored in `engine_build/regimes/spec.py`, registered in `engine_build/regimes/registry.py`, and compiled in `engine_build/regimes/compiler.py`.
+Configuration is authored in `FestinaLente/regimes/spec.py`, registered in `FestinaLente/regimes/registry.py`, and compiled in `FestinaLente/regimes/compiler.py`.
 
 Authoritative path:
 
@@ -69,7 +69,7 @@ The named regime registry currently exposes:
 
 ### Engine
 
-`engine_build/core/engine.py` owns:
+`FestinaLente/core/engine.py` owns:
 
 - the run-level `SeedSequence` (`master_ss`)
 - one spawned world seed for `World`
@@ -93,7 +93,7 @@ Important current behavior:
 
 ### World
 
-`engine_build/core/world.py` implements a 2D toroidal grid with:
+`FestinaLente/core/world.py` implements a 2D toroidal grid with:
 
 - `fertility[y, x]`
 - `resources[y, x]`
@@ -120,7 +120,7 @@ Current limitation:
 
 ### Agent
 
-`engine_build/core/agent.py` keeps the runtime agent intentionally small.
+`FestinaLente/core/agent.py` keeps the runtime agent intentionally small.
 
 Each agent owns:
 
@@ -145,7 +145,7 @@ The engine separates **phase evaluation** from **structural state mutation** usi
 
 Each phase computes *what should happen* (e.g., which agents die, which reproduce) but does not immediately modify engine state. Results are accumulated in intermediate buckets, then applied atomically during commit.
 
-**TransitionContext** (`engine_build/core/transitions.py`) holds:
+**TransitionContext** (`FestinaLente/core/transitions.py`) holds:
 
 ```python
 occupancy: OccupancyIndex            # spatial index after movement
@@ -195,7 +195,7 @@ Each death bucket tracks agent IDs by cause:
 
 ### Runner and analytics
 
-`engine_build/runner/regime_runner.py` owns orchestration, not ecological logic.
+`FestinaLente/runner/regime_runner.py` owns orchestration, not ecological logic.
 
 Responsibilities:
 
@@ -271,8 +271,8 @@ The live code enforces:
 - fixed phase order
 - stable Python dictionary encounter order in the runtime loop
 - separate RNG streams for world, movement, reproduction, and initial energy
-- canonical state hashing through `engine_build/core/state_schema.py`
-- snapshot/restore continuation through `engine_build/core/snapshots.py`
+- canonical state hashing through `FestinaLente/core/state_schema.py`
+- snapshot/restore continuation through `FestinaLente/core/snapshots.py`
 
 Important nuance:
 
@@ -318,9 +318,9 @@ The typed execution layer currently centers on:
 - `ExecutionFeatures`
 - `ExecutionMode`
 
-`engine_build.main` and `engine_build/app/cli/menu.py` both ultimately build an `ExecutionRequest`.
+`FestinaLente.main` and `FestinaLente/app/cli/menu.py` both ultimately build an `ExecutionRequest`.
 
-`engine_build/app/cli/dispatch.py` routes that context to:
+`FestinaLente/app/cli/dispatch.py` routes that context to:
 
 - `run_experiment()`
 - `run_verification()`
@@ -341,8 +341,8 @@ As of April 3, 2026:
 - the 2D topology is live across engine state, hashing, and snapshots
 - the execution-context -> dispatch -> service structure is live
 - the parser subcommands are `experiment`, `verify`, `validate`, and `dynamic`
-- the top-level `menu` shortcut is also live through `engine_build.main`
-- under the project `.venv`, `python -m engine_build.main --help` succeeds and shows the expected parser surface
+- the top-level `menu` shortcut is also live through `FestinaLente.main`
+- under the project `.venv`, `python -m FestinaLente.main --help` succeeds and shows the expected parser surface
 
 ## Known Freeze-Relevant Limits
 

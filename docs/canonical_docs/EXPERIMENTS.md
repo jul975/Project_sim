@@ -16,7 +16,7 @@ Current project posture:
 The canonical experiment entrypoint is:
 
 ```bash
-python -m engine_build.main experiment --regime <name>
+python -m FestinaLente.main experiment --regime <name>
 ```
 
 Runtime path:
@@ -53,7 +53,7 @@ All flags are properly wired end-to-end through [ExecutionRequest](execution_mod
 
 ## 3. Defaults
 
-From [engine_build/app/execution_model/default.py](engine_build/app/execution_model/default.py):
+From [FestinaLente/app/execution_model/default.py](FestinaLente/app/execution_model/default.py):
 
 - `DEFAULT_MASTER_SEED = 20250302`
 - `EXPERIMENT_DEFAULTS = {"ticks": 1000, "runs": 10}`
@@ -95,7 +95,7 @@ The live regime registry is:
 
 ### Run-level fingerprint
 
-`engine_build/analytics/fingerprint.py::compute_fingerprint()` produces:
+`FestinaLente/analytics/fingerprint.py::compute_fingerprint()` produces:
 
 - `min_population`
 - `max_population`
@@ -182,10 +182,10 @@ This path is useful but still secondary to the main experiment and verification 
 The validation CLI is:
 
 ```bash
-python -m engine_build.main validate --suite <all|contracts|separation>
+python -m FestinaLente.main validate --suite <all|contracts|separation>
 ```
 
-`run_validation_mode()` resolves the requested suite through `engine_build/cli/spec.py`.
+`run_validation_mode()` resolves the requested suite through `FestinaLente/cli/spec.py`.
 
 There is also a small alias layer for older suite names:
 
@@ -201,7 +201,7 @@ There is also a small alias layer for older suite names:
 - `extinction`
 - `saturated`
 
-using the regime contracts in `engine_build/validation/contracts.py`.
+using the regime contracts in `FestinaLente/validation/contracts.py`.
 
 ### Separation validation
 
@@ -230,7 +230,7 @@ using `VALIDATION_DEFAULTS`.
 The verification CLI is:
 
 ```bash
-python -m engine_build.main verify --suite <all|determinism|invariants|rng|snapshots>
+python -m FestinaLente.main verify --suite <all|determinism|invariants|rng|snapshots>
 ```
 
 Verification currently covers:
@@ -252,24 +252,24 @@ Verification currently covers:
 Baseline experiment:
 
 ```bash
-python -m engine_build.main experiment --regime stable
+python -m FestinaLente.main experiment --regime stable
 ```
 
 Experiment with profiling:
 
 ```bash
-python -m engine_build.main experiment --regime abundant --perf-flag
+python -m FestinaLente.main experiment --regime abundant --perf-flag
 ```
 
 Experiment with world-frame sampling:
 
 ```bash
-python -m engine_build.main experiment --regime stable --world-frame-flag --plot-dev
+python -m FestinaLente.main experiment --regime stable --world-frame-flag --plot-dev
 ```
 
 Verification and validation:
 
 ```bash
-python -m engine_build.main verify --suite all
-python -m engine_build.main validate --suite all
+python -m FestinaLente.main verify --suite all
+python -m FestinaLente.main validate --suite all
 ```

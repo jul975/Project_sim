@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This document defines the tick order implemented by `engine_build/core/engine.py` on March 23, 2026.
+This document defines the tick order implemented by `FestinaLente/core/engine.py` on March 23, 2026.
 
 The current goals are:
 
@@ -29,7 +29,7 @@ The instrumented path only adds optional profiling and optional world-frame capt
 
 ### 1. Movement phase
 
-Source: `engine_build/core/transitions.py::movement_phase`
+Source: `FestinaLente/core/transitions.py::movement_phase`
 
 Runtime order:
 
@@ -61,7 +61,7 @@ Outputs:
 
 ### 2. Interaction phase
 
-Source: `engine_build/core/transitions.py::interaction_phase`
+Source: `FestinaLente/core/transitions.py::interaction_phase`
 
 For each occupied cell in encounter order:
 
@@ -84,7 +84,7 @@ Outputs:
 
 ### 3. Biology phase
 
-Source: `engine_build/core/transitions.py::biology_phase`
+Source: `FestinaLente/core/transitions.py::biology_phase`
 
 For each agent in `post_harvest_alive`:
 
@@ -107,7 +107,7 @@ Outputs:
 
 ### 4. Commit phase
 
-Source: `engine_build/core/engine.py::commit_phase`
+Source: `FestinaLente/core/engine.py::commit_phase`
 
 Commit order:
 

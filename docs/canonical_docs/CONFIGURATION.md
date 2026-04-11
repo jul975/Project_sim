@@ -13,11 +13,11 @@ RegimeSpec
 -> Engine / World / Agent / Runner
 ```
 
-Configuration lives in `engine_build/regimes/`. There is no active `core/config.py` runtime layer.
+Configuration lives in `FestinaLente/regimes/`. There is no active `core/config.py` runtime layer.
 
 ## Authoring Layer: `RegimeSpec`
 
-`engine_build/regimes/spec.py` defines the human-authored inputs.
+`FestinaLente/regimes/spec.py` defines the human-authored inputs.
 
 ```python
 RegimeSpec(
@@ -44,7 +44,7 @@ All of these dataclasses are currently frozen.
 
 ## Runtime Layer: `CompiledRegime`
 
-`engine_build/regimes/compiled.py` defines the compiled runtime shape:
+`FestinaLente/regimes/compiled.py` defines the compiled runtime shape:
 
 - `EnergyParams`
 - `ReproductionParams`
@@ -55,7 +55,7 @@ All of these dataclasses are currently frozen.
 
 ## Compilation Rules
 
-`engine_build/regimes/compiler.py` is the single place where the ratio math is compiled into runtime integers.
+`FestinaLente/regimes/compiler.py` is the single place where the ratio math is compiled into runtime integers.
 
 For anchors:
 
@@ -122,7 +122,7 @@ The live registry defines six regimes:
 
 Landscape generation currently uses only the correlation field directly.
 
-`engine_build/core/world.py` computes:
+`FestinaLente/core/world.py` computes:
 
 ```text
 raw_kernel = correlation * world_width
@@ -138,7 +138,7 @@ Current limitation:
 
 ## Runtime Defaults
 
-Shared defaults in `engine_build/execution/default.py` are:
+Shared defaults in `FestinaLente/execution/default.py` are:
 
 - `DEFAULT_MASTER_SEED = 20250302`
 - `EXPERIMENT_DEFAULTS = {"ticks": 1000, "runs": 10}`
@@ -151,10 +151,10 @@ That validation default changed from earlier March drafts. Any documentation sti
 Current main-path commands:
 
 ```bash
-python -m engine_build.main experiment --regime stable
-python -m engine_build.main experiment --regime stable --seed 42 --runs 5 --ticks 500
-python -m engine_build.main verify --suite determinism
-python -m engine_build.main validate --suite contracts
+python -m FestinaLente.main experiment --regime stable
+python -m FestinaLente.main experiment --regime stable --seed 42 --runs 5 --ticks 500
+python -m FestinaLente.main verify --suite determinism
+python -m FestinaLente.main validate --suite contracts
 ```
 
 Experiment request flags also include:
@@ -170,8 +170,8 @@ Experiment request flags also include:
 Canonical path from name to runtime config:
 
 ```python
-from engine_build.regimes.registry import get_regime_spec
-from engine_build.regimes.compiler import compile_regime
+from FestinaLente.regimes.registry import get_regime_spec
+from FestinaLente.regimes.compiler import compile_regime
 
 regime = compile_regime(get_regime_spec("stable"))
 ```

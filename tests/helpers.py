@@ -1,15 +1,15 @@
 # repeated runner logic
 
-from engine_build.runner.batch_runner import BatchRunner
-from engine_build.core.engine import Engine
-from engine_build.regimes.compiled import CompiledRegime
-from engine_build.regimes.registry import get_regime_spec
-from engine_build.regimes.compiler import compile_regime
-from engine_build.analytics.pipelines.analyze_batch import analyze_batch
-from engine_build.app.service_models.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
+from FestinaLente.runner.batch_runner import BatchRunner
+from FestinaLente.core.engine import Engine
+from FestinaLente.regimes.compiled import CompiledRegime
+from FestinaLente.regimes.registry import get_regime_spec
+from FestinaLente.regimes.compiler import compile_regime
+from FestinaLente.analytics.analyze_batch import analyze_batch
+from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from dataclasses import fields
 import numpy as np
-from engine_build.analytics.contracts.analysis_context import AnalysisContext
+from FestinaLente.analytics.contracts.analysis_context import AnalysisContext
 
 
 def run_single(seed: int, regime_config : CompiledRegime, ticks: int) :

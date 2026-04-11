@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-from engine_build.core.spatial.neighborhood import MoveCandidate
+from FestinaLente.core.spatial.neighborhood import MoveCandidate
 
-from engine_build.core.engine import Engine
-from engine_build.regimes.compiled import CompiledRegime
+from FestinaLente.core.engine import Engine
+from FestinaLente.regimes.compiled import CompiledRegime
 
 # 1 REAL RNG ISOLATION TEST
 

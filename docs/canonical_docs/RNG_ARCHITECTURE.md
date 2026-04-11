@@ -22,7 +22,7 @@ SeedSequence(batch_seed)
 spawn(n_runs) → [run_ss_0, run_ss_1, ..., run_ss_n]
 ```
 
-Each run receives an independent `SeedSequence`. This logic is in [engine_build/runner/seeds.py](engine_build/runner/seeds.py).
+Each run receives an independent `SeedSequence`. This logic is in [FestinaLente/runner/seeds.py](FestinaLente/runner/seeds.py).
 
 ### Run Level: Master SeedSequence
 
@@ -77,7 +77,7 @@ repro_rng  = Generator(PCG64(identity_words + (REPRODUCTION,)))
 energy_rng = Generator(PCG64(identity_words + (ENERGY,)))
 ```
 
-The domain tags are constants defined in [engine_build/core/domains/agent.py](engine_build/core/domains/agent.py):
+The domain tags are constants defined in [FestinaLente/core/domains/agent.py](FestinaLente/core/domains/agent.py):
 - `MOVEMENT = 1`
 - `REPRODUCTION = 2`
 - `ENERGY = 3`
@@ -140,7 +140,7 @@ Snapshots preserve all RNG state necessary for perfect continuation. Stored RNG 
 - `world.rng_world.bit_generator.state` (PCG64 state dict)
 - **For each live agent**: `move_rng`, `repro_rng`, `energy_rng` bit-generator states
 
-Restoration via [engine_build/core/utils/rng_utils.py::reconstruct_rng](engine_build/core/utils/rng_utils.py) rebuilds:
+Restoration via [FestinaLente/core/utils/rng_utils.py::reconstruct_rng](FestinaLente/core/utils/rng_utils.py) rebuilds:
 
 ```python
 # Schematic restore

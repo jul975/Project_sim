@@ -27,7 +27,7 @@ Engine equality is hash-based:
 sha256(get_state_bytes(engine)) → canonical_hash
 ```
 
-`Engine.__eq__()` delegates to `get_state_hash()`, defined in [engine_build/core/snapshot/state_schema.py](engine_build/core/snapshot/state_schema.py).
+`Engine.__eq__()` delegates to `get_state_hash()`, defined in [FestinaLente/core/snapshot/state_schema.py](FestinaLente/core/snapshot/state_schema.py).
 
 The canonical schema is `SCHEMA_VERSION = 2`. Serialized state includes:
 
@@ -74,7 +74,7 @@ For each live agent:
 movement_phase() → interaction_phase() → biology_phase() → commit_phase() → tick += 1
 ```
 
-No reordering, no conditional skipping. This is enforced in [engine_build/core/engine.py](engine_build/core/engine.py).
+No reordering, no conditional skipping. This is enforced in [FestinaLente/core/engine.py](FestinaLente/core/engine.py).
 
 ### Deterministic Traversal Order
 
@@ -91,7 +91,7 @@ The agent dict (`engine.agents`) maintains:
 #### Movement Phase: Occupancy Index
 
 ```python
-# engine_build/core/spatial/occupancy_index.py
+# FestinaLente/core/spatial/occupancy_index.py
 
 @classmethod
 def build_from_agents(cls, agents: dict[int, Agent]):
@@ -166,7 +166,7 @@ Result: **Continuation is byte-identical**. Resumed trajectory matches original.
 Current verification CLI:
 
 ```bash
-python -m engine_build.main verify --suite <all|determinism|invariants|rng|snapshots>
+python -m FestinaLente.main verify --suite <all|determinism|invariants|rng|snapshots>
 ```
 
 Primary checked-in tests:

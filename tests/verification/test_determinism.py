@@ -1,7 +1,7 @@
 import pytest
 
 from tests.helpers import advance_engine
-from engine_build.core.engine import Engine
+from FestinaLente.core.engine import Engine
 
 
 @pytest.mark.dev
