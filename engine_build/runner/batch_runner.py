@@ -6,14 +6,14 @@ results into batch containers.
 """
 
 
-import numpy as np
 
 
 import time
 
-from engine_build.runner.factories import SingleRunPlans, build_single_run_plans
-from engine_build.runner.results import PhaseProfile, RunArtifacts, BatchRunResults
+from engine_build.runner.factories import EngineBuildMap, SingleRunPlans, build_single_run_plans, build_single_runner
+from engine_build.runner.results import BatchRunResults
 from engine_build.app.execution.workflows.compile_workflow import BatchPlan, EngineTemplate
+from engine_build.runner.single_runner import SingleRunner
 
 
 class BatchRunner:
@@ -62,9 +62,21 @@ class BatchRunner:
 
         
     def _run_batch_quick(self, ticks : int) -> BatchRunResults:
-        pass
 
+        batch_results: dict = {}
+        
+        plans_to_execute: dict[int, EngineBuildMap] = self.batch_run_plans.single_run_plans
 
+        for run_index, runner_plan in plans_to_execute.items():
+            single_runner: SingleRunner = build_single_runner(runner_plan)
+            batch_results[run_index] = single_runner.run(ticks)
+
+        return BatchRunResults(
+            runs=batch_results, 
+            batch_id= self.batch_id, 
+            regime_config= self.engine_template.regime_config, 
+            ticks= ticks, 
+            batch_duration= None)
 
 
 
@@ -80,35 +92,29 @@ class BatchRunner:
             batch duration.
         """
 
+        
+
+        batch_results: dict = {}
+
         batch_start_time: float = time.perf_counter()
 
         # NOTE: tmp entry point connection help. 
 
+        plans_to_execute: dict[int, EngineBuildMap] = self.batch_run_plans.single_run_plans
 
-        
-
-
-        batch_data: BatchRunResults = BatchRunResults(runs={}, batch_id= self.batch_id, regime_config= self.regime_config, ticks= ticks, batch_duration= None)
-
-        for i, seed in enumerate(self.run_seeds):
-
-            run_results : RunArtifacts = self.run_single(seed, ticks)
-            batch_data.runs[i] = run_results  
-
-            
-
-
-            
+        for run_index, runner_plan in plans_to_execute.items():
+            single_runner: SingleRunner = build_single_runner(runner_plan)
+            batch_results[run_index] = single_runner.run(ticks)
 
         batch_end_time: float = time.perf_counter()
         batch_duration: float = batch_end_time - batch_start_time
-        batch_data.batch_duration = batch_duration
-
-        batch_data.max_agent_count = batch_data.runs[0].engine_final.max_agent_count
-
-
-
-        return batch_data
+        
+        return BatchRunResults(
+            runs=batch_results, 
+            batch_id= self.batch_id, 
+            regime_config= self.engine_template.regime_config, 
+            ticks= ticks, 
+            batch_duration= batch_duration)
     
 
     def run_batch(self, ticks) -> BatchRunResults:
