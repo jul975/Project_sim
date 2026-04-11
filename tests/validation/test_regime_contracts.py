@@ -1,8 +1,8 @@
 import pytest
 
-from engine_build.validation.helpers import run_validation_case
-from engine_build.validation.contracts import REGIME_CONTRACTS
-from engine_build.validation.assertions import assert_finite_summary, assert_contract
+from FestinaLente.validation.helpers import run_validation_case
+from FestinaLente.validation.contracts import REGIME_CONTRACTS
+from FestinaLente.validation.assertions import assert_finite_summary, assert_contract
 
 
 @pytest.mark.regime

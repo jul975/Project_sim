@@ -2,7 +2,7 @@
 
 ## Status
 
-This document describes the current `Agent` implementation in [engine_build/core/domains/agent.py](engine_build/core/domains/agent.py) as of April 8, 2026.
+This document describes the current `Agent` implementation in [FestinaLente/core/domains/agent.py](FestinaLente/core/domains/agent.py) as of April 8, 2026.
 
 The agent model is deliberately compact, supporting:
 
@@ -98,7 +98,7 @@ repro_rng  = Generator(PCG64(identity_words + (REPRODUCTION,)))    # domain_tag 
 energy_rng = Generator(PCG64(identity_words + (ENERGY,)))          # domain_tag = 3
 ```
 
-Domain tags are constants defined in [engine_build/core/domains/agent.py](engine_build/core/domains/agent.py). This architecture is explained in detail in [docs/canonical_docs/RNG_ARCHITECTURE.md](RNG_ARCHITECTURE.md).
+Domain tags are constants defined in [FestinaLente/core/domains/agent.py](FestinaLente/core/domains/agent.py). This architecture is explained in detail in [docs/canonical_docs/RNG_ARCHITECTURE.md](RNG_ARCHITECTURE.md).
 
 This is one of the core determinism mechanisms in the project: identity uniquely determines RNG streams.
 

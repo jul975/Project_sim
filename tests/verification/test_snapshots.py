@@ -31,7 +31,7 @@ That is what I would call the “deep snapshot suite.”
 
 import pytest
 
-from engine_build.core.engine import Engine
+from FestinaLente.core.engine import Engine
 from tests.helpers import advance_engine
 
 

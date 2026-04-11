@@ -56,10 +56,10 @@ The current engine is stable enough to treat as the current Stage III freeze bas
 
 The live user-facing entrypoints are:
 
-- `python -m engine_build.main experiment ...`
-- `python -m engine_build.main verify ...`
-- `python -m engine_build.main validate ...`
-- `python -m engine_build.main menu`
+- `python -m FestinaLente.main experiment ...`
+- `python -m FestinaLente.main verify ...`
+- `python -m FestinaLente.main validate ...`
+- `python -m FestinaLente.main menu`
 
 The CLI is intentionally small, but it is coherent enough to document and freeze as a Stage III baseline.
 

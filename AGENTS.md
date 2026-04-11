@@ -105,7 +105,7 @@ Regression: [tests/verification/test_snapshots.py](tests/verification/test_snaps
 - Different hashes under same seed = determinism broken
 - Hash comparison is the primary determinism regression gate
 
-See: [engine_build/core/snapshot/state_schema.py](engine_build/core/snapshot/state_schema.py) (SCHEMA_VERSION = 2)
+See: [FestinaLente/core/snapshot/state_schema.py](FestinaLente/core/snapshot/state_schema.py) (SCHEMA_VERSION = 2)
 
 ### If You Touch These, Run Tests
 
@@ -131,13 +131,13 @@ See: [engine_build/core/snapshot/state_schema.py](engine_build/core/snapshot/sta
 
 **Then inspect:**
 
-- [engine_build/main.py](engine_build/main.py) — CLI entry point
-- [engine_build/core/engine.py](engine_build/core/engine.py) — step orchestration
-- [engine_build/core/domains/agent.py](engine_build/core/domains/agent.py) — agent identity and RNG setup
-- [engine_build/core/transitions/transitions.py](engine_build/core/transitions/transitions.py) — 4-phase cycle
-- [engine_build/regimes/compiler.py](engine_build/regimes/compiler.py) — ecology math authority
-- [engine_build/runner/batch_runner.py](engine_build/runner/batch_runner.py) — orchestration only
-- [engine_build/analytics/pipelines/analyze_batch.py](engine_build/analytics/pipelines/analyze_batch.py) — post-run analytics
+- [FestinaLente/main.py](FestinaLente/main.py) — CLI entry point
+- [FestinaLente/core/engine.py](FestinaLente/core/engine.py) — step orchestration
+- [FestinaLente/core/domains/agent.py](FestinaLente/core/domains/agent.py) — agent identity and RNG setup
+- [FestinaLente/core/transitions/transitions.py](FestinaLente/core/transitions/transitions.py) — 4-phase cycle
+- [FestinaLente/regimes/compiler.py](FestinaLente/regimes/compiler.py) — ecology math authority
+- [FestinaLente/runner/batch_runner.py](FestinaLente/runner/batch_runner.py) — orchestration only
+- [FestinaLente/analytics/pipelines/analyze_batch.py](FestinaLente/analytics/pipelines/analyze_batch.py) — post-run analytics
 
 **Before editing behavior:**
 
@@ -147,7 +147,7 @@ See: [engine_build/core/snapshot/state_schema.py](engine_build/core/snapshot/sta
 **Code organization:**
 
 ```
-engine_build/
+FestinaLente/
 ├── core/
 │   ├── engine.py              [Step orchestration]
 │   ├── domains/               [Agent, World]
@@ -188,28 +188,28 @@ python -m pip install -r requirements.txt
 
 ```bash
 # Baseline
-python -m engine_build.main experiment --regime stable
+python -m FestinaLente.main experiment --regime stable
 
 # Custom parameters
-python -m engine_build.main experiment --regime stable --runs 5 --ticks 200 --seed 42
+python -m FestinaLente.main experiment --regime stable --runs 5 --ticks 200 --seed 42
 
 # With options
-python -m engine_build.main experiment --regime abundant --runs 10 --ticks 1000 --tail-fraction 0.1 --perf-flag
+python -m FestinaLente.main experiment --regime abundant --runs 10 --ticks 1000 --tail-fraction 0.1 --perf-flag
 
 # Interactive menu
-python -m engine_build.main menu
+python -m FestinaLente.main menu
 ```
 
 **Testing:**
 
 ```bash
 # Verification (determinism, invariants, snapshots, RNG isolation)
-python -m engine_build.main verify --suite all
+python -m FestinaLente.main verify --suite all
 # or
 pytest tests/verification
 
 # Validation (regime contracts, separation)
-python -m engine_build.main validate --suite all
+python -m FestinaLente.main validate --suite all
 # or
 pytest tests/validation
 
@@ -224,10 +224,10 @@ pytest tests/verification/test_invariants.py
 
 ```bash
 # Run one experiment and profile
-python -m engine_build.main experiment --regime stable --runs 1 --ticks 100 --perf-flag
+python -m FestinaLente.main experiment --regime stable --runs 1 --ticks 100 --perf-flag
 
 # Run with world-frame capture for debug plots
-python -m engine_build.main experiment --regime stable --runs 2 --ticks 200 --world-frame-flag --plot-dev
+python -m FestinaLente.main experiment --regime stable --runs 2 --ticks 200 --world-frame-flag --plot-dev
 ```
 
 ## Test and Validation Policy
@@ -247,7 +247,7 @@ For any non-trivial code change:
 | Regime params / thresholds / rules | `pytest tests/validation/test_regime_contracts.py` |
 | Agent identity / birth / reproduction | `pytest tests/verification/test_determinism.py` |
 | Spatial / occupancy / harvest mechanics | `pytest tests/verification/test_invariants.py` |
-| CLI / outputs / modes | Run full integration: `python -m engine_build.main experiment --regime stable --runs 2 --ticks 100` |
+| CLI / outputs / modes | Run full integration: `python -m FestinaLente.main experiment --regime stable --runs 2 --ticks 100` |
 
 **Failure response (mandatory):**
 

@@ -108,10 +108,10 @@ As of March 23, 2026, the repository is at package version `0.3.0a0` and represe
 ### Command Surface
 
 ```bash
-python -m engine_build.main experiment --regime <name> [--runs N] [--ticks T] [--seed S] [--plot] [--tail-fraction F]
-python -m engine_build.main verify --suite <all|determinism|invariants|rng|snapshots>
-python -m engine_build.main validate --suite <all|contracts|separation>
-python -m engine_build.main menu
+python -m FestinaLente.main experiment --regime <name> [--runs N] [--ticks T] [--seed S] [--plot] [--tail-fraction F]
+python -m FestinaLente.main verify --suite <all|determinism|invariants|rng|snapshots>
+python -m FestinaLente.main validate --suite <all|contracts|separation>
+python -m FestinaLente.main menu
 ```
 
 ### Named Regimes
@@ -149,35 +149,35 @@ Python >= 3.11 required ([from pyproject.toml](pyproject.toml)).
 
 **Baseline stable regime:**
 ```bash
-python -m engine_build.main experiment --regime stable
+python -m FestinaLente.main experiment --regime stable
 ```
 
 **Custom parameters:**
 ```bash
-python -m engine_build.main experiment --regime abundant --runs 5 --ticks 500 --seed 42
+python -m FestinaLente.main experiment --regime abundant --runs 5 --ticks 500 --seed 42
 ```
 
 **With analysis tuning:**
 ```bash
-python -m engine_build.main experiment --regime collapse --runs 10 --ticks 2000 --tail-fraction 0.1
+python -m FestinaLente.main experiment --regime collapse --runs 10 --ticks 2000 --tail-fraction 0.1
 ```
 
 **With performance profiling:**
 ```bash
-python -m engine_build.main experiment --regime saturated --perf-flag
+python -m FestinaLente.main experiment --regime saturated --perf-flag
 ```
 
 **Interactive menu:**
 ```bash
-python -m engine_build.main menu
+python -m FestinaLente.main menu
 ```
 
 ### Verification & Validation
 
 ```bash
 # Via CLI (routes to pytest)
-python -m engine_build.main verify --suite all
-python -m engine_build.main validate --suite all
+python -m FestinaLente.main verify --suite all
+python -m FestinaLente.main validate --suite all
 
 # Direct pytest
 python -m pytest tests/verification
@@ -198,10 +198,10 @@ python -m pytest tests/validation
 - [ROADMAP.md](docs/Project_Status/ROADMAP.md) — next priorities
 
 **Code organization:**
-- `engine_build/core/` — engine, world, agent state
-- `engine_build/regimes/` — configuration compilation
-- `engine_build/runner/` — batch orchestration
-- `engine_build/analytics/` — metrics, fingerprints, classification
+- `FestinaLente/core/` — engine, world, agent state
+- `FestinaLente/regimes/` — configuration compilation
+- `FestinaLente/runner/` — batch orchestration
+- `FestinaLente/analytics/` — metrics, fingerprints, classification
 - `tests/verification/` — determinism, invariants, snapshots, RNG isolation
 - `tests/validation/` — regime contracts and cross-regime checks
 

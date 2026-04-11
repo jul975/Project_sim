@@ -19,7 +19,7 @@ During the 2D world / tighter energy-coupling transition, long-horizon `abundant
 Documented reference benchmark from the refactor work:
 
 ```text
-python -m engine_build.main experiment --regime abundant --runs 1 --ticks 5000
+python -m FestinaLente.main experiment --regime abundant --runs 1 --ticks 5000
 ```
 
 Legacy reference result:

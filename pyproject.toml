@@ -46,9 +46,9 @@ Repository = "https://github.com/jul975/FestinaLente"
 Issues = "https://github.com/jul975/FestinaLente/issues"
 
 [project.scripts]
-ecosim = "engine_build.main:main"
+ecosim = "FestinaLente.main:main"
 
 [tool.setuptools.packages.find]
-include = ["engine_build*"]
+include = ["FestinaLente*"]
 exclude = ["tests*"]
 namespaces = false

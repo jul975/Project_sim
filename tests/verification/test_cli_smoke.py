@@ -3,19 +3,19 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from engine_build.app.cli.parser import build_parser
-from engine_build.app.cli.request_builder import (
+from FestinaLente.app.cli.parser import build_parser
+from FestinaLente.app.cli.request_builder import (
     build_experiment_request,
     build_verification_request,
     build_validation_request,
 )
-from engine_build.app.cli.menu import run_menu
-from engine_build.app.service_models.service_request_container import (
+from FestinaLente.app.cli.menu import run_menu
+from FestinaLente.app.service_models.service_request_container import (
     ServiceRequest
 )
-from engine_build.app.service_models.modes import ExecutionMode
+from FestinaLente.app.service_models.modes import ExecutionMode
 
-from engine_build.app.service_models.suite_registry import (
+from FestinaLente.app.service_models.suite_registry import (
     REGIME_OPTIONS,
     VERIFICATION_SUITES,
     VALIDATION_SUITES,
@@ -187,7 +187,7 @@ def test_cli_smoke_validate_suite_choices_match_spec():
 
 def test_cli_smoke_help_runs():
     result = subprocess.run(
-        [sys.executable, "-m", "engine_build.main", "--help"],
+        [sys.executable, "-m", "FestinaLente.main", "--help"],
         capture_output=True,
         text=True,
     )
@@ -200,7 +200,7 @@ def test_cli_smoke_help_runs():
 
 def test_cli_smoke_verify_determinism_runs():
     result = subprocess.run(
-        [sys.executable, "-m", "engine_build.main", "verify", "--suite", "determinism"],
+        [sys.executable, "-m", "FestinaLente.main", "verify", "--suite", "determinism"],
         capture_output=True,
         text=True,
     )
