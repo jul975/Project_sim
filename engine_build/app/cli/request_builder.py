@@ -62,7 +62,7 @@ def _build_experiment_features(
 ) -> ExecutionFeatures:
     """Build the execution features for an experiment request."""
     return ExecutionFeatures(
-        plot=plot,
+        plotting=plot,
         plot_dev=plot_dev,
         perf_profiling=profiling,
         capture_world_frames=capture_world_frames,
@@ -84,7 +84,7 @@ def _build_service_request_meta(
         mode=mode,
         regime=regime,
         suite=suite,
-        features=features,
+        execution_features=features,
     )
 
 
@@ -109,7 +109,7 @@ def build_experiment_request(
     change_conditions: bool = False
 ) -> ServiceRequest:
     """Build a complete service request for an experiment execution."""
-    meta = _build_service_request_meta(
+    meta: ServiceRequestMeta = _build_service_request_meta(
         mode=ExecutionMode.EXPLORATION,
         regime=regime,
         features=_build_experiment_features(
@@ -118,7 +118,7 @@ def build_experiment_request(
             profiling=profiling,
             capture_world_frames=capture_world_frames,
             animate=animate,
-            change_conditions=change_conditions
+            change_condition=change_conditions
         ),
     )
     runner_req = _build_runner_request(seed=seed, runs=runs, ticks=ticks)
@@ -126,10 +126,11 @@ def build_experiment_request(
     presentation_req = _build_presentation_request()
 
     return ServiceRequest(
-        **meta.__dict__,
-        **runner_req.__dict__,
-        **processing_req.__dict__,
-        **presentation_req.__dict__,
+        service_request_meta=meta, 
+        runner_request=runner_req, 
+        processing_request=processing_req,
+        presentation_request=presentation_req
+        
     )
 
 

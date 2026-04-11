@@ -8,7 +8,8 @@ from engine_build.analytics.observation.simulation_metrics import SimulationMetr
 from engine_build.regimes.compiled import CompiledRegime
 from engine_build.regimes.compiler import compile_regime
 from engine_build.regimes.registry import get_regime_spec
-from engine_build.runner.batch_runner import RunArtifacts, BatchRunner
+from engine_build.runner.batch_runner import BatchRunner
+from engine_build.runner.results import RunArtifacts
 
 """
 Mesa-style discrete-space animation for the ecosystem ABM.

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from numpy.random import SeedSequence
-
 from engine_build.app.service_models.default import EXPERIMENT_DEFAULTS, DEFAULT_MASTER_SEED, DEFAULT_REGIME_CONFIG
+from engine_build.app.service_models.features import ExecutionFeatures
 from engine_build.app.service_models.service_request_container import RunnerRequest, ServiceRequest, ServiceRequestMeta
 
 from engine_build.regimes.compiler import compile_regime
@@ -10,6 +9,7 @@ from engine_build.regimes.registry import get_regime_spec
 
 from dataclasses import dataclass
 from engine_build.regimes.compiled import CompiledRegime
+from engine_build.regimes.spec import RegimeSpec
 
 
 
@@ -38,13 +38,13 @@ class BatchPlan:
     Attributes: 
         batch_seed: master seed
         n_runs: number of runs
-        ticks: number of ticks
         engine_template: 
         '''
+    engine_template: EngineTemplate
+
     batch_id: int = DEFAULT_MASTER_SEED
     n_runs: int = 10
-    ticks: int = 1000
-    engine_template: EngineTemplate
+    ticks : int = 1000
 
 
 @dataclass
@@ -65,18 +65,18 @@ class CompiledWorkflowPlan:
 
 
 
-def _get_engine_template(runner_request : RunnerRequest, service_request_meta : ServiceRequestMeta) -> EngineTemplate: 
+def _get_engine_template(service_request_meta : ServiceRequestMeta) -> EngineTemplate: 
 
-    regime_spec = get_regime_spec(service_request_meta.regime)
-    regime_config = compile_regime(regime_spec)
+    regime_spec: RegimeSpec = get_regime_spec(service_request_meta.regime)
+    regime_config: CompiledRegime = compile_regime(regime_spec)
 
 
 
-    execution_features = service_request_meta.execution_features
+    execution_features: ExecutionFeatures = service_request_meta.execution_features
 
-    perf_flag = execution_features.perf_profiling
-    world_frame = execution_features.capture_world_frames
-    change_condition = execution_features.change_condition
+    perf_flag: bool = execution_features.perf_profiling
+    world_frame: bool = execution_features.capture_world_frames
+    change_condition: bool = execution_features.change_condition
 
 
 
@@ -92,19 +92,19 @@ def _get_engine_template(runner_request : RunnerRequest, service_request_meta : 
 
 
 
-def _get_runner_plan(workflow_request: ServiceRequest):
+def _get_runner_plan(workflow_request: ServiceRequest) -> BatchPlan:
     """ => single source of truth for runner"""
-    runner_request = workflow_request.runner_request
-    meta_request = workflow_request.service_request_meta
-    engine_template=_get_engine_template(runner_request=runner_request, service_request_meta=meta_request)
+    runner_request: RunnerRequest = workflow_request.runner_request
+    meta_request: ServiceRequestMeta = workflow_request.service_request_meta
+    engine_template: EngineTemplate=_get_engine_template( service_request_meta=meta_request)
     
-    ticks = runner_request.ticks if runner_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
-    runs = runner_request.runs if runner_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
+    ticks: int = runner_request.ticks if runner_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
+    runs: int = runner_request.runs if runner_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
 
     return BatchPlan(
-        batch_seed = runner_request.seed,
+        batch_id=runner_request.seed,
         n_runs = runs,
-        ticks = ticks,
+        ticks=ticks,
         engine_template=engine_template
         )
 
@@ -124,9 +124,9 @@ def compile_workflow_plans(workflow_request: ServiceRequest) -> CompiledWorkflow
 
 # def sep function for building and retuning batch 
 
-    runner_plan  = _get_runner_plan(workflow_request)
-    processing_plan = _get_processing_plan(workflow_request)
-    presentation_plan = _get_presentation_plan(workflow_request)
+    runner_plan: BatchPlan   = _get_runner_plan(workflow_request)
+    processing_plan: ProcessingPlan = _get_processing_plan(workflow_request)
+    presentation_plan: PresentationPlan = _get_presentation_plan(workflow_request)
 
     return CompiledWorkflowPlan(
         running_plan=runner_plan,

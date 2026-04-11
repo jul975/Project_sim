@@ -16,9 +16,15 @@ from dataclasses import dataclass
 from numpy.random import SeedSequence
 
 from engine_build.app.execution.workflows.compile_workflow import EngineTemplate
-from engine_build.core.engine import Engine
 from engine_build.runner.seeds import generate_run_sequences
-from engine_build.runner.single_runner import SingleRunner
+
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..core.engine import Engine
+    from .single_runner import SingleRunner
+
 
 
 @dataclass(frozen=True)
@@ -44,12 +50,12 @@ class SingleRunPlans:
     single_run_plans: dict[int, EngineBuildMap]
 
 
-def build_engine(engine_build_map : EngineBuildMap) -> Engine:
+def build_engine(engine_build_map : EngineBuildMap) -> "Engine":
     ''' gets EngineBuildMap Object => single-universal source of truth for engine setup'''
     return Engine(engine_build_map=engine_build_map)
     
 
-def build_single_runner(engine_build_map : EngineBuildMap) -> SingleRunner:
+def build_single_runner(engine_build_map : EngineBuildMap) -> "SingleRunner":
     """ gets EngineBuildMap obj and return ready to run single runner instance from engine_build_map"""
     return SingleRunner(engine_build_map=engine_build_map)
 
