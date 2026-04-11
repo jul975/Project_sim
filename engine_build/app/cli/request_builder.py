@@ -1,7 +1,8 @@
-"""Build normalized execution requests from CLI or menu inputs.
+"""Normalize CLI and menu inputs into execution request objects.
 
-This module centralizes app-layer request construction so every entry point
-produces the same immutable ``ServiceRequest`` shape before dispatch.
+This module owns construction of app-layer ``ServiceRequest`` objects so all
+entrypoints share one normalized request shape before dispatch. It should
+remain free of mode routing and workflow execution logic.
 """
 
 from __future__ import annotations

@@ -1,8 +1,8 @@
-"""Interactive menu helpers for building execution requests.
+"""Build execution requests through an interactive console menu.
 
-This module gathers console input, prints confirmation summaries, and returns
-normalized ``ServiceRequest`` objects through the shared request-builder
-layer.
+This module owns menu-driven input collection, confirmation summaries, and
+handoff into the shared request-builder layer. It should remain free of
+workflow orchestration and direct execution logic.
 """
 
 from __future__ import annotations
@@ -293,8 +293,9 @@ def run_menu() -> ServiceRequest | None:
     """
     print("Welcome to the Engine Build CLI!")
     print("Please select an execution mode:")
-    mode = _choose_from_list("Execution mode", ["Experiment", "Exploration", "Verification", "Validation", "Exit"])
-
+    mode: str = _choose_from_list("Execution mode", ["Experiment", "Exploration", "Verification", "Validation", "Exit"])
+    request: ServiceRequest
+    
     if mode == "Experiment":
         request = _build_experiment_request_from_menu()
         return request
