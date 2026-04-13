@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from FestinaLente.analytics.contracts.batch_analysis import BatchAnalysis
-from FestinaLente.analytics.derive.batch.aggregate_fingerprint import AggregatedFingerprint
+from FestinaLente.analytics.processing.batch.aggregate_fingerprint import AggregatedFingerprint
 
 @dataclass(frozen=True)
 class RegimeSummary:

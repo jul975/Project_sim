@@ -5,15 +5,19 @@ seeded engines, stepping them for a fixed number of ticks, and packaging the
 results into batch containers.
 """
 
+from __future__ import annotations
 
 
 
 import time
 
 from FestinaLente.runner.factories import EngineBuildMap, SingleRunPlans, build_single_run_plans, build_single_runner
-from FestinaLente.runner.results import BatchRunResults
 from FestinaLente.app.execution.workflows.compile_workflow import BatchPlan, EngineTemplate
 from FestinaLente.runner.single_runner import SingleRunner
+
+
+
+from FestinaLente.runner.results import BatchRunResults
 
 
 class BatchRunner:
@@ -119,8 +123,8 @@ class BatchRunner:
 
     def run_batch(self, ticks) -> BatchRunResults:
         if self.perf_profiling:
-            return self._run_batch_perf_profiling(self, ticks)
-        return self._run_batch_quick(self, ticks)
+            return self._run_batch_perf_profiling(ticks)
+        return self._run_batch_quick(ticks)
 
 
 

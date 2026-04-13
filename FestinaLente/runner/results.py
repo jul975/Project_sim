@@ -118,4 +118,3 @@ class BatchRunResults:
     ticks : np.int64 | None = None
     batch_duration : float | None = None
     max_agent_count : int | None = None
-

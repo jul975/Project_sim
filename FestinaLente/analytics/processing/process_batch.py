@@ -8,18 +8,19 @@ classify_regime(...)
 """
 from dataclasses import dataclass
 
-from FestinaLente.analytics.derive.batch.batch_containers import AggregatedFingerprint, BatchPhaseProfile, BatchWorldFrameSummary
-from FestinaLente.analytics.derive.process_run import ProcessedRun, process_run
+from FestinaLente.analytics.processing.processing_containers.batch_containers import AggregatedFingerprint, BatchPhaseProfile, BatchWorldFrameSummary
+from FestinaLente.analytics.processing.process_run import ProcessedRun, process_run
+
 from FestinaLente.runner.results import RunArtifacts
-from contracts.metadata import BatchMetadata, build_batch_metadata
-from contracts.batch_analysis import BatchAnalysis
-from app.execution.workflows.compile_workflow import ProcessingPlan
+from FestinaLente.analytics.contracts.metadata import BatchMetadata, build_batch_metadata
+from FestinaLente.analytics.contracts.batch_analysis import BatchAnalysis
+from FestinaLente.app.execution.workflows.compile_workflow import ProcessingPlan
 
-from derive.batch.aggregate_fingerprint import get_aggregate_fingerprints
-from derive.batch.aggregate_performance import aggregate_phase_profile
-from derive.batch.aggregate_world_frames import analyze_batch_world_frames
+from FestinaLente.analytics.processing.batch.aggregate_fingerprint import get_aggregate_fingerprints
+from FestinaLente.analytics.processing.batch.aggregate_performance import aggregate_phase_profile
+from FestinaLente.analytics.processing.batch.aggregate_world_frames import analyze_batch_world_frames
 
-from runner.batch_runner import BatchRunResults
+from FestinaLente.runner.batch_runner import BatchRunResults
 
 
 ###############

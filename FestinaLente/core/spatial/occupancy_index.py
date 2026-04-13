@@ -3,11 +3,8 @@ from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 
-
 if TYPE_CHECKING:
     from ..domains.agent import Agent
-
-
 
 @dataclass
 class Position:

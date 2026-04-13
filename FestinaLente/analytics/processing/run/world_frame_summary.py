@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from FestinaLente.analytics.derive.run.run_container import RunFrames, SingleRunWorldFrameSummary
+from FestinaLente.analytics.processing.processing_containers.run_container import RunFrames, SingleRunWorldFrameSummary
 
 
 

@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 
-from FestinaLente.analytics.contracts.analysis_context import AnalysisContext
+from FestinaLente.app.execution.workflows.compile_workflow import ProcessingPlan
 from FestinaLente.runner.results import BatchRunResults
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ class BatchMetadata:
 
 def build_batch_metadata(
     batch_results: BatchRunResults,
-    request: AnalysisRequest,
+    request: ProcessingPlan,
 ) -> BatchMetadata:
     if batch_results.batch_id is None:
         raise ValueError("batch_results.batch_id is None")

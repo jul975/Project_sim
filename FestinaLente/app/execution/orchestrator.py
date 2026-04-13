@@ -15,7 +15,7 @@ from FestinaLente.app.execution.workflows.compile_workflow import BatchPlan, Com
 from FestinaLente.app.execution.workflows.processing_workflow import process_workflow
 from FestinaLente.app.execution.workflows.runner_workflow import Execute_workflow
 from FestinaLente.app.service_models.modes import ExecutionMode
-from FestinaLente.app.service_models.service_request_container import PresentationRequest, ProcessingRequest, RunnerRequest, ServiceRequest
+from FestinaLente.app.service_models.service_request_container import ServiceRequest
 from FestinaLente.runner.results import BatchRunResults
 
 from .services import (

@@ -1,8 +1,8 @@
 
 from dataclasses import dataclass
 import numpy as np
-from FestinaLente.analytics.derive.batch.batch_containers import AggregatedFingerprint
-from FestinaLente.analytics.derive.run.fingerprint import Fingerprint
+from FestinaLente.analytics.processing.processing_containers.batch_containers import AggregatedFingerprint
+from FestinaLente.analytics.processing.run.fingerprint import Fingerprint
 
 
 

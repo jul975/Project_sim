@@ -15,8 +15,6 @@ from dataclasses import dataclass
 
 from numpy.random import SeedSequence
 
-from ..app.execution.workflows.compile_workflow import EngineTemplate
-from ..runner.batch_runner import BatchRunner
 from ..runner.seeds import generate_run_sequences
 
 
@@ -25,6 +23,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..core.engine import Engine
     from .single_runner import SingleRunner
+    from ..app.execution.workflows.compile_workflow import EngineTemplate
+    from ..runner.batch_runner import BatchRunner
 
 
 
@@ -33,7 +33,7 @@ class EngineBuildMap:
     ''' Immutable request for building a single engine instance, containing a seed and an engine template. 
     '''
     run_seed: SeedSequence
-    engine_template: EngineTemplate
+    engine_template: "EngineTemplate"
 
 
 # @dataclass(frozen=True)
@@ -56,7 +56,7 @@ def build_engine(engine_build_map : EngineBuildMap) -> "Engine":
     return Engine(engine_build_map=engine_build_map)
     
 
-def build_single_runner(engine_build_map : EngineBuildMap) -> "SingleRunner":
+def build_single_runner(engine_build_map : EngineBuildMap) -> SingleRunner:
     """ gets EngineBuildMap obj and return ready to run single runner instance from engine_build_map"""
     return SingleRunner(engine_build_map=engine_build_map)
 
@@ -68,10 +68,10 @@ def build_single_runner(engine_build_map : EngineBuildMap) -> "SingleRunner":
 
 
 
-def build_single_run_plans(batch_id: int, n_runs : int , engine_template: EngineTemplate) -> SingleRunPlans:
+def build_single_run_plans(batch_id: int, n_runs : int , engine_template: "EngineTemplate") -> SingleRunPlans:
     '''return dict of all run plans for a given batch id'''
 
-    run_plans_dict : dict[int, EngineBuildMap]
+    run_plans_dict = {}
     run_seeds_dic: dict[int, SeedSequence]= generate_run_sequences(batch_id, n_runs)
 
     for run_index, run_seed in run_seeds_dic.items():
@@ -86,6 +86,5 @@ def build_single_run_plans(batch_id: int, n_runs : int , engine_template: Engine
     )
 
     
-def build_batch_runner() -> BatchRunner:
+def build_batch_runner() -> "BatchRunner":
     pass
-
