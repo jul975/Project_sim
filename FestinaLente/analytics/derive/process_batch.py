@@ -10,7 +10,6 @@ from dataclasses import dataclass
 
 from FestinaLente.analytics.derive.batch.batch_containers import AggregatedFingerprint, BatchPhaseProfile, BatchWorldFrameSummary
 from FestinaLente.analytics.derive.process_run import ProcessedRun, process_run
-from FestinaLente.analytics.derive.run.run_container import SingleRunWorldFrameSummary
 from FestinaLente.runner.results import RunArtifacts
 from contracts.metadata import BatchMetadata, build_batch_metadata
 from contracts.batch_analysis import BatchAnalysis
