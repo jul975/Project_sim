@@ -1,6 +1,5 @@
 
 
-from dataclasses import dataclass, field
 import numpy as np
 
 from FestinaLente.analytics.observation.world_view import WorldView
@@ -12,29 +11,7 @@ from FestinaLente.analytics.observation.world_view import WorldView
 
 
 
-@dataclass(frozen=True)
-class SingleRunWorldFrameSummary:
-    """ Summary of single run world frame analytics. """
-    mean_occupancy_rate: float
-    mean_crowding_nonzero: float
-    mean_peak_density_sampled: float
 
-    mean_resource_level: float
-    mean_resource_heterogeneity: float
-    mean_resource_depletion_rate: float
-
-    mean_energy_level_sampled: float
-    mean_energy_std_sampled: float
-    mean_energy_cv_sampled: float
-
-    mean_density_resource_correlation: float
-
-@dataclass
-class RunFrames:
-    """ Metrics of world frames. """
-    densities: list[np.ndarray] = field(default_factory=list)
-    resources: list[np.ndarray] = field(default_factory=list)
-    energies: list[np.ndarray] = field(default_factory=list)
 
 def build_density_grid(positions: np.ndarray, world_shape: tuple[int, int]) -> np.ndarray:
     """Build a density grid from agent positions."""

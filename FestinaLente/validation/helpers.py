@@ -4,7 +4,7 @@ from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, VALIDAT
 from FestinaLente.regimes.registry import get_regime_spec
 from FestinaLente.regimes.compiler import compile_regime
 from FestinaLente.runner.batch_runner import BatchRunner
-from FestinaLente.analytics.analyze_batch import analyze_batch, AnalysisContext
+from FestinaLente.analytics.derive.process_batch import analyze_batch, AnalysisContext
 from FestinaLente.analytics.interpretation.regime_summary import summarise_regime
 from FestinaLente.analytics.interpretation.regime_classification import classify_regime
 

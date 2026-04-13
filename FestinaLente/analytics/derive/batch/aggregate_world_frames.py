@@ -1,36 +1,11 @@
 
+from FestinaLente.analytics.derive.batch.batch_containers import BatchWorldFrameAnalysis, BatchWorldFrameSummary
 from FestinaLente.runner.results import RunArtifacts
-from typing import Dict
 import numpy as np
-from dataclasses import dataclass
 
 from FestinaLente.analytics.derive.run.world_frame_summary import analyze_single_run_world_frames, SingleRunWorldFrameSummary
 
 
-@dataclass(frozen=True)
-class BatchWorldFrameSummary:
-
-
-    mean_occupancy_rate_over_runs: float
-    mean_crowding_nonzero_over_runs: float
-    peak_density_mean_over_runs: float
-
-    mean_resource_level_over_runs: float
-    mean_resource_heterogeneity_over_runs: float
-    mean_resource_depletion_rate_over_runs: float
-
-    mean_energy_level_sampled_over_runs: float
-    mean_energy_std_sampled_over_runs: float
-    mean_energy_cv_sampled_over_runs: float
-
-    mean_density_resource_correlation_over_runs: float
-
-@dataclass(frozen=True)
-class BatchWorldFrameAnalysis:
-    """ Analysis of batch world frames. """
-    # NOTE: 
-    run_summaries: Dict[int, SingleRunWorldFrameSummary]
-    aggregate_summary: BatchWorldFrameSummary
 
 
 

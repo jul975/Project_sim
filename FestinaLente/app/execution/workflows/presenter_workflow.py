@@ -23,7 +23,7 @@ from FestinaLente.app.execution.presenters.plotting.plot_run import (
     plot_world_view_samples,
 )
 
-from FestinaLente.analytics.analyze_batch import BatchAnalysis
+from FestinaLente.analytics.derive.process_batch import BatchAnalysis
 
 def present_experiment(experiment_request: ServiceRequest , batch_analysis: BatchAnalysis) -> int:
     

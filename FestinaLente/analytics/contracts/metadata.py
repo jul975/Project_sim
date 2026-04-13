@@ -31,28 +31,29 @@ class BatchMetadata:
 
 
 
-def build_batch_metadata(batch_results : BatchRunResults, analysis_context : AnalysisContext) -> BatchMetadata:
-    """ build batch metadata. """
-
+def build_batch_metadata(
+    batch_results: BatchRunResults,
+    request: AnalysisRequest,
+) -> BatchMetadata:
     if batch_results.batch_id is None:
         raise ValueError("batch_results.batch_id is None")
     if batch_results.ticks is None:
         raise ValueError("batch_results.ticks is None")
     if batch_results.batch_duration is None:
         raise ValueError("batch_results.batch_duration is None")
-    
+    if batch_results.regime_config is None:
+        raise ValueError("batch_results.regime_config is None")
+
     return BatchMetadata(
         batch_id=batch_results.batch_id,
-        ticks=analysis_context.total_tics,
-        n_runs=analysis_context.n_runs,
-        tail_start=analysis_context.tail_start,
+        ticks=int(batch_results.ticks),
+        n_runs=len(batch_results.runs),
+        tail_start=request.tail_start(int(batch_results.ticks)),
         batch_duration=batch_results.batch_duration,
-        max_agent_count=analysis_context.compiled_regime.population_params.max_agent_count,
-
-        # NOTE: this is a bit of a hack, assumes all runs in a batch have the same max resource level
-        max_resource_level=analysis_context.compiled_regime.resource_params.max_resource_level
-
+        max_agent_count=batch_results.regime_config.population_params.max_agent_count,
+        max_resource_level=batch_results.regime_config.resource_params.max_resource_level,
     )
+
 
 
 if __name__ == "__main__":

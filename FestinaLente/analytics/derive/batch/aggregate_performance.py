@@ -1,27 +1,10 @@
 
 from dataclasses import dataclass
 
+from FestinaLente.analytics.derive.batch.batch_containers import BatchPhaseProfile
 from FestinaLente.runner.results import RunArtifacts
 from typing import Dict
 import numpy as np
-
-@dataclass
-class BatchPhaseProfile:
-    movement: float = 0.0
-    interaction: float = 0.0
-    biology: float = 0.0
-    commit: float = 0.0
-
-    commit_setup: float = 0.0
-    commit_deaths: float = 0.0
-    commit_births: float = 0.0
-    commit_resource_regrowth: float = 0.0
-
-    movement_ratio: float = 0.0
-    interaction_ratio: float = 0.0
-    biology_ratio: float = 0.0
-    commit_ratio: float = 0.0
-
 
 def aggregate_phase_profile(batch_runs : Dict[np.int64, RunArtifacts], batch_duration : float) -> BatchPhaseProfile:
     """ aggregate phase profile over a batch of runs. """

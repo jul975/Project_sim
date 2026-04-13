@@ -6,6 +6,7 @@ from dataclasses import dataclass
 
 from FestinaLente.runner.results import RunArtifacts
 from typing import Dict
+from analytics.derive.run.run_container import Fingerprint
 
 """
 Fingerprint
@@ -17,28 +18,6 @@ compute_fingerprint
 aggregate_fingerprints
 
 """
-
-@dataclass(frozen=True)
-class Fingerprint:
-    """ Fingerprint of a single run. """
-    min_population: int
-    max_population: int
-    final_population: int
-    mean_population: float
-    std_population: float
-    range_population: float
-    cap_hit_rate: float
-
-    extinction_tick: int | None
-
-    mean_births_per_tick: float
-    mean_deaths_per_tick: float
-
-    mean_deaths_cause_tail: dict[str, float]
-    proportion_deaths_cause_tail: dict[str, float]
-
-    near_cap_rate: float
-    low_population_rate: float
 
 
 
