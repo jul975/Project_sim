@@ -5,7 +5,7 @@ from FestinaLente.core.engine import Engine
 from FestinaLente.regimes.compiled import CompiledRegime
 from FestinaLente.regimes.registry import get_regime_spec
 from FestinaLente.regimes.compiler import compile_regime
-from FestinaLente.analytics.analyze_batch import analyze_batch
+from FestinaLente.analytics.derive.process_batch import analyze_batch
 from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, VALIDATION_DEFAULTS
 from dataclasses import fields
 import numpy as np

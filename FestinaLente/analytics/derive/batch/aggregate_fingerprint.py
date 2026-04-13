@@ -1,25 +1,12 @@
 
 from dataclasses import dataclass
 import numpy as np
+from FestinaLente.analytics.derive.batch.batch_containers import AggregatedFingerprint
 from FestinaLente.analytics.derive.run.fingerprint import Fingerprint
 
 
 
 
-
-@dataclass(frozen=True)
-class AggregatedFingerprint:
-    """ Aggregated fingerprint over a batch of runs. """
-    final_populations: list[int] 
-    mean_population_over_runs: float
-    std_mean_population_over_runs: float
-    extinction_rate: float
-    cap_hit_rate: float
-    birth_death_ratio: float
-    mean_time_cv_over_runs: float
-
-    batch_near_cap_rate: float
-    batch_near_low_population_rate: float
 
 
 
