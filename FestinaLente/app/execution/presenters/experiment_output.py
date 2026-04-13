@@ -2,7 +2,7 @@
 from FestinaLente.analytics.contracts.batch_analysis import BatchAnalysis
 from FestinaLente.analytics.interpretation.regime_summary import RegimeSummary
 from FestinaLente.analytics.interpretation.regime_classification import RegimeClass
-from FestinaLente.analytics.derive.batch.aggregate_fingerprint import AggregatedFingerprint
+from FestinaLente.analytics.processing.batch.aggregate_fingerprint import AggregatedFingerprint
 
 
 

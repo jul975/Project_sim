@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 from FestinaLente.runner.results import RunArtifacts
 from typing import Dict
-from analytics.derive.run.run_container import Fingerprint
+from FestinaLente.analytics.processing.processing_containers.run_container import Fingerprint
 
 """
 Fingerprint

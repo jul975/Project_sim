@@ -2,10 +2,7 @@ import numpy as np
 from .agent import Agent
 
 from FestinaLente.regimes.compiled import CompiledRegime
-
 from ..snapshot.snapshots import WorldSnapshot, _world_from_snapshot
-
-
 
 
 """
@@ -283,5 +280,3 @@ class World:
 
 if __name__ == "__main__":
     pass
-
-

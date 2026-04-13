@@ -1,7 +1,7 @@
 
 from dataclasses import dataclass
 
-from FestinaLente.analytics.derive.batch.batch_containers import BatchPhaseProfile
+from FestinaLente.analytics.processing.processing_containers.batch_containers import BatchPhaseProfile
 from FestinaLente.runner.results import RunArtifacts
 from typing import Dict
 import numpy as np

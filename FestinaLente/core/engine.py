@@ -35,7 +35,6 @@ from .transitions.transitions import (
     interaction_phase, 
     biology_phase)
 
-
 from typing import TYPE_CHECKING
 
 import time 
@@ -405,9 +404,6 @@ class Engine:
 
 if __name__ == "__main__":
     pass
-
-
-
 
 
 

@@ -2,7 +2,7 @@
 
 
 
-from FestinaLente.analytics.derive.run.run_container import RunPerformanceMetrics
+from FestinaLente.analytics.processing.processing_containers.run_container import RunPerformanceMetrics
 from FestinaLente.runner.results import RunArtifacts
 
 

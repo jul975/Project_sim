@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pyparsing import Dict
 
 from FestinaLente.runner.results import RunArtifacts
-from FestinaLente.analytics.derive.run.world_frame_summary import SingleRunWorldFrameSummary
+from FestinaLente.analytics.processing.run.world_frame_summary import SingleRunWorldFrameSummary
 
 
 
@@ -84,5 +84,5 @@ class BatchWorldFrameSummary:
 class BatchWorldFrameAnalysis:
     """ Analysis of batch world frames. """
     # NOTE: 
-    run_summaries: Dict[int, SingleRunWorldFrameSummary]
+    run_summaries: dict[int, SingleRunWorldFrameSummary]
     aggregate_summary: BatchWorldFrameSummary

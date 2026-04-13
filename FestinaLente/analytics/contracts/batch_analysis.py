@@ -4,10 +4,11 @@ from typing import Dict
 import numpy as np
 
 from FestinaLente.analytics.contracts.metadata import BatchMetadata
-from FestinaLente.analytics.derive.batch.aggregate_fingerprint import AggregatedFingerprint
-from FestinaLente.analytics.derive.batch.aggregate_performance import BatchPhaseProfile
-from FestinaLente.analytics.derive.batch.aggregate_world_frames import BatchWorldFrameAnalysis
-from FestinaLente.analytics.derive.run.fingerprint import Fingerprint
+from FestinaLente.analytics.processing.batch.aggregate_fingerprint import AggregatedFingerprint
+from FestinaLente.analytics.processing.batch.aggregate_performance import BatchPhaseProfile
+from FestinaLente.analytics.processing.batch.aggregate_world_frames import BatchWorldFrameAnalysis
+from FestinaLente.analytics.processing.run.fingerprint import Fingerprint
+
 from FestinaLente.runner.results import RunArtifacts
 
 # derived experiment interpretation 

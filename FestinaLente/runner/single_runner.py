@@ -1,5 +1,4 @@
 
-
 from FestinaLente.analytics.observation.simulation_metrics import SimulationMetrics
 
 from FestinaLente.app.execution.workflows.compile_workflow import EngineTemplate
@@ -13,7 +12,6 @@ from ..core.engine import Engine
 
 class SingleRunner:
     def __init__(self, engine_build_map : EngineBuildMap) -> None:
-
         engine_template: EngineTemplate = engine_build_map.engine_template
         
         self.perf_flag : bool = engine_template.perf_flag

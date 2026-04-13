@@ -6,7 +6,7 @@
 
 import numpy as np
 
-from FestinaLente.analytics.derive.run.run_container import RunFrames
+from FestinaLente.analytics.processing.processing_containers.run_container import RunFrames
 from FestinaLente.analytics.observation.world_view import WorldView
 
 

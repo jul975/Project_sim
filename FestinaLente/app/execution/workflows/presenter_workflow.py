@@ -12,18 +12,18 @@ from __future__ import annotations
 
 from ...service_models.service_request_container import ServiceRequest
 
-from FestinaLente.app.execution.presenters.console import (
+from app.execution.presenters.console import (
     print_experiment_spec,
     print_summarize_analytics,
 )
-from FestinaLente.app.execution.presenters.plotting.plot_run import (
+from app.execution.presenters.plotting.plot_run import (
     plot_batch_metrics,
     plot_single_run_metrics,
     plot_world_view_summary,
     plot_world_view_samples,
 )
 
-from FestinaLente.analytics.derive.process_batch import BatchAnalysis
+from analytics.processing.process_batch import BatchAnalysis
 
 def present_experiment(experiment_request: ServiceRequest , batch_analysis: BatchAnalysis) -> int:
     
