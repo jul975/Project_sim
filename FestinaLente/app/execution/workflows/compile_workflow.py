@@ -6,6 +6,10 @@ It does not execute runners, analytics, or presentation side effects.
 
 from __future__ import annotations
 
+from matplotlib import animation
+
+from archive.visualisation.dynamic_new import animate_run
+
 from ...service_models.default import EXPERIMENT_DEFAULTS, DEFAULT_MASTER_SEED, DEFAULT_REGIME_CONFIG
 from ...service_models.features import ExecutionFeatures
 from ...service_models.service_request_container import RunnerRequest, ServiceRequest, ServiceRequestMeta
@@ -59,6 +63,7 @@ class BatchPlan:
 class AnalysisOptions:
     include_perf: bool = False
     include_world_frames: bool = False
+    animate_run: bool = False
 
 @dataclass(frozen=True)
 class ProcessingPlan:

@@ -2,49 +2,12 @@
 
 import numpy as np
 
-from FestinaLente.analytics.observation.world_view import WorldView
+from FestinaLente.analytics.derive.run.run_container import RunFrames, SingleRunWorldFrameSummary
 
 
 
 
-
-
-
-
-
-
-def build_density_grid(positions: np.ndarray, world_shape: tuple[int, int]) -> np.ndarray:
-    """Build a density grid from agent positions."""
-    height, width = world_shape
-    density = np.zeros((height, width), dtype=np.int32)
-
-    if positions.size == 0:
-        return density
-
-    for x, y in positions:
-        density[y, x] += 1
-
-    return density
-
-
-
-def sort_run_frames(world_view: list[WorldView]) -> RunFrames:
-    """Convert world views into analysis-ready frame arrays."""
-    if not world_view:
-        raise ValueError("No world view provided.")
-
-    run_frames = RunFrames()
-
-    for frame in world_view:
-        density = build_density_grid(frame.positions, frame.resources.shape)
-
-        run_frames.densities.append(density)
-        run_frames.resources.append(frame.resources.copy())
-        run_frames.energies.append(frame.energies.copy())
-
-    return run_frames
-
-
+#############################################################
 
 
 def get_occupancy_rate(density : np.ndarray) -> float:
@@ -121,15 +84,15 @@ def get_density_resource_correlation(density: np.ndarray, resources: np.ndarray)
 
 
 
-def analyze_single_run_world_frames( world_frames : list[WorldView], max_resource_level : int) -> SingleRunWorldFrameSummary:
+def analyze_single_run_world_frames( run_frames : RunFrames, max_resource_level : int) -> SingleRunWorldFrameSummary:
     """ analyze single run world frames. """
-    if world_frames is None:
-        raise ValueError("world_frames is None")
+    if run_frames is None:
+        raise ValueError("run_frames is None")
     
     # NOTE: 0.1 is a magic number, should be a parameter stored in regime config.
-    threshold = 0.1 * max_resource_level
+    threshold: float = 0.1 * max_resource_level
     
-    run_frames = sort_run_frames(world_frames)
+    
 
     densities = run_frames.densities
     resources = run_frames.resources
