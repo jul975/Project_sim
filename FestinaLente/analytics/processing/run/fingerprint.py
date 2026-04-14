@@ -4,7 +4,7 @@ from FestinaLente.analytics.observation.simulation_metrics import SimulationMetr
 from dataclasses import dataclass
 
 
-from FestinaLente.runner.results import RunArtifacts
+from FestinaLente.runner.utils.results import RunArtifacts
 from typing import Dict
 from FestinaLente.analytics.processing.processing_containers.run_container import Fingerprint
 

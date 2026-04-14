@@ -6,7 +6,7 @@ from FestinaLente.analytics.interpretation.regime_summary import RegimeSummary
 from FestinaLente.analytics.interpretation.regime_classification import RegimeClass
 
 
-from FestinaLente.runner.results import BatchRunResults
+from FestinaLente.runner.utils.results import BatchRunResults
 
 from FestinaLente.analytics.contracts.batch_analysis import BatchAnalysis
 

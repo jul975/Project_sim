@@ -5,7 +5,6 @@ from numpy.random import SeedSequence
 
 from FestinaLente.app.execution.workflows.compile_workflow import EngineTemplate
 from FestinaLente.core.contracts.step_results import BiologyReport, InteractionReport, MovementReport
-from FestinaLente.runner.factories import EngineBuildMap
 
 from .snapshot.state_schema import get_state_bytes
 
@@ -44,23 +43,31 @@ if TYPE_CHECKING:
 
 # RegimeSpec -> CompiledRegime -> EngineRuntimeParams -> TransitionContext -> EngineState -> StepReport
 
+
+# NOTE: engine entry needs fix 
+# START: => logging outputs 
+# Version ; DATE:TIME ; MODULE/SUBSYSTEM => stand api's
+
 class Engine:
     def __init__(self, 
-                 engine_build_map:EngineBuildMap
+                 engine_templat: EngineTemplate, 
+                 run_seed: SeedSequence , 
+                 perf_flag: bool = False, 
+                 collect_worldview:bool = False
                  ) -> None:
 
 
         # 1) Setup concerns 
-        self.master_ss: SeedSequence = engine_build_map.run_seed
+        self.master_ss: SeedSequence = run_seed
         world_seed: np.random.SeedSequence = self.master_ss.spawn(1)[0]
 
         # temp value
-        engine_template: EngineTemplate = engine_build_map.engine_template
+        engine_template: EngineTemplate = engine_templat
 
 
         # 2) Execution Mode concerns
-        self.perf_flag: bool = engine_template.perf_flag
-        self.collect_world_view: bool = engine_template.world_frame_flag
+        self.perf_flag: bool = perf_flag
+        self.collect_world_view: bool = collect_worldview
         # + change_condition flag need to change
 
         # 3) Compiled model concerns

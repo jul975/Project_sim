@@ -1,7 +1,9 @@
 
 import numpy as np
 
-def generate_run_sequences(master_seed: int, n_runs: int) -> dict[int, np.random.SeedSequence]:
+from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, EXPERIMENT_DEFAULTS
+
+def generate_run_sequences(master_seed: int = DEFAULT_MASTER_SEED, n_runs: int = EXPERIMENT_DEFAULTS["runs"]) -> dict[int, np.random.SeedSequence]:
     """ I do NOT return master seed, state mutation must be avoided, 
         therefore the master seed is used only to generate the run seeds.
         And NEVER touched again 

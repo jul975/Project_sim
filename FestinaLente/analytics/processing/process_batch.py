@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from FestinaLente.analytics.processing.processing_containers.batch_containers import AggregatedFingerprint, BatchPhaseProfile, BatchWorldFrameSummary
 from FestinaLente.analytics.processing.process_run import ProcessedRun, process_run
 
-from FestinaLente.runner.results import RunArtifacts
+from FestinaLente.runner.utils.results import RunArtifacts
 from FestinaLente.analytics.contracts.metadata import BatchMetadata, build_batch_metadata
 from FestinaLente.analytics.contracts.batch_analysis import BatchAnalysis
 from FestinaLente.app.execution.workflows.compile_workflow import ProcessingPlan

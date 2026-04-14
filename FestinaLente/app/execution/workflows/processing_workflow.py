@@ -7,7 +7,7 @@ and classification. It does not execute simulations or present outputs.
 from FestinaLente.analytics.contracts.results import AnalyticsBundle
 from FestinaLente.analytics.orchestrator import process_results
 from FestinaLente.app.execution.workflows.compile_workflow import ProcessingPlan
-from FestinaLente.runner.results import BatchRunResults
+from FestinaLente.runner.utils.results import BatchRunResults
 
 
 def process_workflow(

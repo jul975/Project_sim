@@ -7,7 +7,7 @@ from FestinaLente.analytics.interpretation.regime_summary import RegimeSummary, 
 from FestinaLente.analytics.interpretation.regime_classification import RegimeClass, classify_regime
 
 
-from FestinaLente.runner.results import BatchRunResults
+from FestinaLente.runner.utils.results import BatchRunResults
 
 def process_results(
     batch_results: BatchRunResults,

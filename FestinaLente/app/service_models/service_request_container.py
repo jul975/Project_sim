@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Literal
 
+from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED
 from FestinaLente.app.service_models.features import ExecutionFeatures
 from FestinaLente.app.service_models.modes import ExecutionMode
 
@@ -44,9 +45,9 @@ class ServiceRequestMeta:
 @dataclass(frozen=True)
 class RunnerRequest:
     ''' Shared run controls for experiment/exploration workflows. '''
-    seed: int | None = None
-    runs: int | None = None
-    ticks: int | None = None
+    seed: int = DEFAULT_MASTER_SEED
+    runs: int = 10
+    ticks: int = 1000
 
 @dataclass(frozen=True)
 class ProcessingRequest:

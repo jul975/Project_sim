@@ -8,7 +8,7 @@ from FestinaLente.regimes.compiler import compile_regime
 from FestinaLente.regimes.registry import get_regime_spec
 from FestinaLente.regimes.spec import RegimeSpec
 from FestinaLente.runner.batch_runner import BatchRunner
-from FestinaLente.runner.results import BatchRunResults, RunArtifacts
+from FestinaLente.runner.utils.results import BatchRunResults, RunArtifacts
 from FestinaLente.app.execution.presenters.animation.dynamic_new import animate_run
 
 

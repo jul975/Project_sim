@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from FestinaLente.app.execution.workflows.compile_workflow import ProcessingPlan
-from FestinaLente.runner.results import BatchRunResults
+from FestinaLente.runner.utils.results import BatchRunResults
 
 @dataclass(frozen=True)
 class BatchMetadata:
@@ -39,8 +39,8 @@ def build_batch_metadata(
         raise ValueError("batch_results.batch_id is None")
     if batch_results.ticks is None:
         raise ValueError("batch_results.ticks is None")
-    if batch_results.batch_duration is None:
-        raise ValueError("batch_results.batch_duration is None")
+    # if batch_results.batch_duration is None:
+    #     raise ValueError("batch_results.batch_duration is None")
     if batch_results.regime_config is None:
         raise ValueError("batch_results.regime_config is None")
 

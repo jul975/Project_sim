@@ -9,7 +9,7 @@ from FestinaLente.analytics.processing.batch.aggregate_performance import BatchP
 from FestinaLente.analytics.processing.batch.aggregate_world_frames import BatchWorldFrameAnalysis
 from FestinaLente.analytics.processing.run.fingerprint import Fingerprint
 
-from FestinaLente.runner.results import RunArtifacts
+from FestinaLente.runner.utils.results import RunArtifacts
 
 # derived experiment interpretation 
 @dataclass
