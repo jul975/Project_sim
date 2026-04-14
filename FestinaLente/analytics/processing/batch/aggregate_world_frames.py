@@ -1,6 +1,6 @@
 
 from FestinaLente.analytics.processing.processing_containers.batch_containers import BatchWorldFrameAnalysis, BatchWorldFrameSummary
-from FestinaLente.runner.results import RunArtifacts
+from FestinaLente.runner.utils.results import RunArtifacts
 import numpy as np
 
 from FestinaLente.analytics.processing.run.world_frame_summary import analyze_single_run_world_frames, SingleRunWorldFrameSummary

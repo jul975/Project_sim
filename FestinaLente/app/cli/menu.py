@@ -9,6 +9,7 @@ from __future__ import annotations
 
 
 from FestinaLente.app.cli.request_builder import build_experiment_request, build_verification_request, build_validation_request, build_exploration_request
+from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, EXPERIMENT_DEFAULTS
 from FestinaLente.app.service_models.suite_registry import REGIME_OPTIONS, VERIFICATION_SUITES, VALIDATION_SUITES
 
 from FestinaLente.app.service_models.service_request_container import ServiceRequest
@@ -116,11 +117,16 @@ def _yes_no(prompt: str, default: bool = False) -> bool:
 def _collect_experiment_inputs() -> dict[str, object]:
     """Collect menu inputs required to build an experiment request."""
     print("\n--- Experiment Setup ---")
+    regime = _choose_from_list("Select regime", REGIME_OPTIONS) 
+    runs: int | None = _optional_int("Runs", allow_zero=False)
+    ticks: int | None = _optional_int("Ticks", allow_zero=False)
+    seed: int | None = _optional_int("Seed")
+
     return {
-        "regime": _choose_from_list("Select regime", REGIME_OPTIONS),
-        "runs": _optional_int("Runs", allow_zero=False),
-        "ticks": _optional_int("Ticks", allow_zero=False),
-        "seed": _optional_int("Seed"),
+        "regime": regime ,
+        "runs": runs if runs else EXPERIMENT_DEFAULTS['runs'] ,
+        "ticks": ticks if ticks else EXPERIMENT_DEFAULTS["ticks"],
+        "seed": seed if seed else DEFAULT_MASTER_SEED,
         "plot": _yes_no("Plot batch results?", default=False),
         "plot_dev": _yes_no("Plot dev figures?", default=False),
         "profiling": _yes_no("Enable perf profiling?", default=False),

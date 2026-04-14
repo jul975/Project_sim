@@ -4,11 +4,14 @@ from typing import Dict
 import numpy as np
 
 from FestinaLente.core.contracts.step_results import StepReport
-from FestinaLente.core.engine import Engine
 from FestinaLente.analytics.observation.simulation_metrics import SimulationMetrics
 from FestinaLente.regimes.compiled import CompiledRegime
 
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from FestinaLente.core.engine import Engine
+ 
 @dataclass
 class PhaseProfile:
     """ Phase profile. 
@@ -89,7 +92,7 @@ class RunArtifacts:
         - seed:               Run seed.
         - phase_profile:      Phase profile.
     """
-    engine_final : Engine | None = None
+    engine_final : "Engine" = None
     metrics : SimulationMetrics | None = None
     seed : np.random.SeedSequence | None = None
     phase_profile : PhaseProfile | None = None

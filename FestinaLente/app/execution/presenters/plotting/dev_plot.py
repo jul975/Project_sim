@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from FestinaLente.analytics.observation.simulation_metrics import SimulationMetrics
-from FestinaLente.runner.results import BatchRunResults
+from FestinaLente.runner.utils.results import BatchRunResults
 
 
 def _get_metrics_list(batch_results: BatchRunResults) -> list[SimulationMetrics]:

@@ -11,13 +11,13 @@ from __future__ import annotations
 
 import time
 
-from FestinaLente.runner.factories import EngineBuildMap, SingleRunPlans, build_single_run_plans, build_single_runner
+from FestinaLente.runner.utils.factories import EngineBuildMap, SingleRunPlans, build_single_run_plans
 from FestinaLente.app.execution.workflows.compile_workflow import BatchPlan, EngineTemplate
 from FestinaLente.runner.single_runner import SingleRunner
 
 
 
-from FestinaLente.runner.results import BatchRunResults
+from FestinaLente.runner.utils.results import BatchRunResults
 
 
 class BatchRunner:
@@ -72,7 +72,7 @@ class BatchRunner:
         plans_to_execute: dict[int, EngineBuildMap] = self.batch_run_plans.single_run_plans
 
         for run_index, runner_plan in plans_to_execute.items():
-            single_runner: SingleRunner = build_single_runner(runner_plan)
+            single_runner = SingleRunner(runner_plan)
             batch_results[run_index] = single_runner.run(ticks)
 
         return BatchRunResults(
@@ -107,7 +107,7 @@ class BatchRunner:
         plans_to_execute: dict[int, EngineBuildMap] = self.batch_run_plans.single_run_plans
 
         for run_index, runner_plan in plans_to_execute.items():
-            single_runner: SingleRunner = build_single_runner(runner_plan)
+            single_runner = SingleRunner(runner_plan)
             batch_results[run_index] = single_runner.run(ticks)
 
         batch_end_time: float = time.perf_counter()

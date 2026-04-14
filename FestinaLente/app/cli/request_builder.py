@@ -7,6 +7,7 @@ remain free of mode routing and workflow execution logic.
 
 from __future__ import annotations
 
+from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, EXPERIMENT_DEFAULTS
 from FestinaLente.app.service_models.service_request_container import (
     PresentationRequest, 
     ProcessingRequest, 
@@ -21,7 +22,7 @@ from FestinaLente.app.service_models.features import ExecutionFeatures
 
 def _build_runner_request(
     *,
-    seed: int | None = None,
+    seed: int = DEFAULT_MASTER_SEED,
     runs: int | None = None,
     ticks: int | None = None,
 ) -> RunnerRequest:
@@ -98,9 +99,9 @@ def _build_service_request_meta(
 def build_experiment_request(
     *,
     regime: str,
-    seed: int | None = None,
-    runs: int | None = None,
-    ticks: int | None = None,
+    seed: int  = DEFAULT_MASTER_SEED,
+    runs: int = EXPERIMENT_DEFAULTS["runs"],
+    ticks: int = EXPERIMENT_DEFAULTS["ticks"],
     tail_fraction: float = 0.25,
     plot: bool = False,
     plot_dev: bool = False,

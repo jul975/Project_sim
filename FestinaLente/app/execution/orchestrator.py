@@ -16,7 +16,7 @@ from FestinaLente.app.execution.workflows.processing_workflow import process_wor
 from FestinaLente.app.execution.workflows.runner_workflow import Execute_workflow
 from FestinaLente.app.service_models.modes import ExecutionMode
 from FestinaLente.app.service_models.service_request_container import ServiceRequest
-from FestinaLente.runner.results import BatchRunResults
+from FestinaLente.runner.utils.results import BatchRunResults
 
 from .services import (
     experiment_service_call, 

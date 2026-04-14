@@ -3,7 +3,7 @@
 
 
 from FestinaLente.analytics.processing.processing_containers.run_container import RunPerformanceMetrics
-from FestinaLente.runner.results import RunArtifacts
+from FestinaLente.runner.utils.results import RunArtifacts
 
 
 def compute_run_performance(run : RunArtifacts) -> RunPerformanceMetrics:

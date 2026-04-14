@@ -45,6 +45,7 @@ class SimulationMetrics:
         self.mean_energy: list[float] = []
         self.births: list[int] = []
         self.deaths: list[int] = []
+        self.executed_ticks: int = 0
 
         self.death_causes: dict[str, list[int]] = {
             "age_deaths": [],
@@ -60,6 +61,7 @@ class SimulationMetrics:
 
     def record(self, step_report: StepReport) -> None:
         """Stores per-tick observed signals for one simulation run."""
+        self.executed_ticks += 1
 
         
         # population

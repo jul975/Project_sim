@@ -9,7 +9,7 @@ from FestinaLente.regimes.compiled import CompiledRegime
 from FestinaLente.regimes.compiler import compile_regime
 from FestinaLente.regimes.registry import get_regime_spec
 from FestinaLente.runner.batch_runner import BatchRunner
-from FestinaLente.runner.results import RunArtifacts
+from FestinaLente.runner.utils.results import RunArtifacts
 
 """
 Mesa-style discrete-space animation for the ecosystem ABM.

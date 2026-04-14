@@ -5,7 +5,7 @@ from FestinaLente.analytics.processing.run.run_performance import compute_run_pe
 from FestinaLente.analytics.processing.run.run_world_frames import compute_single_world_frames
 from FestinaLente.analytics.processing.run.world_frame_summary import analyze_single_run_world_frames
 from FestinaLente.app.execution.workflows.compile_workflow import ProcessingPlan
-from FestinaLente.runner.results import RunArtifacts
+from FestinaLente.runner.utils.results import RunArtifacts
 
 from FestinaLente.analytics.processing.run.fingerprint import compute_fingerprint
 

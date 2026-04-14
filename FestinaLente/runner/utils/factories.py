@@ -15,16 +15,14 @@ from dataclasses import dataclass
 
 from numpy.random import SeedSequence
 
-from ..runner.seeds import generate_run_sequences
+from .seeds import generate_run_sequences
 
 
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from ..core.engine import Engine
-    from .single_runner import SingleRunner
-    from ..app.execution.workflows.compile_workflow import EngineTemplate
-    from ..runner.batch_runner import BatchRunner
+    from ...app.execution.workflows.compile_workflow import EngineTemplate
+    from ..batch_runner import BatchRunner
 
 
 
@@ -36,12 +34,7 @@ class EngineBuildMap:
     engine_template: "EngineTemplate"
 
 
-# @dataclass(frozen=True)
-# class SingleRunPlan:
-#     ''' Plan for executing a single run, containing the run index, tick count, and engine build request. '''
-#     # run_index: int | None = None
-#     # ticks: int = 1000
-#     engine_request: EngineBuildMap
+
 
 
 @dataclass(frozen=True)
@@ -49,18 +42,6 @@ class SingleRunPlans:
     """Collection of all generated SingleRunPlan obj's on BatchRunner level """
     batch_id: int
     single_run_plans: dict[int, EngineBuildMap]
-
-
-def build_engine(engine_build_map : EngineBuildMap) -> "Engine":
-    ''' gets EngineBuildMap Object => single-universal source of truth for engine setup'''
-    return Engine(engine_build_map=engine_build_map)
-    
-
-def build_single_runner(engine_build_map : EngineBuildMap) -> SingleRunner:
-    """ gets EngineBuildMap obj and return ready to run single runner instance from engine_build_map"""
-    return SingleRunner(engine_build_map=engine_build_map)
-
-
 
 
 

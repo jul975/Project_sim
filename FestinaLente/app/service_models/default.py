@@ -4,6 +4,7 @@ from FestinaLente.regimes.registry import get_regime_spec
 
 DEFAULT_MASTER_SEED = 20250302
 
+
 EXPERIMENT_DEFAULTS = {
     "ticks": 1000,
     "runs": 10,
