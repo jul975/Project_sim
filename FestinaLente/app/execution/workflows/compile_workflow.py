@@ -87,8 +87,8 @@ class ProcessingPlan:
     options: AnalysisOptions = field(default_factory=AnalysisOptions)
 
     @property
-    def tail_start(self, total_tics) -> int:
-        return int(total_tics * (1.0 - self.tail_fraction))
+    def tail_start(self) -> int:
+        return int(self.total_tics * (1.0 - self.tail_fraction))
 
 
 

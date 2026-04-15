@@ -1,6 +1,7 @@
 
 from dataclasses import dataclass
 import numpy as np
+from FestinaLente.analytics.processing.process_run import ProcessedRun
 from FestinaLente.analytics.processing.processing_containers.batch_containers import AggregatedFingerprint
 from FestinaLente.analytics.processing.run.fingerprint import Fingerprint
 
@@ -11,11 +12,12 @@ from FestinaLente.analytics.processing.run.fingerprint import Fingerprint
 
 
 
-def get_aggregate_fingerprints(fingerprints : list[Fingerprint]) -> AggregatedFingerprint:
+def get_aggregate_fingerprints(processed_runs : list[ProcessedRun]) -> AggregatedFingerprint:
     """Aggregate run-level fingerprints across a batch."""  
-    if not fingerprints:
-        raise ValueError("No fingerprints to aggregate")
-
+    # if not fingerprints:
+    #     raise ValueError("No fingerprints to aggregate")
+    
+    fingerprints = [run_fingerprint.run_fingerprint for run_fingerprint in processed_runs ]
 
     # 1) simple mean and std aggregation
     final_populations = [f.final_population for f in fingerprints]

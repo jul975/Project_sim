@@ -28,27 +28,25 @@ class ProcessedRun:
 def process_run(run : RunArtifacts, processing_plan : ProcessingPlan ) -> ProcessedRun:
     # process a single run, and extract analysis products
         # get run fingerprint
-    run_fingerprint: Fingerprint = compute_fingerprint(run, processing_plan)
+    run_fingerprint: Fingerprint = compute_fingerprint(run.metrics, processing_plan.tail_start)
+    run_performance: RunPerformanceMetrics | None = None
+    run_frames: RunFrames | None = None
+    single_run_world_frame_summary: SingleRunWorldFrameSummary | None = None
 
     if processing_plan.options.include_perf:
-        run_performance : RunPerformanceMetrics = compute_run_performance(run)
+        run_performance = compute_run_performance(run)
 
-
-    # run_frames needed for world summary and animation option. 
     if processing_plan.options.include_world_frames or processing_plan.options.animate_run:
-        run_frames : RunFrames = compute_single_world_frames(run.metrics.world_view)
+        run_frames = compute_single_world_frames(run.metrics.world_view)
 
     if processing_plan.options.include_world_frames:
-        # NOTE broken
-        single_run_world_frame_summary: SingleRunWorldFrameSummary = analyze_single_run_world_frames(run.metrics.world_view, )
+        single_run_world_frame_summary = analyze_single_run_world_frames(run.metrics.world_view)
 
-    
     return ProcessedRun(
         run_fingerprint=run_fingerprint,
-        run_profile=run_performance if processing_plan.options.include_perf else None,
-        run_frames=run_frames if processing_plan.options.animate_run else None,
-        single_run_world_frame_summary=single_run_world_frame_summary if processing_plan.options.include_world_frames else None,
-        
+        run_profile=run_performance,
+        run_frames=run_frames,
+        single_run_world_frame_summary=single_run_world_frame_summary,
     )
 
 

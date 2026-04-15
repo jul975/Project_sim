@@ -4,8 +4,7 @@
 
 from dataclasses import dataclass
 
-from pyparsing import Dict
-
+from typing import Dict
 from FestinaLente.runner.utils.results import RunArtifacts
 from FestinaLente.analytics.processing.run.world_frame_summary import SingleRunWorldFrameSummary
 
