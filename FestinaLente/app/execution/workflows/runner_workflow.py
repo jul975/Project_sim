@@ -23,24 +23,13 @@ def Execute_workflow(runner_plan: BatchPlan) -> BatchRunResults:
 
 
 
-    # NOTE: temp need to move 
-    # print_experiment_spec(regime_spec)
+
 
     runner : BatchRunner = BatchRunner(runner_plan)
 
     batch_results : BatchRunResults = runner.run_batch(ticks=BatchPlan.ticks)
 
-    # analysis_context = AnalysisContext(
-    #     n_runs=runs,
-    #     total_tics=ticks,
-    #     tail_fraction=batch_request.tail_fraction,
-    #     regime_label=batch_request.regime,
-    #     compiled_regime=regime_config,
-    #     options=AnalysisOptions(
-    #         include_perf=batch_request.features.profiling,
-    #         include_world_frames=batch_request.features.capture_world_frames,
-    #     ),
-    # )
+
     
     return batch_results
 

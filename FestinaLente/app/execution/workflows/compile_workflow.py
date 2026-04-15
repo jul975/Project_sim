@@ -78,7 +78,7 @@ class ProcessingPlan:
 
 
     n_runs: int | None = None
-    total_tics: int | None = None
+    total_tics: int = 1000
     tail_fraction: float = 0.25
 
     regime_label: str | None = None
