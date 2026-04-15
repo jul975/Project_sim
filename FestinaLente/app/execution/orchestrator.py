@@ -11,6 +11,8 @@ inputs or implement mode-specific request validation.
 from dataclasses import dataclass
 
 from FestinaLente.analytics.contracts.batch_analysis import BatchAnalysis
+from FestinaLente.analytics.contracts.results import AnalyticsBundle
+from FestinaLente.app.execution.presenters.presentation_router import present_output
 from FestinaLente.app.execution.workflows.compile_workflow import BatchPlan, CompiledWorkflowPlan, PresentationPlan, ProcessingPlan
 from FestinaLente.app.execution.workflows.processing_workflow import process_workflow
 from FestinaLente.app.execution.workflows.runner_workflow import Execute_workflow
@@ -72,9 +74,10 @@ def orchestrate(service_request : ServiceRequest) -> int | OrchestratorResult:
     executed_workflow : BatchRunResults = Execute_workflow(runner_plan=running_plan)
     # execute processing workflow
 
-    processed_workflow : BatchAnalysis = process_workflow(processing_plan=processing_plan, batch_results=executed_workflow)    
+    processed_workflow : AnalyticsBundle = process_workflow(processing_plan=processing_plan, batch_results=executed_workflow)    
     # execute presentation workflow
-    
+
+    present_output(processed_workflow)    
     # return exit code or rich result
 
 
