@@ -8,7 +8,7 @@ classify_regime(...)
 """
 from dataclasses import dataclass
 
-from FestinaLente.analytics.processing.processing_containers.batch_containers import AggregatedFingerprint, BatchPhaseProfile, BatchWorldFrameSummary
+from FestinaLente.analytics.processing.processing_containers.batch_containers import AggregatedFingerprint, BatchPhaseProfile, BatchWorldFrameAnalysis, BatchWorldFrameSummary
 from FestinaLente.analytics.processing.process_run import ProcessedRun, process_run
 
 from FestinaLente.runner.utils.results import RunArtifacts
@@ -74,7 +74,9 @@ def analyze_batch(processing_plan : ProcessingPlan, batch_results : BatchRunResu
         batch_phase_profile = None
 
     if processing_plan.options.include_world_frames:
-        batch_world_frames: BatchWorldFrameSummary = analyze_batch_world_frames(run_process_list)
+        batch_world_frames: BatchWorldFrameAnalysis = analyze_batch_world_frames(batch_runs=batch_results.runs,
+                                                                                max_resource_level=metadata.max_resource_level,
+                                                                                )
     else:
         batch_world_frames = None
     
@@ -85,7 +87,8 @@ def analyze_batch(processing_plan : ProcessingPlan, batch_results : BatchRunResu
         
         all_runs = batch_results.runs,
         aggregate_fingerprint = aggregate_fingerprint,
-        run_fingerprints= processed_runs.processed_runs_dict,
+        run_fingerprints={k: v.run_fingerprint for k, v in processed_runs.processed_runs_dict.items()},
+
         batch_phase_profile = batch_phase_profile,
         
         batch_world_frames = batch_world_frames,
