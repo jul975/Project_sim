@@ -28,7 +28,8 @@ class BatchMetadata:
 
 
 
-
+def get_tail_start(n_ticks, tail_fraction)->int:
+    return int(n_ticks *(1 - tail_fraction))
 
 
 def build_batch_metadata(
@@ -43,12 +44,14 @@ def build_batch_metadata(
     #     raise ValueError("batch_results.batch_duration is None")
     if batch_results.regime_config is None:
         raise ValueError("batch_results.regime_config is None")
+    
+    tail_start = get_tail_start(n_ticks=batch_results.ticks, tail_fraction=request.tail_fraction)
 
     return BatchMetadata(
         batch_id=batch_results.batch_id,
-        ticks=int(batch_results.ticks),
+        ticks=batch_results.ticks,
         n_runs=len(batch_results.runs),
-        tail_start=request.tail_start(int(batch_results.ticks)),
+        tail_start=tail_start,
         batch_duration=batch_results.batch_duration,
         max_agent_count=batch_results.regime_config.population_params.max_agent_count,
         max_resource_level=batch_results.regime_config.resource_params.max_resource_level,

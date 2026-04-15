@@ -28,7 +28,7 @@ class ProcessedRun:
 def process_run(run : RunArtifacts, processing_plan : ProcessingPlan ) -> ProcessedRun:
     # process a single run, and extract analysis products
         # get run fingerprint
-    run_fingerprint: Fingerprint = compute_fingerprint(run, processing_plan.tail_start)
+    run_fingerprint: Fingerprint = compute_fingerprint(run, processing_plan)
 
     if processing_plan.options.include_perf:
         run_performance : RunPerformanceMetrics = compute_run_performance(run)
