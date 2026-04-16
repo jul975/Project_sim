@@ -2,7 +2,9 @@
 
 import numpy as np
 
+from FestinaLente.analytics.observation.world_view import WorldView
 from FestinaLente.analytics.processing.processing_containers.run_container import RunFrames, SingleRunWorldFrameSummary
+from FestinaLente.analytics.processing.run.run_world_frames import compute_single_world_frames
 
 
 
@@ -84,13 +86,17 @@ def get_density_resource_correlation(density: np.ndarray, resources: np.ndarray)
 
 
 
-def analyze_single_run_world_frames( run_frames : RunFrames, max_resource_level : int) -> SingleRunWorldFrameSummary:
+def analyze_single_run_world_frames( run_view : list[WorldView], max_resource_level : int) -> SingleRunWorldFrameSummary:
     """ analyze single run world frames. """
-    if run_frames is None:
+    if run_view is None:
         raise ValueError("run_frames is None")
     
     # NOTE: 0.1 is a magic number, should be a parameter stored in regime config.
+    # NOTE: logic needs to change, right now I'm passing global max resources, this should be the resource array modded to 0.1 for each entry. 
+    # Needs review
     threshold: float = 0.1 * max_resource_level
+
+    run_frames: RunFrames = compute_single_world_frames(run_view)
     
     
 

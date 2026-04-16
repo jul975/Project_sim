@@ -20,7 +20,7 @@ from FestinaLente.analytics.observation.world_view import WorldView
 
 
 
-def build_density_grid(positions: np.ndarray, world_shape: tuple[int, int]) -> np.ndarray:
+def _build_density_grid(positions: np.ndarray, world_shape: tuple[int, int]) -> np.ndarray:
     """Build a density grid from agent positions."""
     height, width = world_shape
     density = np.zeros((height, width), dtype=np.int32)
@@ -35,7 +35,7 @@ def build_density_grid(positions: np.ndarray, world_shape: tuple[int, int]) -> n
 
 
 
-def sort_run_frames(world_view: list[WorldView]) -> RunFrames:
+def _sort_run_frames(world_view: list[WorldView]) -> RunFrames:
     """Convert world views into analysis-ready frame arrays."""
     if not world_view:
         raise ValueError("No world view provided.")
@@ -43,7 +43,7 @@ def sort_run_frames(world_view: list[WorldView]) -> RunFrames:
     run_frames = RunFrames()
 
     for frame in world_view:
-        density = build_density_grid(frame.positions, frame.resources.shape)
+        density = _build_density_grid(frame.positions, frame.resources.shape)
 
         run_frames.densities.append(density)
         run_frames.resources.append(frame.resources.copy())
@@ -59,7 +59,7 @@ def compute_single_world_frames(world_view : WorldView) -> RunFrames:
     if world_view is None:
         raise ValueError("world_view is None")
     
-    return sort_run_frames(world_view)
+    return _sort_run_frames(world_view)
 
     
     

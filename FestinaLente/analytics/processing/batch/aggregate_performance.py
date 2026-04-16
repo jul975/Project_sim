@@ -1,12 +1,13 @@
 
 from dataclasses import dataclass
 
+from FestinaLente.analytics.processing.process_run import ProcessedRun
 from FestinaLente.analytics.processing.processing_containers.batch_containers import BatchPhaseProfile
 from FestinaLente.runner.utils.results import RunArtifacts
 from typing import Dict
 import numpy as np
 
-def aggregate_phase_profile(batch_runs : Dict[np.int64, RunArtifacts], batch_duration : float) -> BatchPhaseProfile:
+def aggregate_phase_profile(batch_runs : list[ProcessedRun], batch_duration : float) -> BatchPhaseProfile:
     """ aggregate phase profile over a batch of runs. """
     
 
@@ -16,18 +17,18 @@ def aggregate_phase_profile(batch_runs : Dict[np.int64, RunArtifacts], batch_dur
     batch_phase_profile = BatchPhaseProfile()
 
     # sum up phase profile
-    for run_results in batch_runs.values():
-        if run_results.phase_profile is None:
+    for run_results in batch_runs:
+        if run_results.run_profile is None:
             raise ValueError("run_results.phase_profile is None")
-        batch_phase_profile.movement += run_results.phase_profile.movement
-        batch_phase_profile.interaction += run_results.phase_profile.interaction
-        batch_phase_profile.biology += run_results.phase_profile.biology
-        batch_phase_profile.commit += run_results.phase_profile.commit
+        batch_phase_profile.movement += run_results.run_profile.movement_time
+        batch_phase_profile.interaction += run_results.run_profile.interaction_time
+        batch_phase_profile.biology += run_results.run_profile.biology_time
+        batch_phase_profile.commit += run_results.run_profile.commit_time
 
-        batch_phase_profile.commit_setup += run_results.phase_profile.commit_setup
-        batch_phase_profile.commit_deaths += run_results.phase_profile.commit_deaths
-        batch_phase_profile.commit_births += run_results.phase_profile.commit_births
-        batch_phase_profile.commit_resource_regrowth += run_results.phase_profile.commit_resource_regrowth
+        batch_phase_profile.commit_setup += run_results.run_profile.commit_setup_time
+        batch_phase_profile.commit_deaths += run_results.run_profile.commit_deaths_time
+        batch_phase_profile.commit_births += run_results.run_profile.commit_births_time
+        batch_phase_profile.commit_resource_regrowth += run_results.run_profile.commit_resource_regrowth_time
 
 
     # compute ratios

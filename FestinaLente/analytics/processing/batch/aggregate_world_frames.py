@@ -63,7 +63,7 @@ def analyze_batch_world_frames(batch_runs : dict[int, RunArtifacts], max_resourc
     for run_id, run_results in batch_runs.items():
         if run_results.metrics is None:
             raise ValueError(f"run_results.world_frames is None for run {id}")
-        
+        # passing list instead of 
         run_summaries[run_id] = analyze_single_run_world_frames(run_results.metrics.world_view , max_resource_level)
 
     aggregate_summary : BatchWorldFrameSummary = aggregate_world_frame_summaries(run_summaries)
