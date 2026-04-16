@@ -77,7 +77,7 @@ def orchestrate(service_request : ServiceRequest) -> int | OrchestratorResult:
     processed_workflow : AnalyticsBundle = process_workflow(processing_plan=processing_plan, batch_results=executed_workflow)    
     # execute presentation workflow
 
-    present_output(processed_workflow)    
+    present_output(presentation_plan, processed_workflow)    
     # return exit code or rich result
 
 
