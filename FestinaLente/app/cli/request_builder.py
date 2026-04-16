@@ -48,10 +48,21 @@ def _build_processing_request(
         pytest_args=pytest_args,
     )
 
-def _build_presentation_request() -> PresentationRequest:
+def _build_presentation_request(
+    *,
+    plot: bool = False,
+    plot_dev: bool = False,
+    profiling: bool = False,
+    capture_world_frames: bool = False,
+    animate: bool = False,
+) -> PresentationRequest:
     """Build the presentation controls component of a service request."""
     
-    return PresentationRequest()
+    return PresentationRequest(
+        plotting=plot,
+        dev_plot=plot_dev,
+        animate_run=animate,
+    )
 
 def _build_experiment_features(
     *,
@@ -123,9 +134,9 @@ def build_experiment_request(
             change_condition=change_conditions
         ),
     )
-    runner_req = _build_runner_request(seed=seed, runs=runs, ticks=ticks)
-    processing_req = _build_processing_request(tail_fraction=tail_fraction)
-    presentation_req = _build_presentation_request()
+    runner_req: RunnerRequest = _build_runner_request(seed=seed, runs=runs, ticks=ticks)
+    processing_req: ProcessingRequest = _build_processing_request(tail_fraction=tail_fraction)
+    presentation_req: PresentationRequest = _build_presentation_request(plot=plot, plot_dev=plot_dev, profiling=profiling, capture_world_frames=capture_world_frames, animate=animate)
 
     return ServiceRequest(
         service_request_meta=meta, 
