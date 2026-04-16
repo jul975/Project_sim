@@ -7,6 +7,7 @@ classify_regime(...)
 
 """
 from dataclasses import dataclass
+from multiprocessing import process
 
 from FestinaLente.analytics.processing.processing_containers.batch_containers import AggregatedFingerprint, BatchPhaseProfile, BatchWorldFrameAnalysis, BatchWorldFrameSummary
 from FestinaLente.analytics.processing.process_run import ProcessedRun, process_run
@@ -52,6 +53,7 @@ def analyze_batch(processing_plan : ProcessingPlan, batch_results : BatchRunResu
     if batch_results.regime_config is None:
         raise ValueError("batch_results.regime_config is None")
     
+    
     ###########
     metadata: BatchMetadata = build_batch_metadata(batch_results, processing_plan)
 
@@ -69,7 +71,7 @@ def analyze_batch(processing_plan : ProcessingPlan, batch_results : BatchRunResu
     aggregate_fingerprint: AggregatedFingerprint = get_aggregate_fingerprints(run_process_list)
 
     if processing_plan.options.include_perf:
-        batch_phase_profile: BatchPhaseProfile = aggregate_phase_profile(run_process_list)
+        batch_phase_profile: BatchPhaseProfile = aggregate_phase_profile(run_process_list, batch_results.batch_duration)
     else:
         batch_phase_profile = None
 

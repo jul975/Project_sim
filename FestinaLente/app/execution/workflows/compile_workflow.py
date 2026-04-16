@@ -6,11 +6,18 @@ It does not execute runners, analytics, or presentation side effects.
 
 from __future__ import annotations
 
+from FestinaLente.analytics.observation import world_view
+from FestinaLente.analytics.processing.run import world_frame_summary
+
 
 
 from ...service_models.default import EXPERIMENT_DEFAULTS, DEFAULT_MASTER_SEED, DEFAULT_REGIME_CONFIG
 from ...service_models.features import ExecutionFeatures
-from ...service_models.service_request_container import RunnerRequest, ServiceRequest, ServiceRequestMeta
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ...service_models.service_request_container import RunnerRequest, ServiceRequest, ServiceRequestMeta
 
 from ....regimes.compiler import compile_regime
 from ....regimes.registry import get_regime_spec
@@ -100,7 +107,11 @@ class ProcessingPlan:
 
 @dataclass
 class PresentationPlan:
-    pass 
+    plotting : bool = False
+    dev_plotting : bool = False
+    world_view : bool = False
+    world_frame_summary : bool = False
+    animate_run: bool = False
 
 
 @dataclass
@@ -140,9 +151,9 @@ def _get_engine_template(service_request_meta : ServiceRequestMeta) -> EngineTem
 
 def _get_runner_plan(workflow_request: ServiceRequest) -> BatchPlan:
     """ => single source of truth for runner"""
-    runner_request: RunnerRequest = workflow_request.runner_request
-    meta_request: ServiceRequestMeta = workflow_request.service_request_meta
-    engine_template: EngineTemplate=_get_engine_template( service_request_meta=meta_request)
+    runner_request: "RunnerRequest" = workflow_request.runner_request
+    meta_request: 'ServiceRequestMeta' = workflow_request.service_request_meta
+    engine_template: 'EngineTemplate'=_get_engine_template( service_request_meta=meta_request)
     
     ticks: int = runner_request.ticks if runner_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
     runs: int = runner_request.runs if runner_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
@@ -199,7 +210,13 @@ def _get_processing_plan(workflow_request: ServiceRequest, engine_template : Eng
 
 def _get_presentation_plan(workflow_request: ServiceRequest) -> PresentationPlan:
     """ => single source of truth for presentation"""
-    pass
+
+
+    return PresentationPlan(
+        plotting=workflow_request.presentation_request.plotting, 
+        dev_plotting=workflow_request.presentation_request.dev_plot,
+        animate_run=workflow_request.presentation_request.animate_run
+    )
 
 
 

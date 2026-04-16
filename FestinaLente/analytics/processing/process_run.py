@@ -40,7 +40,15 @@ def process_run(run : RunArtifacts, processing_plan : ProcessingPlan ) -> Proces
         run_frames = compute_single_world_frames(run.metrics.world_view)
 
     if processing_plan.options.include_world_frames:
-        single_run_world_frame_summary = analyze_single_run_world_frames(run.metrics.world_view)
+        #######################
+            # need cleanup and dissection, logic is lost and confused right now.
+            # also need to review the data flow and dependencies between processing steps, and how to structure
+
+    # NOTE: systemic problem is located here, I'm passing in the global max resource level, but this should be the resource array modded to 0.1 for each entry.
+    # this is because the threshold for depletion rate is based on the resource level, not a fixed value. This needs to be reviewed and fixed in the future.
+
+        ########################
+        single_run_world_frame_summary = analyze_single_run_world_frames(run_view=run.metrics.world_view, max_resource_level=80)
 
     return ProcessedRun(
         run_fingerprint=run_fingerprint,
