@@ -24,10 +24,11 @@ from FestinaLente.app.execution.presenters.animation.dynamic_new import animate_
 # return exit code
 
 
-def exploration_service_call(exploration_request: ServiceRequest) -> int:
+def exploration_service_call(exploration_request: ServiceRequest) -> CompiledRegime:
     if exploration_request.service_request_meta.regime is None:
         raise ValueError("Exploration mode requires a regime.")
-
+    
+    # MODIFY TO RETURN ANIMATION 
     return compile_workflow_plans(exploration_request)
 
 
