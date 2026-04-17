@@ -1,7 +1,7 @@
 import numpy as np
 from .agent import Agent
 
-from FestinaLente.regimes.compiled import CompiledRegime
+from FestinaLente.regimes.compiled import CompiledRegime, LandscapeParams, ResourceParams, WorldParams
 from ..snapshot.snapshots import WorldSnapshot, _world_from_snapshot
 
 
@@ -47,9 +47,9 @@ class World:
         ''' Initializes the world with given parameters and generates fertility fields. '''
         self.tick : np.int64 = 0
 
-        self.world_params = config.world_params
-        self.resource_params = config.resource_params
-        self.landscape_params = config.landscape_params
+        self.world_params: WorldParams = config.world_params
+        self.resource_params: ResourceParams = config.resource_params
+        self.landscape_params: LandscapeParams = config.landscape_params
 
         self.world_size = self.world_params.world_width * self.world_params.world_height
 
@@ -107,62 +107,59 @@ class World:
         assert np.isfinite(self.resources).all()
         assert np.isfinite(self.fertility).all()
     
-    
-
-
-
-
+        
     def _generate_fertility_fields(self) -> np.ndarray:
-        """ generates fertility fields for the world. random noise → smooth fertility landscape. """
+        """Generate static fertility landscape from smoothed random noise."""
 
-        # ρ_L = k / W
-        # k = ρ_L * W
-        # k = ρ_L * sqrt(W)
-        # random 20×20 noise
-        #        ↓
-        # local 3×3 averaging
-        #        ↓
-        # smoothed 20×20 field
-        #        ↓
-        # scaled fertility 20×20 field
-            # 
-        raw_kernel = (
-            self.landscape_params.correlation
-            * self.world_width
-        )
-
+        raw_kernel = self.landscape_params.correlation * self.world_width
         kernel_size = max(3, int(round(raw_kernel)))
-
         if kernel_size % 2 == 0:
             kernel_size += 1
-
         radius = kernel_size // 2
 
-        # random 2D noise
         noise = self.rng_world.random((self.world_height, self.world_width))
-
         smooth = np.zeros_like(noise)
 
         for y in range(self.world_height):
             for x in range(self.world_width):
-
                 total = 0.0
                 count = 0
-
                 for dy in range(-radius, radius + 1):
                     for dx in range(-radius, radius + 1):
-
                         ny = (y + dy) % self.world_height
                         nx = (x + dx) % self.world_width
-
                         total += noise[ny, nx]
                         count += 1
-
                 smooth[y, x] = total / count
 
-        fertility = (smooth * self.resource_params.max_resource_level).astype(np.int64)
+        contrast = float(self.landscape_params.contrast)
+        floor = float(self.landscape_params.floor)
+
+        if contrast < 0.0:
+            raise ValueError("landscape contrast must be >= 0")
+        if not (0.0 <= floor < 1.0):
+            raise ValueError("landscape floor must satisfy 0 <= floor < 1")
+
+        lo = float(smooth.min())
+        hi = float(smooth.max())
+
+        if hi > lo:
+            norm = (smooth - lo) / (hi - lo)
+        else:
+            norm = np.full_like(smooth, 0.5)
+
+        contrasted = 0.5 + contrast * (norm - 0.5)
+        contrasted = np.clip(contrasted, 0.0, 1.0)
+
+        fertility01 = floor + (1.0 - floor) * contrasted
+
+        fertility = np.rint(
+            fertility01 * self.resource_params.max_resource_level
+        ).astype(np.int64)
 
         return fertility
+
+
 
 
 

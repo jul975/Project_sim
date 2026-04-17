@@ -1,7 +1,6 @@
 
 
 from __future__ import annotations
-import re
 
 
 import numpy as np
@@ -19,8 +18,8 @@ from FestinaLente.regimes.compiled import SpatialParams
 
 if TYPE_CHECKING:
     from ..domains.world import World
-    from FestinaLente.core.transitions.transitions import Position
-    from FestinaLente.core.spatial.occupancy_index import OccupancyIndex
+    from ..transitions.transitions import Position
+    from ..spatial.occupancy_index import OccupancyIndex
 
 
 
