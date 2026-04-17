@@ -16,7 +16,8 @@ from .compiled import (
     PopulationParams,
     ReproductionParams,
     ResourceParams,
-    SpatialWeights,
+    SpatialParams,
+    SpatialParams,
     WorldParams,
 )
 from .spec import RegimeSpec
@@ -157,6 +158,20 @@ def _compile_world_system(world_area: int) -> WorldParams:
     side = int(round(sqrt(world_area)))
     return WorldParams(world_width=side, world_height=side)
 
+def _compile_movement_system(regime_spec: RegimeSpec) -> SpatialParams:
+    """Compile movement parameters from the declarative specification.
+
+    Args:
+        regime_spec: Declarative regime specification.
+    Returns:
+        Compiled movement parameters.
+    """
+    return SpatialParams(
+        movement_weight=regime_spec.movement_spec.movement_weight,
+        interaction_weight=regime_spec.movement_spec.interaction_weight,
+        temperature=regime_spec.movement_spec.temperature,
+    )
+
 
 def compile_regime(regime_spec: RegimeSpec) -> CompiledRegime:
     """Compile a full declarative regime into engine-facing parameters.
@@ -173,13 +188,13 @@ def compile_regime(regime_spec: RegimeSpec) -> CompiledRegime:
         rather than scattered across engine subsystems.
     """
 
-    energy_params = _compile_energy_system(regime_spec)
-    resource_params = _compile_resource_system(regime_spec)
-    reproduction_params = _compile_reproduction_system(regime_spec)
-    landscape_params = _compile_landscape_system(regime_spec)
-    population_params = _compile_population_system(regime_spec)
-    world_params = _compile_world_system(regime_spec.world_size)
-    spatial_weights = SpatialWeights()
+    energy_params: EnergyParams = _compile_energy_system(regime_spec)
+    resource_params: ResourceParams = _compile_resource_system(regime_spec)
+    reproduction_params: ReproductionParams = _compile_reproduction_system(regime_spec)
+    landscape_params: LandscapeParams = _compile_landscape_system(regime_spec)
+    population_params: PopulationParams = _compile_population_system(regime_spec)
+    world_params: WorldParams = _compile_world_system(regime_spec.world_size)
+    spatial_params: SpatialParams = _compile_movement_system(regime_spec)
 
     return CompiledRegime(
         energy_params=energy_params,
@@ -188,7 +203,7 @@ def compile_regime(regime_spec: RegimeSpec) -> CompiledRegime:
         population_params=population_params,
         world_params=world_params,
         landscape_params=landscape_params,
-        spatial_weights=spatial_weights
+        spatial_params=spatial_params
     )
 
 
@@ -199,8 +214,8 @@ def validate_regime(regime: CompiledRegime) -> None:
         regime: Compiled regime to inspect for coarse ecological warning signs.
     """
 
-    energy = regime.energy_params
-    resources = regime.resource_params
+    energy: EnergyParams = regime.energy_params
+    resources: ResourceParams = regime.resource_params
 
     if resources.regen_rate <= energy.movement_cost:
         print("Warning: regeneration <= movement cost -> extinction likely")

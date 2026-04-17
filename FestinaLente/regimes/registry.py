@@ -13,6 +13,7 @@ from .spec import (
     RegimeSpec,
     ReproductionSpec,
     ResourceSpec,
+    MovementSpec,
 )
 
 
@@ -32,6 +33,11 @@ REGIMES: dict[str, RegimeSpec] = {
             initial_agent_count=10,
             max_age=100,
         ),
+        movement_spec=MovementSpec(
+                movement_weight=1.0,
+                interaction_weight=1.0,
+                temperature=1.0,
+        )
     ),
     "fragile": RegimeSpec(
         energy_spec=EnergySpec(beta=5, gamma=10, harvest_fraction=0.35),
@@ -46,6 +52,11 @@ REGIMES: dict[str, RegimeSpec] = {
             initial_agent_count=10,
             max_age=100,
         ),
+        movement_spec=MovementSpec(
+                movement_weight=1.0,
+                interaction_weight=1.0,
+                temperature=1.0,
+        )
     ),
     "extinction": RegimeSpec(
         energy_spec=EnergySpec(beta=1.0, gamma=10, harvest_fraction=0.4),
@@ -60,6 +71,11 @@ REGIMES: dict[str, RegimeSpec] = {
             initial_agent_count=10,
             max_age=100,
         ),
+        movement_spec=MovementSpec(
+                movement_weight=1.0,
+                interaction_weight=1.0,
+                temperature=1.0,
+        )
     ),
     "collapse": RegimeSpec(
         energy_spec=EnergySpec(beta=1.0, gamma=2.5, harvest_fraction=0.35),
@@ -74,6 +90,11 @@ REGIMES: dict[str, RegimeSpec] = {
             initial_agent_count=10,
             max_age=100,
         ),
+        movement_spec=MovementSpec(
+                movement_weight=1.0,
+                interaction_weight=1.0,
+                temperature=1.0,
+        )
     ),
     "saturated": RegimeSpec(
         energy_spec=EnergySpec(beta=0.8, gamma=1, harvest_fraction=0.05),
@@ -88,6 +109,11 @@ REGIMES: dict[str, RegimeSpec] = {
             initial_agent_count=10,
             max_age=100,
         ),
+        movement_spec=MovementSpec(
+                movement_weight=1.0,
+                interaction_weight=1.0,
+                temperature=1.0,
+        )
     ),
     "abundant": RegimeSpec(
         energy_spec=EnergySpec(beta=0.1, gamma=1, harvest_fraction=0.35),
@@ -102,6 +128,11 @@ REGIMES: dict[str, RegimeSpec] = {
             initial_agent_count=10,
             max_age=100,
         ),
+        movement_spec=MovementSpec(
+                movement_weight=1.0,
+                interaction_weight=1.0,
+                temperature=1.0,
+        )
     ),
 }
 

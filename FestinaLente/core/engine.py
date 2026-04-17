@@ -25,7 +25,8 @@ from FestinaLente.regimes.compiled import (
     EnergyParams, 
     ResourceParams, 
     LandscapeParams, 
-    PopulationParams, 
+    PopulationParams,
+    SpatialParams, 
     WorldParams)
 
 from .transitions.transitions import (
@@ -77,6 +78,7 @@ class Engine:
         self.landscape_params : LandscapeParams = self.config.landscape_params
         self.population_params : PopulationParams = self.config.population_params
         self.world_params : WorldParams = self.config.world_params
+        self.spatial_params : SpatialParams = self.config.spatial_params
 
 
         # 4) run specific semantics
@@ -193,7 +195,9 @@ class Engine:
         return self._step_fast()
     
     def _step_fast(self) -> StepReport:
-        context = TransitionContext()
+        context = TransitionContext(
+            spatial_params=self.spatial_params
+        )
 
         movement_report: MovementReport = movement_phase(self.agents, context, self.world)
         interaction_report: InteractionReport = interaction_phase(context, self.world)
@@ -218,7 +222,9 @@ class Engine:
     
 
     def _step_instrumented(self) -> StepReport:
-        context = TransitionContext()
+        context = TransitionContext(
+            spatial_params=self.spatial_params
+        )
 
         if self.perf_flag:
             t0 = time.perf_counter()

@@ -1,6 +1,7 @@
 
 
 from __future__ import annotations
+import re
 
 
 import numpy as np
@@ -13,6 +14,8 @@ import numpy as np
 
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
+
+from FestinaLente.regimes.compiled import SpatialParams
 
 if TYPE_CHECKING:
     from ..domains.world import World
@@ -93,7 +96,18 @@ def _softmax_probabilities(scores: list[float], temperature: float = 1.0) -> np.
 
 # sample candidates and prob based on position
 
-def sample_moves(position : "Position", world : "World", occupancy : "OccupancyIndex", resource_weight: float, crowding_weight: float, temperature: float) -> MovementRange:
+def sample_moves(
+        position : "Position", 
+        world : "World", 
+        occupancy : "OccupancyIndex", 
+        spatial_weights : SpatialParams
+        ) -> MovementRange:
+    
+    resource_weight: float = spatial_weights.movement_weight
+    crowding_weight: float = spatial_weights.interaction_weight
+    temperature: float = spatial_weights.temperature
+
+
     candidates = _build_move_candidates(position, world, occupancy)
     scores = _score_move_candidates(candidates, resource_weight, crowding_weight)
     probs = _softmax_probabilities(scores, temperature)
