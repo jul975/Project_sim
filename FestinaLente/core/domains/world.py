@@ -109,17 +109,34 @@ class World:
     
         
     def _generate_fertility_fields(self) -> np.ndarray:
-        """Generate static fertility landscape from smoothed random noise."""
+        """
+        Generate static fertility landscape from smoothed random noise.
 
+        Semantics:
+        - correlation: controls patch size / smoothing width
+        - contrast:   amplifies or flattens fertility differences around 0.5
+        - floor:      raises the minimum fertility baseline as a fraction of max_resource_level
+
+        Legacy-neutral invariant:
+        - contrast = 1.0
+        - floor = 0.0
+
+        reproduces the old behavior:
+            fertility ~= smooth * max_resource_level
+        """
+
+        # 1) Derive smoothing kernel from spatial correlation.
         raw_kernel = self.landscape_params.correlation * self.world_width
         kernel_size = max(3, int(round(raw_kernel)))
         if kernel_size % 2 == 0:
             kernel_size += 1
         radius = kernel_size // 2
 
+        # 2) Sample raw world noise.
         noise = self.rng_world.random((self.world_height, self.world_width))
         smooth = np.zeros_like(noise)
 
+        # 3) Toroidal local mean filter.
         for y in range(self.world_height):
             for x in range(self.world_width):
                 total = 0.0
@@ -132,6 +149,7 @@ class World:
                         count += 1
                 smooth[y, x] = total / count
 
+        # 4) Validate shaping controls.
         contrast = float(self.landscape_params.contrast)
         floor = float(self.landscape_params.floor)
 
@@ -140,28 +158,21 @@ class World:
         if not (0.0 <= floor < 1.0):
             raise ValueError("landscape floor must satisfy 0 <= floor < 1")
 
-        lo = float(smooth.min())
-        hi = float(smooth.max())
-
-        if hi > lo:
-            norm = (smooth - lo) / (hi - lo)
-        else:
-            norm = np.full_like(smooth, 0.5)
-
-        contrasted = 0.5 + contrast * (norm - 0.5)
+        # 5) Apply contrast directly to the smoothed field.
+        #    Important: do NOT min-max normalize here.
+        #    That would change legacy semantics even when contrast=1 and floor=0.
+        contrasted = 0.5 + contrast * (smooth - 0.5)
         contrasted = np.clip(contrasted, 0.0, 1.0)
 
+        # 6) Apply floor as a lower-bound lift.
         fertility01 = floor + (1.0 - floor) * contrasted
 
+        # 7) Scale to integer fertility field.
         fertility = np.rint(
             fertility01 * self.resource_params.max_resource_level
         ).astype(np.int64)
 
         return fertility
-
-
-
-
 
 
 
