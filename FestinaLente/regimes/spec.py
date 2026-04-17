@@ -8,6 +8,7 @@ storing derived engine parameters.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from shutil import move
 
 
 @dataclass(frozen=True)
@@ -123,7 +124,26 @@ class RegimeSpec:
     landscape_spec: LandscapeSpec
     reproduction_spec: ReproductionSpec
     population_spec: PopulationSpec
+    movement_spec: MovementSpec
 
     max_energy: int = 100
     max_resource_level: int = 80
     world_size: int = 400
+
+
+@dataclass(frozen=True)
+class MovementSpec:
+    """Movement preference weights for the engine's movement system.
+
+    Attributes:
+        resource_weight: Weight applied to resource levels when scoring
+            movement options.
+        fertility_weight: Weight applied to fertility levels when scoring
+            movement options.
+        occupancy_weight: Weight applied to occupancy (agent presence) when
+            scoring movement options.
+    """
+
+    movement_weight: float = 1.0
+    interaction_weight: float = 1.0
+    temperature: float = 1.0

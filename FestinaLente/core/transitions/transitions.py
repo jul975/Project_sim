@@ -1,6 +1,11 @@
 from dataclasses import dataclass , field
 from typing import TYPE_CHECKING
 
+from scipy import spatial
+
+from FestinaLente.core.spatial.neighborhood import MovementRange
+from FestinaLente.regimes.compiled import SpatialParams
+
 from ..contracts.step_results import MovementReport, InteractionReport, BiologyReport
 from ..spatial.occupancy_index import OccupancyIndex, Position
 
@@ -11,6 +16,7 @@ from ..spatial.neighborhood import sample_moves
 from typing import List
 
 if TYPE_CHECKING:
+    from core import Engine
     from ..domains.agent import Agent
     from ..domains.world import World    
 ###############################################################################################
@@ -64,6 +70,8 @@ class TransitionContext:
         - should be cleared at the end of each tick. 
         
     ---'''
+
+    spatial_params : SpatialParams = field(default_factory=SpatialParams)
     occupancy : OccupancyIndex = field(default_factory=OccupancyIndex)
     post_harvest_alive : list["Agent"] = field(default_factory=list)
     pending_deaths_by_cause: dict[str, DeathBucket] = field(default_factory=dict)
@@ -74,7 +82,11 @@ class TransitionContext:
 
 
 
-def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext, world : "World") -> MovementReport:
+def movement_phase(
+        agents : dict[int, "Agent"] , 
+        context : TransitionContext, 
+        world : "World"
+        ) -> MovementReport:
     """ movement_phase(agents, world, context):
     """
     
@@ -89,7 +101,7 @@ def movement_phase(agents : dict[int, "Agent"] , context : TransitionContext, wo
         # note weights and temperature are hardcoded for now, 
         # need to be defined by regime compiler
 
-        movement_range = sample_moves(position, world, current_occupancy, resource_weight=1.0, crowding_weight=1.0, temperature=1.0)
+        movement_range: MovementRange = sample_moves(position, world, current_occupancy, context.spatial_params)
 
         for agent in local_agents:
             if not agent.move_agent(movement_range.candidates, movement_range.probability):

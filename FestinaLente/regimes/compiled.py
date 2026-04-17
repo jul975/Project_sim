@@ -108,7 +108,7 @@ class WorldParams:
 
 
 @dataclass(frozen=True)
-class SpatialWeights:
+class SpatialParams:
     """Compiled spatial weight parameters for agent interactions.
 
     Attributes:
@@ -137,7 +137,7 @@ class CompiledRegime:
         population_params: Compiled population constraints.
         world_params: Compiled world dimensions.
         landscape_params: Compiled fertility landscape parameters.
-        spatial_weights: Compiled spatial weight parameters for agent interactions.
+        spatial_params: Compiled spatial weight parameters for agent interactions.
     """
 
     energy_params: EnergyParams
@@ -146,7 +146,7 @@ class CompiledRegime:
     population_params: PopulationParams
     world_params: WorldParams
     landscape_params: LandscapeParams
-    spatial_weights: SpatialWeights
+    spatial_params: SpatialParams
 
     @classmethod
     def from_dict(cls, d: dict) -> "CompiledRegime":
@@ -186,8 +186,8 @@ class CompiledRegime:
         if isinstance(wp, dict):
             outer["world_params"] = WorldParams(**wp)
 
-        sw = outer.get("spatial_weights")
+        sw = outer.get("spatial_params")
         if isinstance(sw, dict):
-            outer["spatial_weights"] = SpatialWeights(**sw)
+            outer["spatial_params"] = SpatialParams(**sw)
 
         return cls(**outer)

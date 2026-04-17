@@ -267,6 +267,7 @@ def engine_from_snapshot(engine_cls, snapshot : EngineSnapshot) -> "Engine":
         engine_clone.config = CompiledRegime.from_dict(snapshot.config) 
         engine_clone.energy_params = engine_clone.config.energy_params
         engine_clone.resource_params = engine_clone.config.resource_params
+        engine_clone.spatial_params = engine_clone.config.spatial_params
 
         engine_clone.landscape_params = engine_clone.config.landscape_params
         engine_clone.population_params = engine_clone.config.population_params
