@@ -9,6 +9,7 @@ from collections.abc import Callable
 from FestinaLente.analytics.contracts.results import AnalyticsBundle
 from FestinaLente.app.execution.presenters.experiment_output import print_summarize_analytics
 from FestinaLente.app.execution.presenters.plotting.plot_run import plot_batch_metrics, plot_single_run_metrics, plot_world_view_samples, plot_world_view_summary
+from FestinaLente.app.execution.presenters.animation.dynamic_new import animate_run
 from FestinaLente.app.execution.workflows.compile_workflow import PresentationPlan
 
 Presenter = Callable[[AnalyticsBundle], None]
@@ -44,6 +45,13 @@ def _present_world_view_plots(output: AnalyticsBundle) -> None:
     plot_world_view_samples(metrics)
 
 
+def _present_animation(output: AnalyticsBundle) -> None:
+    # Get the first run's artifacts for animation
+    for run_id, run_artifacts in output.batch_analysis.all_runs.items():
+        animate_run(run_artifacts)
+        break  # Only animate the first run
+
+
 def _build_presenters(plan: PresentationPlan) -> tuple[Presenter, ...]:
     presenters: list[Presenter] = [_present_console_summary]
 
@@ -53,6 +61,8 @@ def _build_presenters(plan: PresentationPlan) -> tuple[Presenter, ...]:
         presenters.append(_present_dev_plots)
     if plan.world_view:
         presenters.append(_present_world_view_plots)
+    if plan.animate_run:
+        presenters.append(_present_animation)
 
     return tuple(presenters)
 

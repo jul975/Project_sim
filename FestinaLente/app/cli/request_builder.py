@@ -220,7 +220,7 @@ def build_exploration_request(
     meta: ServiceRequestMeta = _build_service_request_meta(
         mode=ExecutionMode.EXPLORATION,
         regime=regime,
-        features=ExecutionFeatures(animate=True),
+        features=ExecutionFeatures(animate=True, capture_world_frames=True),
     )
     runner_req: RunnerRequest = _build_runner_request(
         seed=seed,
@@ -228,9 +228,11 @@ def build_exploration_request(
         ticks=EXPLORATION_DEFAULTS["ticks"] if ticks is None else ticks,
     )
     processing_req: ProcessingRequest = _build_processing_request(
-        
+
     )
-    presentation_req: PresentationRequest = _build_presentation_request()
+    presentation_req: PresentationRequest = _build_presentation_request(
+        animate=True
+    )
 
     return ServiceRequest(
         service_request_meta=meta,
