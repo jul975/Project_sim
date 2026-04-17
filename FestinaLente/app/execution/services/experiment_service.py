@@ -56,54 +56,6 @@ def experiment_service_call(experiment_request: ServiceRequest) -> CompiledWorkf
 
 
 
-"""
-    # 2) Process service request into workflow plans.
-    ################## SERVICE REQUEST Processing => COMPILE WORKFLOW PLANS
-                     # => AFTER this point, Workflow Plans are source of truth for execution, processing and presentation.
- 
-
-    # 3) Execute workflow plans.
-    ################## Workflow orchestration
-
-    # NOTE: print entry point summary here
-    ##################
-
-    ################## EXEXCUTION PLAN  => RUN RUNNER
-    # batch_results = execution_workflow.run()
-
-
-    ################## PROCESSING PLAN => ANALYZE RESULTS
-    # batch_analysis = processing_workflow.run(batch_results)
-    # CLASSIFICATION, SUMMARIZATION, AND OTHER ANALYTIC DERIVATIONS SHOULD BE PART OF THIS WORKFLOW
-
-    ################## PRESENTATION PLAN => PRESENT RESULTS
-    # presentation_workflow.run(batch_analysis)
-
-    ################################ OLD #####################
-    batch_results, analysis_context = build_and_run_batch(experiment_request)
-
-    batch_analysis : BatchAnalysis = analyze_batch(batch_results, analysis_context)
-
-        
-    summary = summarise_regime(batch_analysis)
-    regime_class = classify_regime(summary)
-
-    print_summarize_analytics(
-        batch_analysis=batch_analysis,
-
-
-        regime_class=regime_class,
-        summary=summary,
-    )
-
-    present_experiment(experiment_request, batch_analysis)
-
-
-    return 0
-
-"""
-
-
 
 
 

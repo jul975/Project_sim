@@ -8,13 +8,7 @@ from collections.abc import Callable
 
 from FestinaLente.analytics.contracts.results import AnalyticsBundle
 from FestinaLente.app.execution.presenters.experiment_output import print_summarize_analytics
-from FestinaLente.app.execution.presenters.plotting.plot_run import (
-    plot_batch_metrics,
-    plot_single_run_metrics,
-    plot_world_view_summary,
-    plot_world_view_samples,
-)
-from FestinaLente.app.execution.presenters.plotting.dev_plot import plot_development_metrics
+from FestinaLente.app.execution.presenters.plotting.plot_run import plot_batch_metrics, plot_single_run_metrics, plot_world_view_samples, plot_world_view_summary
 from FestinaLente.app.execution.workflows.compile_workflow import PresentationPlan
 
 Presenter = Callable[[AnalyticsBundle], None]
@@ -66,3 +60,8 @@ def _build_presenters(plan: PresentationPlan) -> tuple[Presenter, ...]:
 def present_output(presentation_plan: PresentationPlan, output: AnalyticsBundle) -> None:
     for presenter in _build_presenters(presentation_plan):
         presenter(output)
+
+
+
+if __name__ == "__main__":
+    pass

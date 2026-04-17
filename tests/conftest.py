@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+from FestinaLente.app.execution.workflows.compile_workflow import EngineTemplate
 from FestinaLente.core.engine import Engine
 from FestinaLente.regimes.registry import get_regime_spec
 from FestinaLente.regimes.compiler import compile_regime
@@ -54,5 +55,24 @@ def ticks_long():
 @pytest.fixture
 def make_engine():
     def _make_engine(seed: int, regime_config, **kwargs):
-        return Engine(np.random.SeedSequence(seed), regime_config, **kwargs)
+        perf_flag = kwargs.pop("perf_flag", False)
+        collect_worldview = kwargs.pop("collect_worldview", False)
+        world_frame_flag = kwargs.pop("world_frame_flag", collect_worldview)
+        change_condition = kwargs.pop("change_condition", False)
+        if kwargs:
+            unexpected = ", ".join(sorted(kwargs))
+            raise TypeError(f"Unexpected engine fixture kwargs: {unexpected}")
+
+        engine_template = EngineTemplate(
+            regime_config=regime_config,
+            perf_flag=perf_flag,
+            world_frame_flag=world_frame_flag,
+            change_condition=change_condition,
+        )
+        return Engine(
+            engine_template,
+            np.random.SeedSequence(seed),
+            perf_flag=perf_flag,
+            collect_worldview=world_frame_flag,
+        )
     return _make_engine

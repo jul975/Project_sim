@@ -169,7 +169,8 @@ def _get_processing_plan(workflow_request: ServiceRequest, engine_template : Eng
     """ => single source of truth for processing
     first draft version """
     
-    n_runs: int  = workflow_request.runner_request.runs
+    n_runs: int = workflow_request.runner_request.runs if workflow_request.runner_request.runs is not None else EXPERIMENT_DEFAULTS["runs"]
+    total_tics: int = workflow_request.runner_request.ticks if workflow_request.runner_request.ticks is not None else EXPERIMENT_DEFAULTS["ticks"]
     tail_fraction : float = workflow_request.processing_request.tail_fraction
     
     # NOTE: placeholder type regime label needs cleanup 
@@ -185,6 +186,7 @@ def _get_processing_plan(workflow_request: ServiceRequest, engine_template : Eng
 
     return ProcessingPlan(
         n_runs=n_runs,
+        total_tics=total_tics,
         tail_fraction=tail_fraction,
         regime_label=regime_label,
         compiled_regime=compiled_regime,
@@ -235,7 +237,6 @@ def compile_workflow_plans(workflow_request: ServiceRequest) -> CompiledWorkflow
         processing_plan=processing_plan,
         presentation_plan=presentation_plan    
     )
-
 
 
 

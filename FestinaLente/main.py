@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import sys
 
-from FestinaLente.app.cli.dispatch import dispatch
+
 from FestinaLente.app.cli.menu import run_menu
 from FestinaLente.app.cli.parser import build_parser
+from FestinaLente.app.cli.dispatch import dispatch
 from FestinaLente.app.cli.request_builder import (
     build_experiment_request,
     build_verification_request,
