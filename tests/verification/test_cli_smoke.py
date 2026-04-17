@@ -10,6 +10,7 @@ from FestinaLente.app.cli.request_builder import (
     build_validation_request,
 )
 from FestinaLente.app.cli.menu import run_menu
+from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, EXPERIMENT_DEFAULTS
 from FestinaLente.app.service_models.service_request_container import (
     ServiceRequest
 )
@@ -34,6 +35,19 @@ def _get_suite_choices(subparser) -> tuple[str, ...]:
     return tuple(suite_action.choices)
 
 
+def _assert_default_experiment_request(request: ServiceRequest, *, tail_fraction: float) -> None:
+    assert request.service_request_meta.mode is ExecutionMode.EXPERIMENT
+    assert request.service_request_meta.regime == "stable"
+    assert request.runner_request.runs == EXPERIMENT_DEFAULTS["runs"]
+    assert request.runner_request.ticks == EXPERIMENT_DEFAULTS["ticks"]
+    assert request.runner_request.seed == DEFAULT_MASTER_SEED
+    assert request.service_request_meta.execution_features.plotting is False
+    assert request.service_request_meta.execution_features.plot_dev is False
+    assert request.service_request_meta.execution_features.perf_profiling is False
+    assert request.service_request_meta.execution_features.capture_world_frames is False
+    assert request.processing_request.tail_fraction == tail_fraction
+
+
 def test_cli_smoke_experiment_request_build():
     parser = build_parser()
     args = parser.parse_args(["experiment", "--regime", "stable"])
@@ -52,15 +66,7 @@ def test_cli_smoke_experiment_request_build():
     )
 
     assert isinstance(request, ServiceRequest)
-    assert request.regime == "stable"
-    assert request.runs is None
-    assert request.ticks is None
-    assert request.seed is None
-    assert request.features.plotting is False
-    assert request.features.plot_dev is False
-    assert request.features.profiling is False
-    assert request.features.capture_world_frames is False
-    assert request.tail_fraction == 0.25
+    _assert_default_experiment_request(request, tail_fraction=0.25)
 
 def test_cli_smoke_experiment_tail_fraction_parser_plumbing():
     parser = build_parser()
@@ -82,15 +88,7 @@ def test_cli_smoke_experiment_tail_fraction_parser_plumbing():
     )
 
     assert isinstance(request, ServiceRequest)
-    assert request.regime == "stable"
-    assert request.runs is None
-    assert request.ticks is None
-    assert request.seed is None
-    assert request.features.plotting is False
-    assert request.features.plot_dev is False
-    assert request.features.profiling is False
-    assert request.features.capture_world_frames is False
-    assert request.tail_fraction == 0.5
+    _assert_default_experiment_request(request, tail_fraction=0.5)
 
 
 def test_cli_smoke_experiment_tail_fraction_menu_plumbing(monkeypatch):
@@ -115,16 +113,7 @@ def test_cli_smoke_experiment_tail_fraction_menu_plumbing(monkeypatch):
     context = run_menu()
 
     assert isinstance(context, ServiceRequest)
-    assert context.mode is ExecutionMode.EXPERIMENT
-    assert context.regime == "stable"
-    assert context.runs is None
-    assert context.ticks is None
-    assert context.seed is None
-    assert context.features.plotting is False
-    assert context.features.plot_dev is False
-    assert context.features.profiling is False
-    assert context.features.capture_world_frames is False
-    assert context.tail_fraction == 0.5
+    _assert_default_experiment_request(context, tail_fraction=0.5)
 
 
 def test_cli_smoke_verify_request_build():
@@ -139,10 +128,11 @@ def test_cli_smoke_verify_request_build():
     )
 
     assert isinstance(request, ServiceRequest)
-    assert request.suite == "determinism"
-    assert request.verbose is False
-    assert request.fail_fast is False
-    assert request.pytest_args == ()
+    assert request.service_request_meta.mode is ExecutionMode.VERIFICATION
+    assert request.service_request_meta.suite == "determinism"
+    assert request.processing_request.verbose is False
+    assert request.processing_request.fail_fast is False
+    assert request.processing_request.pytest_args == ()
 
 
 def test_cli_smoke_validate_request_build():
@@ -157,10 +147,11 @@ def test_cli_smoke_validate_request_build():
     )
 
     assert isinstance(request, ServiceRequest)
-    assert request.suite == "contracts"
-    assert request.verbose is False
-    assert request.fail_fast is False
-    assert request.pytest_args == ()
+    assert request.service_request_meta.mode is ExecutionMode.VALIDATION
+    assert request.service_request_meta.suite == "contracts"
+    assert request.processing_request.verbose is False
+    assert request.processing_request.fail_fast is False
+    assert request.processing_request.pytest_args == ()
 
 
 def test_cli_smoke_experiment_regime_choices_match_spec():

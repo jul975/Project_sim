@@ -7,7 +7,11 @@ remain free of mode routing and workflow execution logic.
 
 from __future__ import annotations
 
-from FestinaLente.app.service_models.default import DEFAULT_MASTER_SEED, EXPERIMENT_DEFAULTS
+from FestinaLente.app.service_models.default import (
+    DEFAULT_MASTER_SEED,
+    EXPERIMENT_DEFAULTS,
+    EXPLORATION_DEFAULTS,
+)
 from FestinaLente.app.service_models.service_request_container import (
     PresentationRequest, 
     ProcessingRequest, 
@@ -22,13 +26,13 @@ from FestinaLente.app.service_models.features import ExecutionFeatures
 
 def _build_runner_request(
     *,
-    seed: int = DEFAULT_MASTER_SEED,
+    seed: int | None = DEFAULT_MASTER_SEED,
     runs: int | None = None,
     ticks: int | None = None,
 ) -> RunnerRequest:
     """Build the runner controls component of a service request."""
     return RunnerRequest(
-        seed=seed,
+        seed=DEFAULT_MASTER_SEED if seed is None else seed,
         runs=runs,
         ticks=ticks,
     )
@@ -45,7 +49,7 @@ def _build_processing_request(
         tail_fraction=tail_fraction,
         verbose=verbose,
         fail_fast=fail_fast,
-        pytest_args=pytest_args,
+        pytest_args=tuple(pytest_args),
     )
 
 def _build_presentation_request(
@@ -123,7 +127,7 @@ def build_experiment_request(
 ) -> ServiceRequest:
     """Build a complete service request for an experiment execution."""
     meta: ServiceRequestMeta = _build_service_request_meta(
-        mode=ExecutionMode.EXPLORATION,
+        mode=ExecutionMode.EXPERIMENT,
         regime=regime,
         features=_build_experiment_features(
             plot=plot,
@@ -134,7 +138,11 @@ def build_experiment_request(
             change_condition=change_conditions
         ),
     )
-    runner_req: RunnerRequest = _build_runner_request(seed=seed, runs=runs, ticks=ticks)
+    runner_req: RunnerRequest = _build_runner_request(
+        seed=seed,
+        runs=EXPERIMENT_DEFAULTS["runs"] if runs is None else runs,
+        ticks=EXPERIMENT_DEFAULTS["ticks"] if ticks is None else ticks,
+    )
     processing_req: ProcessingRequest = _build_processing_request(tail_fraction=tail_fraction)
     presentation_req: PresentationRequest = _build_presentation_request(plot=plot, plot_dev=plot_dev, profiling=profiling, capture_world_frames=capture_world_frames, animate=animate)
 
@@ -157,21 +165,23 @@ def build_verification_request(
     pytest_args: tuple[str, ...] = (),
 ) -> ServiceRequest:
     """Build a complete service request for a verification execution."""
-    meta = _build_service_request_meta(
+    meta: ServiceRequestMeta = _build_service_request_meta(
         mode=ExecutionMode.VERIFICATION,
         suite=suite,
     )
-    processing_req = _build_processing_request(
+      # default runner settings for verification
+    processing_req: ProcessingRequest = _build_processing_request(
         verbose=verbose,
         fail_fast=fail_fast,
         pytest_args=pytest_args,
     )
-    presentation_req = _build_presentation_request()
+    presentation_req: PresentationRequest = _build_presentation_request()
 
     return ServiceRequest(
-        **meta.__dict__,
-        **processing_req.__dict__,
-        **presentation_req.__dict__,
+        service_request_meta=meta,
+        processing_request=processing_req,
+        presentation_request=presentation_req,
+
     )
 
 
@@ -183,21 +193,21 @@ def build_validation_request(
     pytest_args: tuple[str, ...] = (),
 ) -> ServiceRequest:
     """Build a complete service request for a validation execution."""
-    meta = _build_service_request_meta(
+    meta: ServiceRequestMeta = _build_service_request_meta(
         mode=ExecutionMode.VALIDATION,
         suite=suite,
     )
-    processing_req = _build_processing_request(
+    processing_req: ProcessingRequest = _build_processing_request(
         verbose=verbose,
         fail_fast=fail_fast,
         pytest_args=pytest_args,
     )
-    presentation_req = _build_presentation_request()
+    presentation_req: PresentationRequest = _build_presentation_request()
 
     return ServiceRequest(
-        **meta.__dict__,
-        **processing_req.__dict__,
-        **presentation_req.__dict__,
+        service_request_meta=meta,
+        processing_request=processing_req,
+        presentation_request=presentation_req,
     )
 
 def build_exploration_request(
@@ -207,20 +217,26 @@ def build_exploration_request(
     ticks: int | None = None,
 ) -> ServiceRequest:
     """Build an exploration-mode execution request."""
-    meta = _build_service_request_meta(
+    meta: ServiceRequestMeta = _build_service_request_meta(
         mode=ExecutionMode.EXPLORATION,
         regime=regime,
         features=ExecutionFeatures(animate=True),
     )
-    runner_req = _build_runner_request(seed=seed, ticks=ticks)
-    processing_req = _build_processing_request()
-    presentation_req = _build_presentation_request()
+    runner_req: RunnerRequest = _build_runner_request(
+        seed=seed,
+        runs=1,
+        ticks=EXPLORATION_DEFAULTS["ticks"] if ticks is None else ticks,
+    )
+    processing_req: ProcessingRequest = _build_processing_request(
+        
+    )
+    presentation_req: PresentationRequest = _build_presentation_request()
 
     return ServiceRequest(
-        **meta.__dict__,
-        **runner_req.__dict__,
-        **processing_req.__dict__,
-        **presentation_req.__dict__,
+        service_request_meta=meta,
+        runner_request=runner_req,
+        processing_request=processing_req,
+        presentation_request=presentation_req,
     )
 
 

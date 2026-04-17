@@ -17,17 +17,9 @@ from FestinaLente.runner.batch_runner import BatchRunner, BatchRunResults
 def Execute_workflow(runner_plan: BatchPlan) -> BatchRunResults:
     """ build batch, run batch and return batch results from context. """
 
-    
-    # processing_plan = workflow_plan.processing_plan
-    # presentation_plan = workflow_plan.presentation_plan
-
-
-
-
-
     runner : BatchRunner = BatchRunner(runner_plan)
 
-    batch_results : BatchRunResults = runner.run_batch(ticks=BatchPlan.ticks)
+    batch_results : BatchRunResults = runner.run_batch(ticks=runner_plan.ticks)
 
 
     
