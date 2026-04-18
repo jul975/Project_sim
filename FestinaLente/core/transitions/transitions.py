@@ -16,32 +16,15 @@ from ..spatial.neighborhood import sample_moves
 from typing import List
 
 if TYPE_CHECKING:
-    from core import Engine
     from ..domains.agent import Agent
     from ..domains.world import World    
 ###############################################################################################
-# Formal agent transition order: =>    T = Π ∘ B ∘ D ∘ H ∘ M ∘ A
-
-        # M: move agents
-        # H: world.resolve_harvest()
-        # R: world.resolve_reproduction()
-        # G: world.resolve_agent_aging()
-        # Π: commit births/deaths
-
-# NOTE: 
-    # - transition context holds intermediate data during transition phases, should be cleared at the end of each tick. 
-    # - transition reports hold data about the outcomes of each phase, to be used for reporting and analytics.
-
-##############################################################################################
-# Regarding determinism:
-    # - OccupancyIndex is a critical component regarding percervance of determinism, 
-    
-    # - OccupancyIndex gets created by iterating over sorted agents.id, insertion order is
-    # preserved during the tick, and iteration order is deterministic as it relies on the underlying dict order, 
-    # which is deterministic in python 3.7+.
-
-
-##############################################################################################
+# Formal tick order: movement → interaction → biology → commit → tick increment
+#
+# TransitionContext holds intermediate phase results. See DETERMINISM.md for:
+# - "World / OccupancyIndex / TransitionContext Contract" (State Freezing pattern)
+# - "Explicit Local Ordering Guarantee" (deterministic iteration order)
+###############################################################################################
 
 
 @dataclass
@@ -65,12 +48,30 @@ class DeathBucket:
 
 @dataclass
 class TransitionContext:
-    ''' TransitionContext:
-        - holds intermediate data during transition phases
-        - should be cleared at the end of each tick. 
-        
-    ---'''
-
+    """TransitionContext: intermediate state holder for a single tick's phase computation.
+    
+    **Part of the State Freezing pattern** — see DETERMINISM.md "World / OccupancyIndex / 
+    TransitionContext Contract".
+    
+    Lifecycle:
+    - Created at start of Engine.step()
+    - Populated by each phase (movement → interaction → biology)
+    - Applied atomically in commit_phase()
+    - Discarded at end of tick
+    
+    Responsibilities:
+    - occupancy: spatial index (built in movement, frozen for rest of tick)
+    - pending_deaths_by_cause: agent IDs queued for removal (categorized)
+    - post_harvest_alive: agents surviving harvest
+    - reproducing_agents: agents queued for birth
+    
+    Invariant: Never persisted. Always cleared at tick end.
+    
+    Commit order (deterministic):
+    1. Remove all pending deaths
+    2. Create births (limited by capacity)
+    3. Regrow resources
+    """
     spatial_params : SpatialParams = field(default_factory=SpatialParams)
     occupancy : OccupancyIndex = field(default_factory=OccupancyIndex)
     post_harvest_alive : list["Agent"] = field(default_factory=list)
@@ -87,14 +88,25 @@ def movement_phase(
         context : TransitionContext, 
         world : "World"
         ) -> MovementReport:
-    """ movement_phase(agents, world, context):
+    """Movement phase: update agent positions and build occupancy index for the tick.
+    
+    Steps:
+    1. Age check: identify agents >= max_age (queued for death)
+    2. Build fresh OccupancyIndex from agents in encounter order
+    3. For each cell, sample movement candidates (softmax by resource + crowding)
+    4. Move agents, deduct energy, check for metabolic death
+    5. Update context.occupancy as agents move (frozen after this phase)
+    
+    Frozen at end of this phase: context.occupancy is used by interaction/biology phases.
+    
+    See DETERMINISM.md "World / OccupancyIndex / TransitionContext Contract" for 
+    the occupancy freeze guarantee.
     """
     
     metabolic_deaths = DeathBucket()
     
     current_occupancy, age_dead_ids = OccupancyIndex.build_from_agents(agents)
     age_deaths = DeathBucket.fill_bucket_from_ids(age_dead_ids)
-        # M
 
     occupied_cells : Iterable[tuple[Position, list["Agent"]]] = current_occupancy.occupied_items()
     for position, local_agents in occupied_cells:
@@ -107,7 +119,6 @@ def movement_phase(
             if not agent.move_agent(movement_range.candidates, movement_range.probability):
                 metabolic_deaths.agents_ids.append(agent.id)
                 continue
-            # NOTE: context.occupancy is still empty at this point,
             context.occupancy.add(agent)  # update occupancy with new position
 
 
@@ -124,16 +135,23 @@ def movement_phase(
 
 
 def interaction_phase(context : TransitionContext, world : "World") -> InteractionReport:
-    """ 
-    interaction_phase(context):
+    """Interaction phase: harvest resources and check for starvation death.
+    
+    Steps:
+    1. For each occupied cell (in order from OccupancyIndex):
+       - Harvest resources deterministically (all agents in cell get share)
+       - Remainder distributed to first r agents in local encounter order
+    2. Check each agent's post-harvest energy
+    3. Alive agents added to post_harvest_alive; dead queued for death
+    
+    Uses frozen context.occupancy (from movement phase).
+    
+    See DETERMINISM.md "Explicit Local Ordering Guarantee" for harvest distribution order.
     """
     pending_starvation_death = DeathBucket()
 
     occupied_positions : OccupancyIndex = context.occupancy
 
-
-    # H
-    # NOTE: loop will need simplification, but for now this is the cleanest way to distribute resources while conserving energy and ensuring deterministic distribution of remainders.
     for position, local_agents in occupied_positions.occupied_items():
         world.harvest(local_agents, position)
 
@@ -153,8 +171,18 @@ def interaction_phase(context : TransitionContext, world : "World") -> Interacti
 
 
 def biology_phase(context : TransitionContext) -> BiologyReport:
-    """ 
-    biology_phase(context):
+    """Biology phase: reproduction and aging.
+    
+    Steps:
+    1. For each agent that survived harvest:
+       - Check if can reproduce (energy >= reproduction_cost)
+       - Sample reproduction Bernoulli
+       - If reproducing: queue for birth, pay energy cost, check if energy <= 0
+       - Age the agent (increment age counter)
+    2. Agents dying from post-reproduction energy depletion queued for death
+    
+    Determinism: uses post_harvest_alive from interaction phase (in encounter order).
+    Birth queue order determines child ID order during commit.
     """
     post_reproduction_death = DeathBucket()
 

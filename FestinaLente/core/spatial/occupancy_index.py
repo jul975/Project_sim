@@ -14,9 +14,25 @@ class Position:
 
 @dataclass
 class OccupancyIndex:
-    """ OccupancyIndex: only owns the spatial lookup of agents, should be updated at the end of each tick. 
-    NOTE: this is a critical component regarding percervance of determinism, 
-    OccupancyIndex gets created by iterating over sorted agents.id, insertion order is preserved during the tick, and iteration order is deterministic as it relies on the underlying dict order, which is deterministic in python 3.7+."""
+    """OccupancyIndex: spatial lookup structure mapping positions to ordered agent lists.
+    
+    **Part of the State Freezing pattern** — see DETERMINISM.md "World / OccupancyIndex / 
+    TransitionContext Contract".
+    
+    **Built once at start of movement phase, frozen for rest of tick.**
+    
+    Responsibilities:
+    - Store agents by position (x, y) → [agent_0, agent_1, ...]
+    - Maintain insertion order within each cell for deterministic harvest distribution
+    - Provide iteration over occupied cells
+    
+    Local ordering contract:
+    - Agents within a cell are stored in a list (encounter order)
+    - Cells are iterated in order of first occupancy during movement
+    - Harvest remainder is allocated to first r agents in local list
+    
+    See DETERMINISM.md "Explicit Local Ordering Guarantee" for full specification.
+    """
     cells: dict[Position, list["Agent"]] = field(default_factory=dict)
 
     def clear(self) -> None:
@@ -44,13 +60,14 @@ class OccupancyIndex:
     
     @classmethod
     def build_from_agents(cls, agents: dict[int, "Agent"]) -> tuple["OccupancyIndex", list[int]]:
-        """ build_from_agents(agents):
-        builds an OccupancyIndex from a given dict of agents, and returns a DeathBucket of dead agents. 
+        """Build occupancy index from agent dict and return dead agent IDs.
+        
+        **Determinism-critical**: Iterates agents.values() which preserves insertion order 
+        (Python 3.7+ dict guarantee). This ensures encounter order is consistent across runs.
+        
+        See DETERMINISM.md "Explicit Local Ordering Guarantee" for the three-layer ordering
+        contract and why re-sorting would break determinism.
         """
-        # NOTE: insertion order of dict is preserved, need verification and formalization
-            # need to assure deterministic order of agent processing, while avoiding overhead of sorting by id at each tick.
-            # should be stable as is but still relying on dict order for determinism is a bit concerning/bug risk
-            # idea, counter? (easy to overdo it) or just be careful and document
         index = cls()
         dead_agents_ids = []
 
