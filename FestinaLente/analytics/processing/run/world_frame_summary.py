@@ -45,7 +45,7 @@ def get_resource_depletion_rate(resources : np.ndarray, threshold : float) -> fl
 
 ##############
 
-def get_mean_energy_level_sampled(energies: np.ndarray) -> float:
+def get_mean_energy_reserve_sampled(energies: np.ndarray) -> float:
     if energies.size == 0:
         return 0.0
     return float(np.mean(energies))
@@ -121,7 +121,7 @@ def analyze_single_run_world_frames( run_view : list[WorldView], max_resource_le
     
     mean_resource_depletion_rate = np.mean([get_resource_depletion_rate(resource, threshold) for resource in resources])
 
-    mean_energy_level_sampled = np.mean([get_mean_energy_level_sampled(energy) for energy in energies])
+    mean_energy_reserve_sampled = np.mean([get_mean_energy_reserve_sampled(energy) for energy in energies])
     mean_energy_std_sampled = np.mean([get_energy_std_sampled(energy) for energy in energies])
     mean_energy_inequality = np.mean([get_energy_cv_sampled(energy) for energy in energies])
 
@@ -136,7 +136,7 @@ def analyze_single_run_world_frames( run_view : list[WorldView], max_resource_le
         mean_resource_heterogeneity=mean_resource_heterogeneity,
         mean_resource_depletion_rate=mean_resource_depletion_rate,
 
-        mean_energy_level_sampled=mean_energy_level_sampled,
+        mean_energy_reserve_sampled=mean_energy_reserve_sampled,
         mean_energy_std_sampled=mean_energy_std_sampled,
         mean_energy_cv_sampled=mean_energy_inequality,
 

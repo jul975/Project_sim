@@ -142,7 +142,7 @@ def print_summarize_analytics(
         _print_metric("mean_resource_level_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_resource_level_over_runs))
         _print_metric("mean_resource_heterogeneity_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_resource_heterogeneity_over_runs))
         _print_metric("mean_resource_depletion_rate_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_resource_depletion_rate_over_runs))
-        _print_metric("mean_energy_level_sampled_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_energy_level_sampled_over_runs))
+        _print_metric("mean_energy_reserve_sampled_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_energy_reserve_sampled_over_runs))
         _print_metric("mean_energy_std_sampled_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_energy_std_sampled_over_runs))
         _print_metric("mean_energy_cv_sampled_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_energy_cv_sampled_over_runs))
         _print_metric("mean_density_resource_correlation_over_runs", _format_value(batch_analysis.batch_world_frames.aggregate_summary.mean_density_resource_correlation_over_runs))

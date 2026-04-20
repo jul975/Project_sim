@@ -94,7 +94,7 @@ class Agent:
         else:
             self.position = position
         self.alive : bool = True
-        self.energy_level = self.energy_rng.integers(self.engine.energy_params.energy_init_range[0], self.engine.energy_params.energy_init_range[1])
+        self.energy_reserve = self.energy_rng.integers(self.engine.energy_params.energy_init_range[0], self.engine.energy_params.energy_init_range[1])
 
 
 
@@ -116,7 +116,7 @@ class Agent:
 
         # biological state
         assert self.age >= 0
-        assert self.energy_level >= 0 or not self.alive
+        assert self.energy_reserve >= 0 or not self.alive
 
         # RNG integrity
         assert isinstance(self.move_rng, np.random.Generator)
@@ -143,7 +143,7 @@ class Agent:
 
     def harvest_resources(self, harvest : np.int64) -> None:
         """ harvests resources from current position. """
-        self.energy_level += harvest
+        self.energy_reserve += harvest
 
 
 
@@ -164,23 +164,23 @@ class Agent:
         self.position = candidates[idx].position
 
         # NOTE: 8/6/24 - deduct energy after movement, future proofing for potential movement costs that depend on the environment or movement range.
-        self.energy_level -= self.engine.energy_params.movement_cost
+        self.energy_reserve -= self.engine.energy_params.movement_cost
 
-        if self.energy_level <= 0:
+        if self.energy_reserve <= 0:
             self.alive = False
             return False
         return True
     
     def can_reproduce(self) -> bool:
             """ check energy level"""
-            if self.energy_level >= self.engine.energy_params.reproduction_threshold:
+            if self.energy_reserve >= self.engine.energy_params.reproduction_threshold:
                 return True
             return False
             
     def does_reproduce(self) -> bool:
             reproduce = self.repro_rng.random()
             if reproduce < self.engine.reproduction_probability:
-                self.energy_level -= self.engine.energy_params.reproduction_cost
+                self.energy_reserve -= self.engine.energy_params.reproduction_cost
                 return True
             return False
          

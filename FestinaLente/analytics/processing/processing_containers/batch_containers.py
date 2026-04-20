@@ -73,7 +73,7 @@ class BatchWorldFrameSummary:
     mean_resource_heterogeneity_over_runs: float
     mean_resource_depletion_rate_over_runs: float
 
-    mean_energy_level_sampled_over_runs: float
+    mean_energy_reserve_sampled_over_runs: float
     mean_energy_std_sampled_over_runs: float
     mean_energy_cv_sampled_over_runs: float
 

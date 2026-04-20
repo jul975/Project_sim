@@ -156,7 +156,7 @@ def interaction_phase(context : TransitionContext, world : "World") -> Interacti
         world.harvest(local_agents, position)
 
         for agent in local_agents:
-            if agent.energy_level <= 0:
+            if agent.energy_reserve <= 0:
                 
                 pending_starvation_death.agents_ids.append(agent.id)
                 continue
@@ -193,7 +193,7 @@ def biology_phase(context : TransitionContext) -> BiologyReport:
             if agent.does_reproduce():
                 context.reproducing_agents.append(agent)
      
-                if agent.energy_level <= 0:
+                if agent.energy_reserve <= 0:
                     post_reproduction_death.agents_ids.append(agent.id)
 
         agent.age_agent()

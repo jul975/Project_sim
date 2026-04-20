@@ -136,7 +136,7 @@ def _schema_v2(engine : "Engine" ) -> bytes:
         buffer += set_int64(agent.id)
         # position can be negative so use signed=True
         buffer += set_int64_pair(agent.position[0], agent.position[1])
-        buffer += set_int64(agent.energy_level)
+        buffer += set_int64(agent.energy_reserve)
         buffer += set_int64(agent.age)
         buffer += set_uint8(int(agent.alive))
 
@@ -200,7 +200,7 @@ def _schema_v1(engine) -> bytes:
         buffer += set_int64(agent.id)
         # position can be negative so use signed=True
         buffer += set_int64(agent.position, signed=True)
-        buffer += set_int64(agent.energy_level)
+        buffer += set_int64(agent.energy_reserve)
         buffer += set_uint8(int(agent.alive))
 
 
