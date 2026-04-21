@@ -37,3 +37,39 @@ W
 >1+ε
 
 This is much better than exact equality, and much closer to ecological net-productivity reasoning.
+
+
+E
+t+1
+	​
+
+=E
+t
+	​
+
++A
+t
+	​
+
+−C
+t
+	​
+
+
+Where:
+
+E
+t
+	​
+
+ = current stored usable energy at tick t
+A
+t
+	​
+
+ = assimilated energy entering the organism during tick t
+C
+t
+	​
+
+ = total energy consumed, dissipated, or committed during tick t
