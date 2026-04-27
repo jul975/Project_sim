@@ -10,9 +10,13 @@ class CompiledAnimalParams:
     max_structure_kg: float
     maturity_move_threshold_J: float
     maturity_repro_threshold_J: float
+
+    energy_conductance_cm_per_day: float # energy conductance
     kappa: float
+
     growth_efficiency: float
     reproduction_efficiency: float
+
     maturity_maintenance_rate_per_day: float
     somatic_maintenance_J_per_kg_day: float
 

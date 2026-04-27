@@ -1,20 +1,19 @@
+"""
+Sheep specific values from amp
+"""
 
 
 from dataclasses import dataclass
 
-# daily max intake as fraction of body mass, from DMI data for sheep
-DMI_RATIOS: dict[str, float] = {
-    "newborn": 0.00,   # if milk-fed / not grazing yet
-    "juvenile": 0.04,  # growing lamb, post-weaning
-    "adult": 0.025,    # maintenance adult on pasture
-}
+"""
+V controls L
+L and v control mobilization
+mobilization controls available energy flow
+κ controls allocation
+allocation controls growth/maturation/reproduction
+"""
 
-grass_energy_density_J_per_kg_DM = 18_000_000.0
-assimilation_efficiency = 0.45
 
-newborn_intake_ratio = 0.00
-juvenile_intake_ratio = 0.04
-adult_intake_ratio = 0.025
 
 
 @dataclass(frozen=True)
@@ -29,7 +28,10 @@ class SheepEnergeticSpec:
     - reproduction efficiency: 	kap_R = 0.95
     - maturity maintenance : 	k_J = 0.002 1/d
     - somatic maintenance :	p_M = 2511 J/d/cm³
+    - energy conductance : 0.02737 cm/d
     - reproduction rate sanity check :	Ri = 0.004329 #/d"""
+    assimilation_efficiency = 0.45
+    v_conductance = 0.02737
     wwb = 5.4
     wwi = 86.0
     tp = 548
@@ -44,6 +46,9 @@ class SheepEnergeticSpec:
 
 @dataclass(frozen=True)
 class SheepEmpiricalAnchors:
+    assimilation_efficiency : float = 0.45
+    v_conductance: float  = 0.02737
+
     birth_wet_mass_kg: float = 5.4
     adult_female_wet_mass_kg: float = 86.0
     weaning_age_days: float = 135.0
@@ -57,3 +62,7 @@ class SheepEmpiricalAnchors:
     maturity_maintenance_rate_per_day: float = 0.002
 
     somatic_maintenance_J_per_day_per_cm3: float = 2511.0
+
+
+
+
