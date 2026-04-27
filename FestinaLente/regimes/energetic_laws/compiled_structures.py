@@ -3,19 +3,18 @@ import numpy as np
 
 
 @dataclass(frozen=True)
-class CompiledEnergetics:
-    reserve_init: float
-    repr_buffer_init: float
-    eta_base: float
+class CompiledAnimalParams:
+    # NOTE: max harvest => adult sheep 3% of mass for average pasture
+    # NOTE: will need to change agent class 
+    birth_structure_kg: float
+    max_structure_kg: float
+    maturity_move_threshold_J: float
+    maturity_repro_threshold_J: float
     kappa: float
-    maintenance_coeff: float
-    mass_scaling_exponent: float
-    temperature_ref_K: float | None
-    activation_energy_maint: float | None
-    activation_energy_assim: float | None
-    movement_mode: str
-    reproduction_mode: str
-    death_mode: str
+    growth_efficiency: float
+    reproduction_efficiency: float
+    maturity_maintenance_rate_per_day: float
+    somatic_maintenance_J_per_kg_day: float
 
 @dataclass(frozen=True)
 class CompiledWorldEnergetics:
@@ -24,3 +23,5 @@ class CompiledWorldEnergetics:
     capacity_field: np.ndarray
     initial_stock_field: np.ndarray
     inflow_field: np.ndarray
+
+
