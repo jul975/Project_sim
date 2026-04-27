@@ -9,6 +9,13 @@ DMI_RATIOS: dict[str, float] = {
     "adult": 0.025,    # maintenance adult on pasture
 }
 
+grass_energy_density_J_per_kg_DM = 18_000_000.0
+assimilation_efficiency = 0.45
+
+newborn_intake_ratio = 0.00
+juvenile_intake_ratio = 0.04
+adult_intake_ratio = 0.025
+
 
 @dataclass(frozen=True)
 class SheepEnergeticSpec:
