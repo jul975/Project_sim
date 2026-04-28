@@ -138,6 +138,8 @@ class SheepParams:
     dt_days: float = 1.0
 
     # DEB-style allocation
+    v_conductance: float  = 0.02737
+
     kappa: float = 0.7978
     growth_efficiency: float = 0.7994
     reproduction_efficiency: float = 0.95
