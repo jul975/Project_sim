@@ -27,7 +27,7 @@ DMI_RATIOS: dict[str, float] = {
 
 grass_energy_density_J_per_kg_DM = 18_000_000.0
 
-@dataclass(frozen=True)
+'''@dataclass(frozen=True)
 class AgentRegistryEntry:
     """ placholder copy of sheep energetic spec, to be used in regime compiler and agent class """
     assimilation_efficiency : float = 0.45
@@ -46,3 +46,6 @@ class AgentRegistryEntry:
     maturity_maintenance_rate_per_day: float = 0.002
 
     somatic_maintenance_J_per_day_per_cm3: float = 2511.0
+
+
+'''

@@ -1,6 +1,6 @@
 
-from FestinaLente.regimes.NEW_laws.domain_dataclasses import EnergeticLawSpec
-from FestinaLente.regimes.NEW_laws.universal_laws.theta_E import CompiledEnergetics
+from FestinaLente.regimes.deb.domain_dataclasses import EnergeticLawSpec
+from FestinaLente.regimes.deb.universal_laws.theta_E import CompiledEnergetics
 
 
 def compile_energetic_law(theta_E: EnergeticLawSpec) -> CompiledEnergetics:

@@ -66,3 +66,17 @@ class SheepEmpiricalAnchors:
 
 
 
+
+@dataclass(frozen=True)
+class SheepEmpiricalAnchors:
+    birth_wet_mass_kg: float = 5.4
+    adult_female_wet_mass_kg: float = 86.0
+    weaning_age_days: float = 135.0
+    female_puberty_age_days: float = 548.0
+
+    energy_conductance_cm_per_day: float = 0.02737
+    kappa: float = 0.7978
+    growth_efficiency: float = 0.7994
+    reproduction_efficiency: float = 0.95
+    maturity_maintenance_rate_per_day: float = 0.002
+    somatic_maintenance_J_per_day_cm3: float = 2511.0
