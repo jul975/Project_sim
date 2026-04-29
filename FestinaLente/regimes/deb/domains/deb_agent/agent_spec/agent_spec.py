@@ -10,6 +10,7 @@ from dataclasses import dataclass
 
 @dataclass(frozen=True)
 class SheepModelSpec:
+    """ Encoded modeling choices"""
     dt_days: float = 1.0
 
     grass_energy_density_J_per_kg_DM: float = 18_000_000.0
