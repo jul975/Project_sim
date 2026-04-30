@@ -80,3 +80,24 @@ class SheepEmpiricalAnchors:
     reproduction_efficiency: float = 0.95
     maturity_maintenance_rate_per_day: float = 0.002
     somatic_maintenance_J_per_day_cm3: float = 2511.0
+
+
+@dataclass(frozen=True)
+class OvisDEBParams:
+    T_ref: float = 293.15
+    T_A: float = 8000.0
+
+    v: float = 0.027372          # cm/day
+    kappa: float = 0.79779
+    kappa_R: float = 0.95
+
+    p_M: float = 2510.8646       # J/day/cm^3
+    k_J: float = 0.002           # 1/day
+    E_G: float = 7851.4521       # J/cm^3
+
+    E_Hb: float = 2.933e6        # J, birth
+    E_Hx: float = 3.591e7        # J, weaning
+    E_Hp: float = 1.580e8        # J, female puberty
+    E_Hpm: float = 1.814e8       # J, male puberty
+
+    f: float = 1.0
