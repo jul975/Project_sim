@@ -1,22 +1,8 @@
 from dataclasses import dataclass
+from turtle import position
 
 
-@dataclass(frozen=True)
-class EnergyParams:
-    v: float = 0.02737          # cm / day
-    p_M: float = 2511.0         # J / day / cm^3
-    E_G: float = 7853.0         # J / cm^3
-    kappa: float = 0.7978       # allocation fraction to soma
-    k_J: float = 0.002          # 1 / day
-    V_min: float = 1e-6         # cm^3 numerical floor
 
-
-@dataclass
-class EnergyState:
-    E_reserve: float  # J
-    V: float          # cm^3
-    E_H: float        # J
-    E_R: float        # J
 
 @dataclass(frozen=True)
 class MobilizationResult:
@@ -33,7 +19,7 @@ class MaintenanceResult:
     maturity_maintenance_paid_J: float
 
 
-#############################
+############################# MOBILIZATION OF ENERGY RESERVE INTO USABLE POWER
 def mobilization_phase(state, params : EnergyParams, dt : float) -> MobilizationResult:
     """Compute mobilized energy from reserve."""
 
@@ -65,7 +51,7 @@ def mobilization_phase(state, params : EnergyParams, dt : float) -> Mobilization
 
     
 
-#############################
+############################# BRANCH SPLIT OF MOBILIZED ENERGY INTO SOMA AND MATURITY/REPRODUCTION
 
 def branch_split_phase(mobilized_energy, params : EnergyParams) -> BranchBudget:
     
@@ -84,7 +70,7 @@ def branch_split_phase(mobilized_energy, params : EnergyParams) -> BranchBudget:
     return BranchBudget(soma_budget_J=p_soma, maturity_repro_budget_J=p_maturity_repro)
 
 
-#############################
+############################# PAY MAINTENANCE COSTS FIRST, THEN DETERMINE SURPLUS FOR GROWTH/MATURATION/REPRODUCTION
 
 
 def maintenance_phase(state, params, dt, branch_budget: BranchBudget) -> MaintenanceResult:
@@ -118,7 +104,7 @@ def maintenance_phase(state, params, dt, branch_budget: BranchBudget) -> Mainten
     return MaintenanceResult(somatic_maintenance_paid_J=p_S * dt, maturity_maintenance_paid_J=p_J * dt)
 
 
-#############################
+############################# MOVEMENT PHASE, (needs implementation placeholder for now)
 
 
 def movement_phase(agent, soma_surplus, params, dt) -> MovementResult:
@@ -128,7 +114,7 @@ def movement_phase(agent, soma_surplus, params, dt) -> MovementResult:
 
     pass
 
-#############################
+############################# STRUCTURAL GROWTH PHASE
 
 def growth_phase(state : EnergyState, soma_surplus_after_movement, params, dt) -> GrowthResult:
     """Convert remaining soma surplus into structural volume."""
@@ -166,7 +152,7 @@ def growth_phase(state : EnergyState, soma_surplus_after_movement, params, dt) -
 
 
 
-#############################
+############################# MATURITY/REPRODUCTION PHASE
 
 
 def maturity_reproduction_phase(state, maturity_surplus, params) -> MaturityResult:
@@ -191,4 +177,23 @@ def maturity_reproduction_phase(state, maturity_surplus, params) -> MaturityResu
             return 0.0, maturity_deficit
 
         return p_H_raw, 0.0
-    
+#### NEW AGENT CLASS
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class EnergyParams:
+    v: float = 0.02737          # cm / day
+    p_M: float = 2511.0         # J / day / cm^3
+    E_G: float = 7853.0         # J / cm^3
+    kappa: float = 0.7978       # allocation fraction to soma
+    k_J: float = 0.002          # 1 / day
+    V_min: float = 1e-6         # cm^3 numerical floor
+
+
+@dataclass
+class EnergyState:
+    E_reserve: float  # J
+    V: float          # cm^3
+    E_H: float        # J
+    E_R: float        # J
+
